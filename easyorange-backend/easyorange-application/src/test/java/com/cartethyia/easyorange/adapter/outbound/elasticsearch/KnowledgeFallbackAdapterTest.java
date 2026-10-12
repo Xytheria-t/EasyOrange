@@ -4,8 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.cartethyia.easyorange.ai.domain.model.KnowledgeChunkHit;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeDocEntity;
-import com.cartethyia.easyorange.ai.domain.model.KnowledgeMatch;
 import com.cartethyia.easyorange.ai.domain.port.KnowledgeIndexPort;
 import com.cartethyia.easyorange.ai.domain.port.KnowledgeRepository;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -49,7 +49,7 @@ class KnowledgeFallbackAdapterTest {
                         LocalDateTime.now())));
         KnowledgeIndexPort adapter = new KnowledgeFallbackAdapter(repository, meterRegistry);
 
-        List<KnowledgeMatch> matches = adapter.search("退款", null, 5);
+        List<KnowledgeChunkHit> matches = adapter.search("退款", null, 5);
 
         assertThat(matches).hasSize(1);
         assertThat(matches.getFirst().docId()).isEqualTo("kb-0002");

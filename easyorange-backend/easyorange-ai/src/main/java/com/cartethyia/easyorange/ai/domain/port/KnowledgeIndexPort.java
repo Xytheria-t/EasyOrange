@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.ai.domain.port;
 
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeChunk;
-import com.cartethyia.easyorange.ai.domain.model.KnowledgeMatch;
+import com.cartethyia.easyorange.ai.domain.model.KnowledgeChunkHit;
 import java.util.List;
 
 /**
@@ -25,7 +25,7 @@ public interface KnowledgeIndexPort {
      * 实现侧完成（要拿到两路完整排名才能算融合分），返回顺序即最终顺序、调用方不再重排；两路都不可用
      * 返回空列表，单路可用按单路排名返回。命中不再回传分块向量。
      */
-    List<KnowledgeMatch> search(String query, List<Float> queryEmbedding, int topK);
+    List<KnowledgeChunkHit> search(String query, List<Float> queryEmbedding, int topK);
 
     /** 索引是否可用（ES 未启用时为 false，摄入侧保持 PENDING 等待重试）。 */
     boolean isAvailable();

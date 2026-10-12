@@ -6,8 +6,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.cartethyia.easyorange.ai.domain.model.KnowledgeChunkHit;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeHit;
-import com.cartethyia.easyorange.ai.domain.model.KnowledgeMatch;
 import com.cartethyia.easyorange.ai.domain.port.KnowledgeIndexPort;
 import com.cartethyia.easyorange.ai.testsupport.TestModelSupport;
 import java.util.List;
@@ -61,8 +61,8 @@ class KnowledgeRetrievalAppServiceTest {
         // 融合分由索引侧算好：kb-a 排前是因为两路都命中，光看余弦 kb-b 反而更近
         when(indexPort.search("退款", List.of(1f, 0f, 0f), 2))
                 .thenReturn(List.of(
-                        new KnowledgeMatch("kb-a", 0, "A", "退款规则", 1.0 / 61 + 1.0 / 61),
-                        new KnowledgeMatch("kb-b", 0, "B", "不相关内容", 1.0 / 62)));
+                        new KnowledgeChunkHit("kb-a", 0, "A", "退款规则", 1.0 / 61 + 1.0 / 61),
+                        new KnowledgeChunkHit("kb-b", 0, "B", "不相关内容", 1.0 / 62)));
 
         List<KnowledgeHit> hits = retrievalService.search("退款", 2);
 
@@ -79,7 +79,7 @@ class KnowledgeRetrievalAppServiceTest {
         setUpRetrieval();
         when(indexPortProvider.getIfAvailable()).thenReturn(indexPort);
         when(indexPort.isAvailable()).thenReturn(false);
-        when(indexPort.search("退款", null, 2)).thenReturn(List.of(new KnowledgeMatch("kb-0002", 0, "退款规则", "内容", 0)));
+        when(indexPort.search("退款", null, 2)).thenReturn(List.of(new KnowledgeChunkHit("kb-0002", 0, "退款规则", "内容", 0)));
 
         List<KnowledgeHit> hits = retrievalService.search("退款", 2);
 
@@ -98,7 +98,7 @@ class KnowledgeRetrievalAppServiceTest {
         when(embeddingModelProvider.getIfAvailable()).thenReturn(embeddingModel);
         when(embeddingModel.embedForResponse(anyList())).thenThrow(new RuntimeException("embedding provider down"));
         when(indexPort.search("退款", List.of(), 2))
-                .thenReturn(List.of(new KnowledgeMatch("kb-0002", 0, "退款规则", "7 天无理由", 0.5)));
+                .thenReturn(List.of(new KnowledgeChunkHit("kb-0002", 0, "退款规则", "7 天无理由", 0.5)));
 
         List<KnowledgeHit> hits = retrievalService.search("退款", 2);
 

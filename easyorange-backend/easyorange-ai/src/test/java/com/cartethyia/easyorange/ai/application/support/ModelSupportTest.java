@@ -203,15 +203,15 @@ class ModelSupportTest {
     }
 
     @Nested
-    @DisplayName("callJsonAsWithImages")
+    @DisplayName("callJsonWithImages")
     class CallJsonAsWithImagesTests {
 
         @Test
         @DisplayName("多图按 URL 后缀标注 MIME，随提示词交给视觉模型并解析成结构化结果")
-        void callJsonAsWithImages_attachesMediaAndParses() {
+        void callJsonWithImages_attachesMediaAndParses() {
             when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("{\"title\":\"二手相机\"}"));
 
-            Optional<Listing> result = aiModelSupport.callJsonAsWithImages(
+            Optional<Listing> result = aiModelSupport.callJsonWithImages(
                     chatModel,
                     ModelCallScope.AUTO_LISTING,
                     "system",
@@ -233,10 +233,10 @@ class ModelSupportTest {
 
         @Test
         @DisplayName("data URL 从 mime 头解析类型（服务端取图转 base64 后的内联形态，后缀推断对 base64 无效）")
-        void callJsonAsWithImages_dataUrlMimeFromHeader() {
+        void callJsonWithImages_dataUrlMimeFromHeader() {
             when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("{\"title\":\"二手相机\"}"));
 
-            Optional<Listing> result = aiModelSupport.callJsonAsWithImages(
+            Optional<Listing> result = aiModelSupport.callJsonWithImages(
                     chatModel,
                     ModelCallScope.AUTO_LISTING,
                     "system",
@@ -254,10 +254,10 @@ class ModelSupportTest {
 
         @Test
         @DisplayName("模型输出不可解析 — 返回 empty 由调用方决定语义，不抛异常")
-        void callJsonAsWithImages_unparsable() {
+        void callJsonWithImages_unparsable() {
             when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("{broken}"));
 
-            Optional<Listing> result = aiModelSupport.callJsonAsWithImages(
+            Optional<Listing> result = aiModelSupport.callJsonWithImages(
                     chatModel,
                     ModelCallScope.AUTO_LISTING,
                     "system",

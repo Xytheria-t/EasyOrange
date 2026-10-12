@@ -28,7 +28,7 @@
 
 1. **融合算法**：RRF（Reciprocal Rank Fusion，Cormack et al. 2009），`score(d) = Σ 1/(k + rank_r(d))`，`k = 60`。只用排名不用分数 —— 余弦相似度与 BM25 分值量纲不可比，直接加权求和需要调参且对分布漂移敏感。实现为纯函数 `RrfFusion.fuse(k, rankedIdLists)`，稳定排序保证评测可复现。
 2. **单路失败降级为单路召回**：任一腿查询异常只告警并继续用另一腿，不整体空手而归。
-3. **检索端口契约改为返回 `KnowledgeMatch`**（docId/chunkIndex/title/content/score），**不再返回 `KnowledgeChunk`**（带 1024 维向量）：排序已在索引侧定稿，业务侧不需要向量；ES 查询用 `_source` 排除 `embedding`（每条约 10KB 的 JSON 不再回传）。
+3. **检索端口契约改为返回 `KnowledgeChunkHit`**（docId/chunkIndex/title/content/score），**不再返回 `KnowledgeChunk`**（带 1024 维向量）：排序已在索引侧定稿，业务侧不需要向量；ES 查询用 `_source` 排除 `embedding`（每条约 10KB 的 JSON 不再回传）。
 4. **语料扩容**：新增 kb-0006~kb-0025 共 20 篇**同域干扰文档**（也是真实平台规则，非随机噪声），使 `topK=5` 面对全库分块成为真正的选择问题；金标准集相应拆分为 20 条 `scope: chat` + 15 条 `scope: retrieval`（新增 5 条覆盖干扰文档），并由 `GoldenSetLoader` 在加载期强校验 scope 与字段自洽性。后续 kb-0004 / kb-0008 随信用、举报功能下线删除（ID 不复用）；2026-09-25 语料再度扩容——新增 kb-0026~kb-0035 共 10 篇交易安全与验机指南；此后又补入两篇多块长文档把分块质量纳入评测（当前语料条数与金标准集 scope 分布以 [工程指标.md §结构计数](../工程指标.md) 为准）。
 5. **门禁补覆盖率维度**：`EvalGate` 除分数外新增 `checkCoverage`，评审覆盖率低于 80% 判失败（均分只统计幸存用例，1 条打 5 分也能蒙过分数门禁）。
 
@@ -73,6 +73,6 @@
 
 - 相关 ADR：Related to [ADR-0008](0008-ai-spring-ai-framework.md)（Spring AI 框架化）、ADR-0004（Token 预算仍现役；记录见[已替代决策.md](已替代决策.md)）
 - 相关文档：[easyorange-backend/AGENTS.md](../../easyorange-backend/AGENTS.md)「模块要点 → ai」（RAG 检索）、[doc/工程指标.md](../工程指标.md)（AI 能力表）
-- 相关代码：`RrfFusion` / `KnowledgeElasticsearchAdapter` / `KnowledgeMatch` / `KnowledgeRetrievalAppService`
+- 相关代码：`RrfFusion` / `KnowledgeElasticsearchAdapter` / `KnowledgeChunkHit` / `KnowledgeRetrievalAppService`
 - 后续演进触发条件：语料分块数超过 ES `num_candidates`（100）的量级，或 hit@5 触顶而 MRR 停滞时，重新评估重排模型与独立向量库
 - 决策回顾周期：下次 `ai-eval.yml` 回归给出新口径数字后回看（按需 `workflow_dispatch` 触发，单次约 60 次真实模型调用）

@@ -5,7 +5,7 @@ import co.elastic.clients.elasticsearch._types.SortOptions;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeChunk;
-import com.cartethyia.easyorange.ai.domain.model.KnowledgeMatch;
+import com.cartethyia.easyorange.ai.domain.model.KnowledgeChunkHit;
 import com.cartethyia.easyorange.ai.domain.model.RrfFusion;
 import com.cartethyia.easyorange.ai.domain.port.KnowledgeIndexPort;
 import java.time.Duration;
@@ -87,7 +87,7 @@ public class KnowledgeElasticsearchAdapter implements KnowledgeIndexPort {
     }
 
     @Override
-    public List<KnowledgeMatch> search(String query, List<Float> queryEmbedding, int topK) {
+    public List<KnowledgeChunkHit> search(String query, List<Float> queryEmbedding, int topK) {
         if (topK <= 0) {
             return List.of();
         }
@@ -199,11 +199,11 @@ public class KnowledgeElasticsearchAdapter implements KnowledgeIndexPort {
                 .build();
     }
 
-    private static KnowledgeMatch toMatch(KnowledgeChunkDocument doc, double score) {
+    private static KnowledgeChunkHit toMatch(KnowledgeChunkDocument doc, double score) {
         if (doc == null) {
             return null;
         }
-        return new KnowledgeMatch(
+        return new KnowledgeChunkHit(
                 doc.getDocId(),
                 doc.getChunkIndex() != null ? doc.getChunkIndex() : 0,
                 doc.getTitle(),

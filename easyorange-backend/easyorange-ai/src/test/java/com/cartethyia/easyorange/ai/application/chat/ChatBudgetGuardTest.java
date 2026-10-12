@@ -65,21 +65,21 @@ class ChatBudgetGuardTest {
     }
 
     @Test
-    @DisplayName("tryAcquire 余量充足返回句柄，耗尽返回 null（流式入口与切面同一条原子预留协议）")
-    void tryAcquire_grantsOrDeniesAtomically() {
+    @DisplayName("tryReserve 余量充足返回句柄，耗尽返回 null（流式入口与切面同一条原子预留协议）")
+    void tryReserve_grantsOrDeniesAtomically() {
         when(budgetStore.tryReserve("chat", 1500, 300_000))
                 .thenReturn(null)
                 .thenReturn(TokenBudgetStorePort.TokenReservation.NOOP);
 
         var guard = guard(PropertyBindings.bind(AiProperties.class));
 
-        assertThat(guard.tryAcquire()).isNull();
-        assertThat(guard.tryAcquire()).isNotNull();
+        assertThat(guard.tryReserve()).isNull();
+        assertThat(guard.tryReserve()).isNotNull();
     }
 
     @Test
-    @DisplayName("tryAcquire 的预留量与判据同源：场景配置缺失用注解同值的兜底常量")
-    void tryAcquire_usesResolvedConfig() {
+    @DisplayName("tryReserve 的预留量与判据同源：场景配置缺失用注解同值的兜底常量")
+    void tryReserve_usesResolvedConfig() {
         var properties = PropertyBindings.bind(
                 AiProperties.class,
                 "budget.scenarios.chat.max-tokens-per-call",
@@ -88,7 +88,7 @@ class ChatBudgetGuardTest {
                 "5000");
         when(budgetStore.tryReserve("chat", 800, 5000)).thenReturn(TokenBudgetStorePort.TokenReservation.NOOP);
 
-        assertThat(guard(properties).tryAcquire()).isNotNull();
+        assertThat(guard(properties).tryReserve()).isNotNull();
     }
 
     /** 兜底常量与注解默认值分属「手动预检」与「AOP 切面」两条路径，反射钉住 —— 改一边不改另一边直接红。 */

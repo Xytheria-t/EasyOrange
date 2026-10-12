@@ -6,7 +6,7 @@ import com.cartethyia.easyorange.ai.domain.model.AssetHit;
 import com.cartethyia.easyorange.ai.domain.model.CategorySummary;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeHit;
 import com.cartethyia.easyorange.ai.domain.port.AssetDetailPort;
-import com.cartethyia.easyorange.ai.domain.port.CategoryListPort;
+import com.cartethyia.easyorange.ai.domain.port.CategoryTreePort;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.EnumMap;
@@ -59,7 +59,7 @@ public class PlatformMcpTools {
     private final AssetSourcingAppService assetSourcingService;
     private final AssetDetailPort assetDetailPort;
     private final KnowledgeRetrievalAppService knowledgeRetrievalService;
-    private final CategoryListPort categoryListPort;
+    private final CategoryTreePort categoryListPort;
 
     private final Map<McpToolTag, Counter> callCounters;
 
@@ -67,7 +67,7 @@ public class PlatformMcpTools {
             AssetSourcingAppService assetSourcingService,
             AssetDetailPort assetDetailPort,
             KnowledgeRetrievalAppService knowledgeRetrievalService,
-            CategoryListPort categoryListPort,
+            CategoryTreePort categoryListPort,
             MeterRegistry meterRegistry) {
         this.assetSourcingService = assetSourcingService;
         this.assetDetailPort = assetDetailPort;

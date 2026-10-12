@@ -9,7 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeChunk;
-import com.cartethyia.easyorange.ai.domain.model.KnowledgeMatch;
+import com.cartethyia.easyorange.ai.domain.model.KnowledgeChunkHit;
 import com.cartethyia.easyorange.ai.domain.port.KnowledgeIndexPort;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.Arrays;
@@ -97,10 +97,10 @@ class KnowledgeElasticsearchAdapterTest {
                 .thenReturn(knnLeg)
                 .thenReturn(bm25Leg);
 
-        List<KnowledgeMatch> matches = adapter.search("退款", List.of(1f, 0f), 3);
+        List<KnowledgeChunkHit> matches = adapter.search("退款", List.of(1f, 0f), 3);
 
         // kb-2 两路都命中 → 融合分最高；其后按各路名次（1/61 > 1/62）
-        assertThat(matches).extracting(KnowledgeMatch::docId).containsExactly("kb-2", "kb-1", "kb-3");
+        assertThat(matches).extracting(KnowledgeChunkHit::docId).containsExactly("kb-2", "kb-1", "kb-3");
         assertThat(matches.getFirst().score()).isGreaterThan(matches.get(1).score());
         verify(elasticsearchOperations, times(2)).search(any(NativeQuery.class), eq(KnowledgeChunkDocument.class));
     }
@@ -115,9 +115,9 @@ class KnowledgeElasticsearchAdapterTest {
                 .thenThrow(new RuntimeException("knn timeout"))
                 .thenReturn(bm25Leg);
 
-        List<KnowledgeMatch> matches = adapter.search("退款", List.of(1f, 0f), 3);
+        List<KnowledgeChunkHit> matches = adapter.search("退款", List.of(1f, 0f), 3);
 
-        assertThat(matches).extracting(KnowledgeMatch::docId).containsExactly("kb-9");
+        assertThat(matches).extracting(KnowledgeChunkHit::docId).containsExactly("kb-9");
     }
 
     @Test
@@ -129,9 +129,9 @@ class KnowledgeElasticsearchAdapterTest {
         when(elasticsearchOperations.search(any(NativeQuery.class), eq(KnowledgeChunkDocument.class)))
                 .thenReturn(bm25Leg);
 
-        List<KnowledgeMatch> matches = adapter.search("退款", null, 3);
+        List<KnowledgeChunkHit> matches = adapter.search("退款", null, 3);
 
-        assertThat(matches).extracting(KnowledgeMatch::docId).containsExactly("kb-7");
+        assertThat(matches).extracting(KnowledgeChunkHit::docId).containsExactly("kb-7");
         verify(elasticsearchOperations, times(1)).search(any(NativeQuery.class), eq(KnowledgeChunkDocument.class));
     }
 

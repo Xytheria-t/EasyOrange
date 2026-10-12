@@ -135,7 +135,7 @@ public class AutoListingAppService {
     /** 视觉预识别 — 循环前的一次多模态调用，产出决策轮线索；识别不出即显式失败，不给半张表。 */
     private ImageClues recognizeClues(String cluePrompt, List<String> dataUrls) {
         return aiModelSupport
-                .callJsonAsWithImages(
+                .callJsonWithImages(
                         modelRouter.choose(ModelRouter.SCENARIO_VISION),
                         ModelCallScope.AUTO_LISTING,
                         cluePrompt,
@@ -151,7 +151,7 @@ public class AutoListingAppService {
                 ListingPromptAssembler.generatorUserText(loop.knowledgeHits(), loop.assetHits(), availableCategories());
         // clues 只服务决策轮，不进生成消息：生成器 prompt 的上下文只有 <observations> 与 <category_options>，
         // 画面信息由随请求的原图承担
-        Optional<AutoListingResult> listing = aiModelSupport.callJsonAsWithImages(
+        Optional<AutoListingResult> listing = aiModelSupport.callJsonWithImages(
                 modelRouter.choose(ModelRouter.SCENARIO_VISION),
                 ModelCallScope.AUTO_LISTING,
                 generatorPrompt,

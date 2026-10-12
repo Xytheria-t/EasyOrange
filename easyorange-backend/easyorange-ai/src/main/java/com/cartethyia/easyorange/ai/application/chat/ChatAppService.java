@@ -199,7 +199,7 @@ public class ChatAppService {
         }
         // 流式链路绕过 @TokenBudget 切面，这里手动原子预留（与切面同一条 tryReserve 协议）；预留在 finally 释放，
         // 真实用量仍由记账侧按供应商回报记 —— 请求结束后只留真实消耗，在途占用不滞留
-        var reservation = budgetGuard.tryAcquire();
+        var reservation = budgetGuard.tryReserve();
         if (reservation == null) {
             log.warn("action=token_budget_exceeded, scenario={}", ModelCallScope.CHAT.budgetScenario());
             handler.onError("今日 AI 调用预算已用尽，请明天再试");

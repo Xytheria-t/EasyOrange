@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
  * {@link TokenBudgetGuard}（配置优先、此处兜底常量），本类只锁 chat 的场景键与兜底值。
  * <p>
  * 流式路径手动预留而不挂 {@code @TokenBudget}：切面在<b>代理边界</b>抛预算异常、早于方法体，{@code streamAnswer}
- * 转 error 事件的路由接不到，预算提示会落成 Controller 的通用降级文案；预留走 {@link #tryAcquire}（与切面同一
+ * 转 error 事件的路由接不到，预算提示会落成 Controller 的通用降级文案；预留走 {@link #tryReserve}（与切面同一
  * 原子预留协议，请求结束释放），{@link #exhausted} 是循环中途的只读检查（用量含在途预留）。不放进工具调用循环：
  * 预算是「这次调用还能不能发出去」的治理决策，属 chat 特性而非循环执行器；兜底值须与
  * {@code @TokenBudget(scenario = "chat")} 一致，{@code ChatBudgetGuardTest} 反射断言两者相等。
@@ -33,7 +33,7 @@ public class ChatBudgetGuard {
 
     /** 流式入口的原子预留 — 预留失败（返回 null）即日预算耗尽，调用方转 error 事件；成功必须配对释放（请求结束 finally），
      * 与切面同一条 tryReserve 协议，只是流式路径没有切面边界。 */
-    public @Nullable TokenReservation tryAcquire() {
+    public @Nullable TokenReservation tryReserve() {
         var budget = tokenBudgetGuard.resolve(CHAT_SCENARIO, DEFAULT_MAX_TOKENS_PER_CALL, DEFAULT_DAILY_LIMIT);
         return tokenBudgetGuard.tryReserve(CHAT_SCENARIO, budget);
     }

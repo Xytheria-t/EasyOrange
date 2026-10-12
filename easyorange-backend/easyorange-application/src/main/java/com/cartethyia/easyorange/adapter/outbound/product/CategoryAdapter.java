@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.adapter.outbound.product;
 
 import com.cartethyia.easyorange.ai.domain.model.CategorySummary;
 import com.cartethyia.easyorange.ai.domain.port.CategoryCatalogPort;
-import com.cartethyia.easyorange.ai.domain.port.CategoryListPort;
+import com.cartethyia.easyorange.ai.domain.port.CategoryTreePort;
 import com.cartethyia.easyorange.product.application.query.CategoryQueryHandler;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 /**
  * 公开类目适配器 — 同时实现 ai 模块的两个类目端口（MCP 工具面浏览 + 拍照识别清单）。
  * <p>
- * 两个端口此前各有一条实现：{@code CategoryListPort} 走 {@link CategoryQueryHandler}（带缓存、
+ * 两个端口此前各有一条实现：{@code CategoryTreePort} 走 {@link CategoryQueryHandler}（带缓存、
  * 经 read model），{@code CategoryCatalogPort} 却是一段裸 SQL 直接查 {@code eo_category}。
  * 同一张表两个事实来源，过滤规则（level / status）各写一遍 —— 迟早漂。
  * 现在统一走一条路径：类目怎么过滤只有 product 模块说了算。
@@ -22,7 +22,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @RequiredArgsConstructor
-public class CategoryListAdapter implements CategoryListPort, CategoryCatalogPort {
+public class CategoryAdapter implements CategoryTreePort, CategoryCatalogPort {
 
     private final CategoryQueryHandler categoryQueryHandler;
 

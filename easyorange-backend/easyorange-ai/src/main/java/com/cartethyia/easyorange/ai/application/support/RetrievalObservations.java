@@ -53,22 +53,22 @@ public final class RetrievalObservations {
     }
 
     /** 一次检索的工具产物 — fresh 追加进累加器、observation 回给模型；fresh 在判冗余前算好，两步共用一次判定。 */
-    public record Turn<T>(List<T> fresh, String observation) {}
+    public record SearchTurn<T>(List<T> fresh, String observation) {}
 
-    public static Turn<KnowledgeHit> knowledgeTurn(List<KnowledgeHit> accumulated, List<KnowledgeHit> found) {
+    public static SearchTurn<KnowledgeHit> knowledgeTurn(List<KnowledgeHit> accumulated, List<KnowledgeHit> found) {
         List<KnowledgeHit> fresh = freshKnowledge(accumulated, found);
         String observation = isRedundant(found.size() - fresh.size(), found.size())
                 ? NO_NEW_HIT_OBSERVATION
                 : knowledgeObservation(found);
-        return new Turn<>(fresh, observation);
+        return new SearchTurn<>(fresh, observation);
     }
 
-    public static Turn<AssetHit> assetTurn(List<AssetHit> accumulated, List<AssetHit> found) {
+    public static SearchTurn<AssetHit> assetTurn(List<AssetHit> accumulated, List<AssetHit> found) {
         List<AssetHit> fresh = freshAssets(accumulated, found);
         String observation = isRedundant(found.size() - fresh.size(), found.size())
                 ? NO_NEW_HIT_OBSERVATION
                 : assetObservation(found);
-        return new Turn<>(fresh, observation);
+        return new SearchTurn<>(fresh, observation);
     }
 
     public static String knowledgeObservation(List<KnowledgeHit> found) {

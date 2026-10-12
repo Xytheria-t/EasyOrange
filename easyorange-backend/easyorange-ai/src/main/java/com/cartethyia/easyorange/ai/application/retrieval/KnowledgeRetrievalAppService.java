@@ -3,8 +3,8 @@ package com.cartethyia.easyorange.ai.application.retrieval;
 import com.cartethyia.easyorange.ai.application.support.ModelSupport;
 import com.cartethyia.easyorange.ai.domain.annotation.TokenBudget;
 import com.cartethyia.easyorange.ai.domain.enums.ModelCallScope;
+import com.cartethyia.easyorange.ai.domain.model.KnowledgeChunkHit;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeHit;
-import com.cartethyia.easyorange.ai.domain.model.KnowledgeMatch;
 import com.cartethyia.easyorange.ai.domain.port.KnowledgeIndexPort;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -69,7 +69,7 @@ public class KnowledgeRetrievalAppService {
         }
     }
 
-    private static List<KnowledgeHit> toHits(List<KnowledgeMatch> matches) {
+    private static List<KnowledgeHit> toHits(List<KnowledgeChunkHit> matches) {
         return matches.stream()
                 .map(m -> new KnowledgeHit(m.docId(), m.title(), m.content(), m.score()))
                 .toList();

@@ -12,7 +12,7 @@ import com.cartethyia.easyorange.ai.domain.model.AssetHit;
 import com.cartethyia.easyorange.ai.domain.model.CategorySummary;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeHit;
 import com.cartethyia.easyorange.ai.domain.port.AssetDetailPort;
-import com.cartethyia.easyorange.ai.domain.port.CategoryListPort;
+import com.cartethyia.easyorange.ai.domain.port.CategoryTreePort;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.math.BigDecimal;
 import java.util.List;
@@ -37,7 +37,7 @@ class PlatformMcpToolsTest {
     private KnowledgeRetrievalAppService knowledgeRetrievalService;
 
     @Mock
-    private CategoryListPort categoryListPort;
+    private CategoryTreePort categoryListPort;
 
     private final SimpleMeterRegistry registry = new SimpleMeterRegistry();
 

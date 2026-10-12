@@ -6,7 +6,7 @@ import co.elastic.clients.elasticsearch._types.SortOptions;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import com.cartethyia.easyorange.adapter.outbound.elasticsearch.KnowledgeChunkDocument;
 import com.cartethyia.easyorange.ai.application.eval.GoldenSetLoader;
-import com.cartethyia.easyorange.ai.domain.model.KnowledgeMatch;
+import com.cartethyia.easyorange.ai.domain.model.KnowledgeChunkHit;
 import com.cartethyia.easyorange.ai.domain.port.KnowledgeIndexPort;
 import com.cartethyia.easyorange.ai.domain.port.RetrievalMetricPort;
 import java.util.ArrayList;
@@ -102,7 +102,7 @@ class KnowledgeRetrievalEvalIT extends AbstractIntegrationTest {
             double fusedRr = rr(
                     gold,
                     indexPort.search(c.question(), vector, TOP_K).stream()
-                            .map(KnowledgeMatch::docId)
+                            .map(KnowledgeChunkHit::docId)
                             .toList());
             fusedRrs.add(fusedRr);
             caseIds.add(c.id());

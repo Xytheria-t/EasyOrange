@@ -138,7 +138,7 @@ public class ModelSupport {
 
     /** 多模态结构化输出：图片与「要哪些字段」同一次请求给到视觉模型。刻意不做「视觉模型写自由文本、文本模型再转
      * JSON」两段式 —— 第二次调用看不到图片，多付一次调用的钱与延迟，还丢掉没写进文字的画面细节。 */
-    public <T> Optional<T> callJsonAsWithImages(
+    public <T> Optional<T> callJsonWithImages(
             ChatModel chatModel,
             ModelCallScope scope,
             String systemPrompt,

@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.adapter.outbound.elasticsearch;
 
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeChunk;
-import com.cartethyia.easyorange.ai.domain.model.KnowledgeMatch;
+import com.cartethyia.easyorange.ai.domain.model.KnowledgeChunkHit;
 import com.cartethyia.easyorange.ai.domain.port.KnowledgeIndexPort;
 import com.cartethyia.easyorange.ai.domain.port.KnowledgeRepository;
 import io.micrometer.core.instrument.Counter;
@@ -56,10 +56,10 @@ public class KnowledgeFallbackAdapter implements KnowledgeIndexPort {
     }
 
     @Override
-    public List<KnowledgeMatch> search(String query, List<Float> queryEmbedding, int topK) {
+    public List<KnowledgeChunkHit> search(String query, List<Float> queryEmbedding, int topK) {
         degradedSearchCounter.increment();
         return repository.searchByContent(query, topK).stream()
-                .map(doc -> new KnowledgeMatch(doc.id(), 0, doc.title(), doc.content(), 0))
+                .map(doc -> new KnowledgeChunkHit(doc.id(), 0, doc.title(), doc.content(), 0))
                 .toList();
     }
 

@@ -16,8 +16,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("CategoryListAdapter 测试")
-class CategoryListAdapterTest {
+@DisplayName("CategoryAdapter 测试")
+class CategoryAdapterTest {
 
     @Mock
     private CategoryQueryHandler categoryQueryHandler;
@@ -27,7 +27,7 @@ class CategoryListAdapterTest {
     void list_mapsToPublicSummary() {
         when(categoryQueryHandler.getCategories(null)).thenReturn(List.of(readModel("c1", "数码", 1, 12)));
 
-        var result = new CategoryListAdapter(categoryQueryHandler).list(null);
+        var result = new CategoryAdapter(categoryQueryHandler).list(null);
 
         assertThat(result).containsExactly(new CategorySummary("c1", "数码", 1, 12));
     }
@@ -37,7 +37,7 @@ class CategoryListAdapterTest {
     void list_nullLevelDefaultsToZero() {
         when(categoryQueryHandler.getCategories("c1")).thenReturn(List.of(readModel("c2", "显卡", null, 3)));
 
-        var result = new CategoryListAdapter(categoryQueryHandler).list("c1");
+        var result = new CategoryAdapter(categoryQueryHandler).list("c1");
 
         assertThat(result).containsExactly(new CategorySummary("c2", "显卡", 0, 3));
     }
