@@ -40,11 +40,11 @@ public class ToolCallDecider {
      */
     public List<ToolLoopCall> decideForLoop(
             @Nullable String sessionId,
-            List<Message> decisionMessages,
-            List<ToolCallback> toolCallbacks,
+            List<Message> messages,
+            List<ToolCallback> callbacks,
             AiCallScope scope,
             Function<ToolCallDecision, String> toolInputOf) {
-        return decideWithRetry(sessionId, decisionMessages, toolCallbacks, scope).stream()
+        return decideWithRetry(sessionId, messages, callbacks, scope).stream()
                 .map(decision -> new ToolLoopCall(
                         decision.tool(),
                         decision.parsedArguments().thought(),
@@ -55,17 +55,14 @@ public class ToolCallDecider {
     }
 
     private List<ToolCallDecision> decideWithRetry(
-            @Nullable String sessionId,
-            List<Message> decisionMessages,
-            List<ToolCallback> toolCallbacks,
-            AiCallScope scope) {
+            @Nullable String sessionId, List<Message> messages, List<ToolCallback> callbacks, AiCallScope scope) {
         try {
-            return decideOnce(sessionId, decisionMessages, toolCallbacks, scope);
+            return decideOnce(sessionId, messages, callbacks, scope);
         } catch (Exception first) {
             log.warn("action=tool_call_decision_retry, sessionId={}, reason={}", sessionId, FailureReason.of(first));
         }
         try {
-            return decideOnce(sessionId, decisionMessages, toolCallbacks, scope);
+            return decideOnce(sessionId, messages, callbacks, scope);
         } catch (Exception second) {
             log.warn(
                     "action=tool_call_decision_failed, fallback=single_step, sessionId={}, reason={}",
@@ -76,12 +73,9 @@ public class ToolCallDecider {
     }
 
     private List<ToolCallDecision> decideOnce(
-            @Nullable String sessionId,
-            List<Message> decisionMessages,
-            List<ToolCallback> toolCallbacks,
-            AiCallScope scope) {
+            @Nullable String sessionId, List<Message> messages, List<ToolCallback> callbacks, AiCallScope scope) {
         List<AssistantMessage.ToolCall> toolCalls = aiModelSupport.callWithTools(
-                modelRouter.choose(AiModelRouter.SCENARIO_CHAT_TOOL), scope, decisionMessages, toolCallbacks);
+                modelRouter.choose(AiModelRouter.SCENARIO_CHAT_TOOL), scope, messages, callbacks);
         if (toolCalls.isEmpty()) {
             log.warn(
                     "action=tool_call_decision_failed, fallback=single_step, sessionId={}, reason=模型未返回工具调用",
@@ -89,15 +83,12 @@ public class ToolCallDecider {
             return List.of();
         }
         List<ToolCallDecision> decisions = toolCalls.stream()
-                .map(toolCall -> ToolCallDecision.of(parseArgs(toolCall), toolCall))
+                .map(toolCall -> ToolCallDecision.of(
+                        objectMapper.readValue(toolCall.arguments(), ToolCallArguments.class), toolCall))
                 .toList();
         if (decisions.size() > 1) {
             log.info("action=tool_call_parallel, sessionId={}, count={}", sessionId, decisions.size());
         }
         return decisions;
-    }
-
-    private ToolCallArguments parseArgs(AssistantMessage.ToolCall toolCall) {
-        return objectMapper.readValue(toolCall.arguments(), ToolCallArguments.class);
     }
 }
