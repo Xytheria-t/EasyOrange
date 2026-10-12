@@ -114,7 +114,7 @@ class ToolCallLoopTest {
         // 真实 guard：判定读同一个 budgetStore 桩，预算降级用例不用额外改写
         budgetGuard = new ChatBudgetGuard(budgetStore, aiProperties);
         toolCallLoop = newToolCallLoop();
-        lenient().when(modelRouter.choose("chat_tool")).thenReturn(chatModel);
+        lenient().when(modelRouter.choose(AiModelRouter.SCENARIO_CHAT_TOOL)).thenReturn(chatModel);
         lenient().when(idGenerator.generateId()).thenReturn("trace-1");
         lenient().when(budgetStore.getTodayUsage("chat")).thenReturn(Optional.empty());
     }

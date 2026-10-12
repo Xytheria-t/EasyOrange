@@ -85,8 +85,8 @@ class AutoListingAppServiceTest {
 
     @BeforeEach
     void setUp() {
-        lenient().when(modelRouter.choose("vision")).thenReturn(visionChatModel);
-        lenient().when(modelRouter.choose("chat_tool")).thenReturn(decisionChatModel);
+        lenient().when(modelRouter.choose(AiModelRouter.SCENARIO_VISION)).thenReturn(visionChatModel);
+        lenient().when(modelRouter.choose(AiModelRouter.SCENARIO_CHAT_TOOL)).thenReturn(decisionChatModel);
         lenient().when(categoryCatalogPort.listAvailableCategoryNames()).thenReturn(List.of("手机数码", "图书教材"));
         lenient()
                 .when(visionChatModel.call(any(Prompt.class)))
