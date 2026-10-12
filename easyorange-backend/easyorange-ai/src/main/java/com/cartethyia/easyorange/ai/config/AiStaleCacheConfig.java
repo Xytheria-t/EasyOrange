@@ -23,11 +23,11 @@ public class AiStaleCacheConfig {
 
     @Bean("aiStaleCache")
     public Cache<String, ChatAnswer> aiStaleCache() {
-        var props = aiProperties.cache();
-        log.info("AI stale cache initialized: maxSize={}, expire={}h", props.staleMaxSize(), props.staleExpireHours());
+        var props = aiProperties.staleCache();
+        log.info("AI stale cache initialized: maxSize={}, expire={}h", props.maxSize(), props.expireHours());
         return Caffeine.newBuilder()
-                .maximumSize(props.staleMaxSize())
-                .expireAfterWrite(props.staleExpireHours(), TimeUnit.HOURS)
+                .maximumSize(props.maxSize())
+                .expireAfterWrite(props.expireHours(), TimeUnit.HOURS)
                 .build();
     }
 }

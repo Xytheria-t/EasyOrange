@@ -434,9 +434,9 @@ easyorange:
       # 必须与 ES 映射的 dims 一致（product-mapping.json / knowledge-mapping.json）；换模型要同步改映射并重建索引
       dimensions: 1024
       timeout: 30000
-    cache:
-      stale-max-size: 5000
-      stale-expire-hours: 24
+    stale-cache:           # LLM 故障降级缓存（本地 Caffeine）— 调用失败时返回旧回答兜底
+      max-size: 5000
+      expire-hours: 24
     rate-limit:
       enabled: true
       fail-open: true
