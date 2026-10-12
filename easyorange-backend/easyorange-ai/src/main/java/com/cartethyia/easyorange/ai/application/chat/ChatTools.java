@@ -23,8 +23,9 @@ import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 
 /**
- * 多步工具循环的内部工具面 — 7 个工具（{@code @Tool} / {@code @ToolParam} 注解生成供应商侧校验的 schema）；每次循环实例化
- * 一份，召回物累加器是单次请求内的可变状态、由实例独占。
+ * 多步工具循环的内部工具面 — 检索 3 / 计算 2 / 写入 1 / 收敛 1，共 7 个工具（{@code @Tool} / {@code @ToolParam}
+ * 注解生成供应商侧校验的 schema，方法分节即此四类）；每次循环实例化一份，召回物累加器是单次请求内的可变状态、
+ * 由实例独占。
  * <p>
  * 约定：thought 是每个工具的必填参数（原生 tool calling 没有独立的「决策理由」通道，只由编排器取出落 trace / SSE）；
  * 抛异常 = 该步失败，「查无此资产」这类有效结果必须返回观察文本；finish 只有 schema 没有执行；remember_preference 是唯一写路径
@@ -33,8 +34,8 @@ import org.springframework.ai.tool.annotation.ToolParam;
 @SuppressWarnings("unused") // thought 只进工具 schema，方法体不消费（见类注释）
 public class ChatTools {
 
-    /** 工具名与 {@code @Tool(name = ...)} 同源，编排器引用常量；{@code eval/golden-set.yaml} 的 {@code expected_tools}
-     * 按这些名字在加载期强校验，工具改名后标注写错会炸而不是静默评成「路由走错」。 */
+    // ── 工具名：@Tool(name = ...)、编排器与评测共用这一份字面量 ──
+
     public static final String TOOL_KNOWLEDGE_SEARCH = "knowledge_search";
 
     public static final String TOOL_PRODUCT_SEARCH = "product_search";
@@ -47,11 +48,10 @@ public class ChatTools {
 
     public static final String TOOL_REMEMBER_PREFERENCE = "remember_preference";
 
-    /** 偏好值的长度上限 —— 超长值不落库（跨会话回注的偏好块不吃无界文本）。 */
-    static final int PREFERENCE_VALUE_MAX_LENGTH = 60;
-
     public static final String TOOL_FINISH = "finish";
 
+    /** 全集 —— {@code GoldenSetLoader} 加载期按它强校验 {@code eval/golden-set.yaml} 的 {@code expected_tools}：
+     * 工具改名后标注里留着旧名会炸，而不是静默评成「路由走错」。 */
     public static final Set<String> TOOL_NAMES = Set.of(
             TOOL_KNOWLEDGE_SEARCH,
             TOOL_PRODUCT_SEARCH,
@@ -61,17 +61,31 @@ public class ChatTools {
             TOOL_REMEMBER_PREFERENCE,
             TOOL_FINISH);
 
+    // ── 取值约束与白名单 ──
+
     /** 偏好键白名单 — 声明序即回执文案列举序（List 保序）；与 schema 描述的同源由 ToolCallLoopTest 钉住。 */
     static final List<String> PREFERENCE_KEYS = List.of("condition", "price_range", "style", "location");
+
+    /** 偏好值长度上限 —— value 原样落库、经 {@code <user_preferences>} 回注后续所有会话的偏好块：无上限时它是一条
+     * 跨会话的存储型注入通道，上限把「塞一段话进偏好块」的成本抬到不可用。 */
+    static final int PREFERENCE_VALUE_MAX_LENGTH = 60;
 
     /** 详情描述进观察前截断的字数 —— 描述是自由文本，长度不可控。 */
     private static final int DETAIL_DESC_MAX_CHARS = 80;
 
-    /** 各轮召回物累加器 — 读取走只读快照方法，不交出可变引用（可变状态归属见类注释）。 */
+    // ── 召回物累加器：单次循环的可变状态 ──
+
+    /** 三类检索工具的产物各一（知识 / 找货 / 详情）—— 只追加、跨步判重（检索判据在 {@link RetrievalObservations}，
+     * 详情在 {@link #recordDetail}）；出循环经 {@code ChatToolLoop.Result} 定稿，供生成装配与溯源，读取只经
+     * 下方快照方法，可变引用不出实例。 */
     private final List<KnowledgeHit> knowledgeHits = new ArrayList<>();
 
     private final List<AssetHit> assetHits = new ArrayList<>();
+
     private final List<AssetDetail> details = new ArrayList<>();
+
+    // ── 协作方与归属用户 ──
+
     private final KnowledgeRetrievalAppService retrievalService;
     private final AssetSourcingAppService assetSourcingService;
     private final AssetDetailPort assetDetailPort;
@@ -93,6 +107,8 @@ public class ChatTools {
         this.userId = userId;
     }
 
+    // ── 累加器只读快照 ──
+
     List<KnowledgeHit> knowledgeHits() {
         return List.copyOf(knowledgeHits);
     }
@@ -104,6 +120,8 @@ public class ChatTools {
     List<AssetDetail> details() {
         return List.copyOf(details);
     }
+
+    // ── 检索类工具：知识 / 找货 / 详情 ──
 
     @Tool(
             name = TOOL_KNOWLEDGE_SEARCH,
@@ -149,6 +167,8 @@ public class ChatTools {
         recordDetail(found.get());
         return formatDetailObservation(found.get());
     }
+
+    // ── 计算类工具：零模型调用，消费累加器里的召回物 ──
 
     // 顺序约束写进 schema 描述而不只写 system prompt：模型是在选工具时读它的，等生成回答时才发现约束已经晚一轮
     @Tool(
@@ -204,6 +224,8 @@ public class ChatTools {
                 .orElse("可用于对比的资产不足 2 件（可能不存在或已下架）" + missingNote);
     }
 
+    // ── 写入类工具：唯一写路径 ──
+
     @Tool(
             name = TOOL_REMEMBER_PREFERENCE,
             description = "记录用户的长期偏好（成色 / 价格区间 / 风格 / 地区），跨会话生效；对话中出现明确偏好时调用一次即可，同一偏好不要重复记录",
@@ -227,8 +249,6 @@ public class ChatTools {
         // 折叠空白（含换行）：偏好块按 \n 分行回注，换行能让一条值跨会话伪造出「额外一条偏好」
         String value = preferenceValue.trim().replaceAll("\\s+", " ");
         if (value.length() > PREFERENCE_VALUE_MAX_LENGTH) {
-            // value 原样落库并经 <user_preferences> 回注后续所有会话的偏好块 —— 无长度约束时它就是
-            // 一条跨会话的存储型注入通道，长度上限把「塞一段话进偏好块」的成本抬到不可用
             return "偏好取值过长（上限 %d 字），请概括成短语再记；直接继续回答即可".formatted(PREFERENCE_VALUE_MAX_LENGTH);
         }
         try {
@@ -240,11 +260,15 @@ public class ChatTools {
         return "已记录偏好：%s = %s".formatted(key, value);
     }
 
+    // ── 收敛 ──
+
     @Tool(name = TOOL_FINISH, description = "信息已足够回答，或无需检索（寒暄 / 闲聊），不再调用任何工具")
     public String finish(@ToolParam(description = "收敛理由，不超过 20 字的中文概括") String thought) {
         // 方法体永不执行，这里只为让 finish 出现在发给供应商的工具 schema 里
         return TOOL_FINISH;
     }
+
+    // ── 内部方法（不进工具 schema） ──
 
     /** 决策失败降级的补检索 — 判重口径与 {@link #searchKnowledge} 一致，降级路径不会把 Result 撑出重复来源。 */
     void searchKnowledgeForFallback(String question) {
@@ -254,15 +278,6 @@ public class ChatTools {
 
     private Optional<AssetDetail> findDetail(String productId) {
         return queryDetailOrFail(() -> assetDetailPort.findDetail(productId));
-    }
-
-    /** 详情累加器判重 — 与 hits 同口径（保留首次出现）：重复详情会让生成侧 <asset_details> 块重复同一资产。 */
-    private void recordDetail(AssetDetail detail) {
-        boolean alreadyRecorded =
-                details.stream().anyMatch(existing -> Objects.equals(existing.productId(), detail.productId()));
-        if (!alreadyRecorded) {
-            details.add(detail);
-        }
     }
 
     private List<AssetDetail> findDetails(List<String> productIds) {
@@ -275,6 +290,15 @@ public class ChatTools {
             return query.get();
         } catch (Exception e) {
             throw new IllegalStateException("资产详情查询失败: " + FailureReason.of(e), e);
+        }
+    }
+
+    /** 详情累加器判重 — 与 hits 同口径（保留首次出现）：重复详情会让生成侧 {@code <asset_details>} 块重复同一资产。 */
+    private void recordDetail(AssetDetail detail) {
+        boolean alreadyRecorded =
+                details.stream().anyMatch(existing -> Objects.equals(existing.productId(), detail.productId()));
+        if (!alreadyRecorded) {
+            details.add(detail);
         }
     }
 
