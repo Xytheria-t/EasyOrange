@@ -202,6 +202,8 @@
 
 > 末 4 条（幻觉 / Embedding / Chunk / Rerank）属第 ③ 章 RAG，到那时再解锁；表里没有的词（RRF / kNN / HNSW / MRR…）同理，属于更后面的章，现在不用管。
 
+> **标准出处**（要「官方口径」时引这里）：SSE → [WHATWG §9.2](https://html.spec.whatwg.org/multipage/server-sent-events.html) · trace/span → [OpenTelemetry](https://opentelemetry.io/docs/concepts/signals/traces/) · 对话消息 / role / tool_call_id → [OpenAI API 规范](https://github.com/openai/openai-openapi)（DeepSeek 同规范） · Context Caching → [DeepSeek 文档](https://api-docs.deepseek.com/guides/kv_cache) · 观察（Observation）→ [ReAct 论文](https://arxiv.org/abs/2210.03629)（ICLR 2023） · 工具循环执行归属 → [Spring AI](https://docs.spring.io/spring-ai/reference/api/tools.html)
+
 **AI 主线**
 
 | 词 | 一句话 |
