@@ -218,23 +218,24 @@ public class ToolLoopKernel {
      * 工具面（一次请求内）— 按名执行对照表 + 未知工具的可用清单；清单按本次真正下发的回调生成，白名单
      * 过滤后不会报出模型拿不到的工具。召回累加器归各链路工具面实例，内核不持召回状态。
      */
-    private record ToolDispatcher(Map<String, ToolCallback> byName, String unknownToolHint) {
+    private record ToolDispatcher(Map<String, ToolCallback> toolsByName, String availableToolNames) {
 
         static ToolDispatcher of(List<ToolCallback> callbacks) {
-            var byName = callbacks.stream()
+            var toolsByName = callbacks.stream()
                     .collect(Collectors.toMap(
                             callback -> callback.getToolDefinition().name(), Function.identity()));
-            String hint = callbacks.stream()
+            // 单独存串而不从 toolsByName 派生：HashMap 迭代序与下发顺序无关，模型看到的工具清单须按下发序保持稳定
+            String availableToolNames = callbacks.stream()
                     .map(callback -> callback.getToolDefinition().name())
                     .collect(Collectors.joining(" / "));
-            return new ToolDispatcher(byName, hint);
+            return new ToolDispatcher(toolsByName, availableToolNames);
         }
 
         /** 未知工具与执行异常（参数不合 schema / 工具内部故障）都收敛成失败观察：模型据此重试或收敛，不把整轮对话打死。 */
         DispatchResult dispatch(ToolLoopCall call) {
-            ToolCallback callback = byName.get(call.tool());
+            ToolCallback callback = toolsByName.get(call.tool());
             if (callback == null) {
-                return new DispatchResult(false, "未知工具 %s，请改用 %s".formatted(call.tool(), unknownToolHint));
+                return new DispatchResult(false, "未知工具 %s，请改用 %s".formatted(call.tool(), availableToolNames));
             }
             try {
                 return new DispatchResult(true, callback.call(call.rawArguments()));
