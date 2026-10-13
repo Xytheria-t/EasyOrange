@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { Camera, List, LogOut, Package, Shield, ShoppingBag, Sparkles } from 'lucide-react';
+import { Camera, LogOut, Package, Shield, ShoppingBag, Sparkles } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { userApi } from '@/api/userApi';
@@ -165,10 +165,6 @@ export function ProfileSidebar({ user, activeTab, onTabChange, onLogout, animate
                     </Button>
 
                     <div className="ps-btn-grid">
-                        <Button variant="outline" className="ps-btn-secondary" onClick={() => navigate('/my-products')}>
-                            <List size={18} />
-                            <span className="ps-btn-secondary-text">我的发布</span>
-                        </Button>
                         <Button variant="outline" className="ps-btn-secondary" onClick={() => navigate('/orders')}>
                             <ShoppingBag size={18} />
                             <span className="ps-btn-secondary-text">我的订单</span>

@@ -2,112 +2,11 @@ import type { CSSProperties } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAdminStore } from '../store';
 
+// 管理端前端只挂 AI 运维两个面（知识库 + 检索质量回看），业务 CRUD 走后端 REST
 const navItems = [
     {
-        section: '管理',
+        section: 'AI 运维',
         items: [
-            {
-                path: '/admin/users',
-                label: '用户管理',
-                icon: (
-                    <svg
-                        aria-hidden="true"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                    >
-                        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
-                        <circle cx="9" cy="7" r="4" />
-                        <path d="M23 21v-2a4 4 0 00-3-3.87" />
-                        <path d="M16 3.13a4 4 0 010 7.75" />
-                    </svg>
-                ),
-            },
-            {
-                path: '/admin/products',
-                label: '商品审核',
-                icon: (
-                    <svg
-                        aria-hidden="true"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                    >
-                        <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" />
-                        <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-                        <line x1="12" y1="22.08" x2="12" y2="12" />
-                    </svg>
-                ),
-            },
-            {
-                path: '/admin/orders',
-                label: '订单管理',
-                icon: (
-                    <svg
-                        aria-hidden="true"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                    >
-                        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-                        <polyline points="14 2 14 8 20 8" />
-                        <line x1="16" y1="13" x2="8" y2="13" />
-                        <line x1="16" y1="17" x2="8" y2="17" />
-                    </svg>
-                ),
-            },
-            {
-                path: '/admin/categories',
-                label: '分类管理',
-                icon: (
-                    <svg
-                        aria-hidden="true"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                    >
-                        <path d="M4 6h16M4 12h16M4 18h16" />
-                        <line x1="8" y1="6" x2="8" y2="18" />
-                        <line x1="16" y1="6" x2="16" y2="18" />
-                    </svg>
-                ),
-            },
-        ],
-    },
-    {
-        section: '数据',
-        items: [
-            {
-                path: '/admin',
-                label: '数据统计',
-                icon: (
-                    <svg
-                        aria-hidden="true"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                    >
-                        <line x1="18" y1="20" x2="18" y2="10" />
-                        <line x1="12" y1="20" x2="12" y2="4" />
-                        <line x1="6" y1="20" x2="6" y2="14" />
-                    </svg>
-                ),
-            },
             {
                 path: '/admin/knowledge',
                 label: '知识库管理',
@@ -176,12 +75,7 @@ export function AdminSidebar({ onNavigate, className = '' }: AdminSidebarProps =
     const { sidebarCollapsed } = useAdminStore();
     const location = useLocation();
 
-    const isActive = (path: string) => {
-        if (path === '/admin') {
-            return location.pathname === '/admin';
-        }
-        return location.pathname.startsWith(path);
-    };
+    const isActive = (path: string) => location.pathname.startsWith(path);
 
     // 抽屉内始终展开，不跟随桌面端的折叠态
     const collapsed = className.includes('admin-sidebar--drawer') ? false : sidebarCollapsed;

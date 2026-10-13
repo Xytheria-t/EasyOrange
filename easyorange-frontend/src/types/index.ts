@@ -2,7 +2,6 @@ export type { RequestOptions } from './api';
 export type { ApiCode, PageResult, Result } from './common';
 export { isSuccessCode } from './common';
 export type { ChatMessage, ChatMessageStatus, ChatMessageType, ChatSession } from './message';
-export type { NotificationItem, UnreadCount } from './notification';
 
 export type {
     CreateOrderRequest,

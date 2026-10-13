@@ -4,16 +4,18 @@ import { seedAdminSession, seedSession, spaNavigate } from './helpers/auth';
 /**
  * 管理后台 E2E —— 契约层：钉住「守卫 + 路由可达」，不断言页面数据。
  *
- * 后台判定走 useAdminGuard（userType '00'|'02'），登录态注入与 auth/checkout 同款
+ * 后台判定走 useAdminGuard（userType '00'|'02'），登录态注入与 auth/product 同款
  * 双 Token 会话恢复流（seedSession 拦截 /auth/refresh + /users/me），管理员用
  * seedAdminSession（userType '00'）。受保护路由用 spaNavigate 前进，避开 full goto
  * 与异步 restore 的竞态（见 helpers/auth.ts 注释）。
  *
  * 断言基准：
  * - 守卫通过信号 = `.admin-layout` 可见（AdminRouteGuard 放行后 AdminLayout 挂载）
- * - 页面可达 = 该页稳定标题可见（商品审核/用户管理/订单管理/数据统计；举报页无标题
- *   则以布局 + 侧边栏品牌为准）
+ * - 页面可达 = 该页稳定标题可见（知识库管理 / 检索质量回看）
  * - 页面数据的真实渲染由 src/admin/pages/** 组件测试覆盖，不在 E2E 重复
+ *
+ * 2026-10-13：管理端前端裁到 AI 运维两个面（知识库 + 检索质量回看），
+ * 业务 CRUD 页面（用户/商品审核/订单/分类/统计）的 E2E 随路由一并移除。
  */
 test.describe('管理后台', () => {
     test('未登录访问后台跳转到登录页', async ({ page }) => {
@@ -22,10 +24,10 @@ test.describe('管理后台', () => {
     });
 
     test('未登录访问后台各页面均跳转登录', async ({ page }) => {
-        const adminPaths = ['/admin/users', '/admin/products', '/admin/orders', '/admin/stats'];
+        const adminPaths = ['/admin/knowledge', '/admin/retrieval-quality'];
         for (const path of adminPaths) {
             await page.goto(path);
-            // 深链先加载 lazy admin chunk（含 recharts 等重块）再执行守卫跳转，给足时间
+            // 深链先加载 lazy admin chunk 再执行守卫跳转，给足时间
             await expect(page).toHaveURL(/\/login/, { timeout: 20000 });
         }
     });
@@ -78,45 +80,33 @@ test.describe('管理后台', () => {
 
         test('可访问后台首页', async ({ page }) => {
             await spaNavigate(page, '/admin');
-            // 守卫通过 → AdminLayout 挂载
+            // 守卫通过 → AdminLayout 挂载；index 即检索质量回看
             await expect(page.locator('.admin-layout')).toBeVisible({ timeout: 15000 });
             await expect(page.locator('.sidebar-logo-text')).toHaveText('易橙管理', { timeout: 10000 });
         });
 
-        test('可导航到商品审核页面', async ({ page }) => {
-            await spaNavigate(page, '/admin/products');
+        test('可导航到知识库管理页面', async ({ page }) => {
+            await spaNavigate(page, '/admin/knowledge');
             await expect(page.locator('.admin-layout')).toBeVisible({ timeout: 15000 });
-            await expect(page.locator('text=商品审核').first()).toBeVisible({ timeout: 15000 });
+            await expect(page.locator('text=知识库管理').first()).toBeVisible({ timeout: 15000 });
         });
 
-        test('可导航到用户管理页面', async ({ page }) => {
-            await spaNavigate(page, '/admin/users');
+        test('可导航到检索质量回看页面', async ({ page }) => {
+            await spaNavigate(page, '/admin/retrieval-quality');
             await expect(page.locator('.admin-layout')).toBeVisible({ timeout: 15000 });
-            await expect(page.locator('text=用户管理').first()).toBeVisible({ timeout: 15000 });
-        });
-
-        test('可导航到订单管理页面', async ({ page }) => {
-            await spaNavigate(page, '/admin/orders');
-            await expect(page.locator('.admin-layout')).toBeVisible({ timeout: 15000 });
-            await expect(page.locator('text=订单管理').first()).toBeVisible({ timeout: 15000 });
-        });
-
-        test('可导航到数据统计页面', async ({ page }) => {
-            await spaNavigate(page, '/admin/stats');
-            await expect(page.locator('.admin-layout')).toBeVisible({ timeout: 15000 });
-            await expect(page.locator('text=数据统计').first()).toBeVisible({ timeout: 15000 });
+            await expect(page.locator('text=检索质量回看').first()).toBeVisible({ timeout: 15000 });
         });
 
         test('后台侧边栏导航可用', async ({ page }) => {
             await spaNavigate(page, '/admin');
             await expect(page.locator('.admin-layout')).toBeVisible({ timeout: 15000 });
 
-            // 点击侧边栏「商品审核」→ 应路由到 /admin/products
-            const productNav = page.locator('.sidebar-nav a').filter({ hasText: '商品审核' }).first();
-            await expect(productNav).toBeVisible({ timeout: 10000 });
-            await productNav.click();
-            await expect(page).toHaveURL(/\/admin\/products/, { timeout: 10000 });
-            await expect(page.locator('text=商品审核').first()).toBeVisible({ timeout: 15000 });
+            // 点击侧边栏「知识库管理」→ 应路由到 /admin/knowledge
+            const knowledgeNav = page.locator('.sidebar-nav a').filter({ hasText: '知识库管理' }).first();
+            await expect(knowledgeNav).toBeVisible({ timeout: 10000 });
+            await knowledgeNav.click();
+            await expect(page).toHaveURL(/\/admin\/knowledge/, { timeout: 10000 });
+            await expect(page.locator('text=知识库管理').first()).toBeVisible({ timeout: 15000 });
         });
     });
 });

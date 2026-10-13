@@ -66,9 +66,6 @@ export default defineConfig({
             output: {
                 manualChunks(id) {
                     if (id.includes('node_modules')) {
-                        if (id.includes('recharts') || id.includes('d3-') || id.includes('victory-vendor')) {
-                            return 'vendor-recharts';
-                        }
                         // react-markdown 的 micromark 全家桶体积大且路径含 "react"，须先于 react 判断分组
                         if (
                             id.includes('react-markdown') ||

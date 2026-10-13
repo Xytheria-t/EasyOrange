@@ -129,7 +129,7 @@ describe('HeroSection', () => {
     it('navigates to search on hot tag click', () => {
         render(<HeroSection />);
         fireEvent.click(screen.getByText('教材'));
-        expect(mockNavigate).toHaveBeenCalledWith('/search?keyword=%E6%95%99%E6%9D%90');
+        expect(mockNavigate).toHaveBeenCalledWith('/products?keyword=%E6%95%99%E6%9D%90');
     });
 
     it('navigates to search on form submit', () => {
@@ -137,7 +137,7 @@ describe('HeroSection', () => {
         const input = screen.getByPlaceholderText('搜索你想要的资产...');
         fireEvent.change(input, { target: { value: 'macbook' } });
         fireEvent.submit(screen.getByRole('button', { name: '搜索' }).closest('form') as HTMLFormElement);
-        expect(mockNavigate).toHaveBeenCalledWith('/search?keyword=macbook');
+        expect(mockNavigate).toHaveBeenCalledWith('/products?keyword=macbook');
     });
 
     it('does not navigate on empty search', () => {

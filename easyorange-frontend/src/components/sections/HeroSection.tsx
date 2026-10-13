@@ -63,7 +63,7 @@ export default function HeroSection() {
             e?.preventDefault();
             const trimmed = searchKeyword.trim();
             if (trimmed) {
-                navigate(`/search?keyword=${encodeURIComponent(trimmed)}`);
+                navigate(`/products?keyword=${encodeURIComponent(trimmed)}`);
             }
         },
         [searchKeyword, navigate]
@@ -71,7 +71,7 @@ export default function HeroSection() {
 
     const handleHotTagClick = useCallback(
         (tag: string) => {
-            navigate(`/search?keyword=${encodeURIComponent(tag)}`);
+            navigate(`/products?keyword=${encodeURIComponent(tag)}`);
         },
         [navigate]
     );

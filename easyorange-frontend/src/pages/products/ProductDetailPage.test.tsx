@@ -277,9 +277,8 @@ describe('ProductDetailPage', () => {
 
         renderPage();
 
-        // Owner sees "编辑商品" button
-        expect(screen.getByText('编辑商品')).toBeInTheDocument();
-        // Owner does NOT see "联系资产方" in the action buttons area
+        // Owner 没有购买 / 联系自己的入口（编辑商品走发布链路，详情页不再挂编辑按钮）
+        expect(screen.queryByText('立即购买')).not.toBeInTheDocument();
         expect(screen.queryByText('联系资产方')).not.toBeInTheDocument();
     });
 

@@ -145,10 +145,9 @@ describe('ProfileSidebar', () => {
         expect(screen.getByText('42')).toBeInTheDocument();
     });
 
-    it('renders action buttons (提交资产, 我的发布, 我的订单, 退出登录)', () => {
+    it('renders action buttons (提交资产, 我的订单, 退出登录)', () => {
         render(<ProfileSidebar {...defaultProps} />);
         expect(screen.getByText('提交资产')).toBeInTheDocument();
-        expect(screen.getByText('我的发布')).toBeInTheDocument();
         expect(screen.getByText('我的订单')).toBeInTheDocument();
         expect(screen.getByText('退出登录')).toBeInTheDocument();
     });
@@ -157,12 +156,6 @@ describe('ProfileSidebar', () => {
         render(<ProfileSidebar {...defaultProps} />);
         fireEvent.click(screen.getByText('提交资产'));
         expect(mockNavigate).toHaveBeenCalledWith('/publish');
-    });
-
-    it('navigates to /my-products on my products button click', () => {
-        render(<ProfileSidebar {...defaultProps} />);
-        fireEvent.click(screen.getByText('我的发布'));
-        expect(mockNavigate).toHaveBeenCalledWith('/my-products');
     });
 
     it('navigates to /orders on my orders button click', () => {

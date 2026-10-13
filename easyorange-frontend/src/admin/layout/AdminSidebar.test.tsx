@@ -31,18 +31,20 @@ describe('AdminSidebar', () => {
         expect(screen.getByText('易橙管理')).toBeInTheDocument();
     });
 
-    it('renders all nav sections', () => {
+    it('renders the AI-ops section', () => {
         render(<AdminSidebar />);
-        expect(screen.getByText('管理')).toBeInTheDocument();
-        expect(screen.getByText('数据')).toBeInTheDocument();
+        expect(screen.getByText('AI 运维')).toBeInTheDocument();
     });
 
-    it('renders all nav items', () => {
+    it('renders the two AI-ops nav items only', () => {
         render(<AdminSidebar />);
-        expect(screen.getByText('用户管理')).toBeInTheDocument();
-        expect(screen.getByText('商品审核')).toBeInTheDocument();
-        expect(screen.getByText('订单管理')).toBeInTheDocument();
-        expect(screen.getByText('数据统计')).toBeInTheDocument();
+        expect(screen.getByText('知识库管理')).toBeInTheDocument();
+        expect(screen.getByText('检索质量回看')).toBeInTheDocument();
+        // 业务 CRUD 导航已裁（走后端 REST），不应再出现
+        expect(screen.queryByText('用户管理')).not.toBeInTheDocument();
+        expect(screen.queryByText('商品审核')).not.toBeInTheDocument();
+        expect(screen.queryByText('订单管理')).not.toBeInTheDocument();
+        expect(screen.queryByText('数据统计')).not.toBeInTheDocument();
     });
 
     it('renders back to main site link', () => {
@@ -50,30 +52,24 @@ describe('AdminSidebar', () => {
         expect(screen.getByText('返回主站')).toBeInTheDocument();
     });
 
-    it('marks 数据统计 as active when on /admin', () => {
+    it('marks 检索质量回看 as active when on /admin/retrieval-quality', () => {
+        mockLocation.pathname = '/admin/retrieval-quality';
         render(<AdminSidebar />);
-        const statsLink = screen.getByText('数据统计').closest('a');
-        expect(statsLink).toHaveClass('active');
-    });
-
-    it('marks user management as active when on /admin/users', () => {
-        mockLocation.pathname = '/admin/users';
-        render(<AdminSidebar />);
-        const usersLink = screen.getByText('用户管理').closest('a');
-        expect(usersLink).toHaveClass('active');
+        const retrievalLink = screen.getByText('检索质量回看').closest('a');
+        expect(retrievalLink).toHaveClass('active');
     });
 
     it('marks nested route as active for both parent and child', () => {
-        mockLocation.pathname = '/admin/products/review';
+        mockLocation.pathname = '/admin/retrieval-quality/runs';
         render(<AdminSidebar />);
-        // /admin/products/review matches /admin/products (startsWith) — both active on same item
-        const reviewLink = screen.getByText('商品审核').closest('a');
-        expect(reviewLink).toHaveClass('active');
+        // 前缀匹配：/admin/retrieval-quality/runs 命中 /admin/retrieval-quality
+        const retrievalLink = screen.getByText('检索质量回看').closest('a');
+        expect(retrievalLink).toHaveClass('active');
     });
 
     it('does not collapse sections when sidebarCollapsed is false', () => {
         render(<AdminSidebar />);
-        expect(screen.getByText('管理')).toBeVisible();
+        expect(screen.getByText('AI 运维')).toBeVisible();
     });
 
     it('hides section titles when sidebarCollapsed is true', () => {
@@ -81,8 +77,7 @@ describe('AdminSidebar', () => {
             sidebarCollapsed: true,
         });
         render(<AdminSidebar />);
-        expect(screen.queryByText('管理')).not.toBeInTheDocument();
-        expect(screen.queryByText('数据')).not.toBeInTheDocument();
+        expect(screen.queryByText('AI 运维')).not.toBeInTheDocument();
     });
 
     it('applies collapsed class when sidebarCollapsed is true', () => {

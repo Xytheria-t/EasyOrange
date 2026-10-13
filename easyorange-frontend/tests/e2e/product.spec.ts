@@ -5,6 +5,9 @@ import { test, expect } from '@playwright/test';
  * 依赖真实后端数据的渲染（排序选项数量、筛选按钮、搜索结果列表、商品详情 404 等）
  * 由组件测试（src 下各组件的 .test.tsx）+ 后端 IT 覆盖，E2E 不 mock 整组商品 API 来测数据渲染。
  * floating-nav 有无限动画，点击用 force（与 auth/admin 同款，见 helpers 注释）。
+ *
+ * 检索入口收敛在商品列表页（/products?keyword=…）——原独立 /search 页与列表页
+ * 检索能力重复，2026-10-13 裁撤；首页搜索与顶栏搜索图标都改指这里。
  */
 test.describe('商品浏览与搜索', () => {
   test('首页可加载', async ({ page }) => {
@@ -12,14 +15,15 @@ test.describe('商品浏览与搜索', () => {
     await expect(page.locator('body')).toBeVisible();
   });
 
-  test('搜索功能可交互', async ({ page }) => {
+  test('首页搜索提交后跳转商品列表并带上关键词', async ({ page }) => {
     await page.goto('/');
     const searchInput = page.locator('input[type="text"], input[placeholder*="搜索"]').first();
     await expect(searchInput).toBeVisible({ timeout: 10000 });
     await searchInput.fill('手机');
     await searchInput.press('Enter');
-    // 提交后应跳转到搜索页
-    await expect(page).toHaveURL(/\/search/, { timeout: 10000 });
+    // 提交后应跳转到商品列表页，关键词进 query
+    await expect(page).toHaveURL(/\/products\?keyword=/, { timeout: 10000 });
+    await expect(page).toHaveURL(/%E6%89%8B%E6%9C%BA/);
   });
 
   test('页面导航存在', async ({ page }) => {
@@ -41,34 +45,19 @@ test.describe('商品浏览与搜索', () => {
     await expect(nav.locator('a').filter({ hasText: '商品' })).toBeVisible();
   });
 
-  test('搜索页面可访问且有搜索输入框', async ({ page }) => {
-    await page.goto('/search');
-    // 搜索输入框应可见
-    const searchInput = page.locator('.search-input-field, input[placeholder*="搜索"]').first();
-    await expect(searchInput).toBeVisible({ timeout: 10000 });
-  });
-
-  test('搜索页面显示初始分类浏览区域', async ({ page }) => {
-    await page.goto('/search');
-
-    // 分类浏览区域应可见（初始状态下）
-    const categoriesSection = page.locator('.search-categories-section').first();
-    await expect(categoriesSection).toBeVisible({ timeout: 10000 });
-  });
-
   test('商品页面可加载', async ({ page }) => {
     await page.goto('/products');
     // 商品页面容器应可见
     await expect(page.locator('.products-page-wrapper, .products-container').first()).toBeVisible({ timeout: 10000 });
   });
 
-  test('商品导航到搜索页面', async ({ page }) => {
+  test('顶栏搜索图标导航到商品列表', async ({ page }) => {
     await page.goto('/');
     // 点击搜索图标按钮
     const searchBtn = page.locator('.floating-nav__icon-btn[aria-label="搜索"]').first();
     await expect(searchBtn).toBeVisible();
     await searchBtn.click();
-    await expect(page).toHaveURL(/\/search/);
+    await expect(page).toHaveURL(/\/products/);
   });
 
   test('发布按钮导航到登录或发布页', async ({ page }) => {
@@ -81,29 +70,5 @@ test.describe('商品浏览与搜索', () => {
     // 可能是 /login 或 /publish（如果已登录）
     const isLoginOrPublish = currentUrl.includes('/login') || currentUrl.includes('/publish');
     expect(isLoginOrPublish).toBeTruthy();
-  });
-
-  test('搜索提交后展示结果区与关键词回显', async ({ page }) => {
-    await page.goto('/search');
-
-    const searchInput = page.locator('.search-input-field').first();
-    await expect(searchInput).toBeVisible({ timeout: 10000 });
-    // 使用一个不太可能匹配到的长字符串
-    await searchInput.fill('zzzzzzzzznonexistentproduct999999');
-    await page.locator('.search-submit-btn, button[type="submit"]').first().click();
-
-    // 契约层（无后端）只断提交后**同步确定性**的 UI：结果区与关键词回显由 submittedKeyword 驱动，
-    // 不依赖接口结算。「未找到相关商品」空状态要等接口返回（无后端时是 10s 超时 + React Query 重试，
-    // 动辄 40s+），已由 SearchPage.test.tsx 组件测试覆盖，E2E 不再等待它
-    await expect(page.locator('.search-results-section')).toBeVisible({ timeout: 10000 });
-    await expect(page.locator('.search-keyword-highlight')).toHaveText('zzzzzzzzznonexistentproduct999999');
-  });
-
-  test('搜索页面热门搜索区域初始可见', async ({ page }) => {
-    await page.goto('/search');
-
-    // 热门搜索区域应可见（如果 API 返回数据）
-    // CSS 或选择器 + first()：两个区域同时渲染时 A.or(B) 会命中 2 个元素触发 strict mode
-    await expect(page.locator('.search-top-card, .search-initial-content').first()).toBeVisible({ timeout: 10000 });
   });
 });

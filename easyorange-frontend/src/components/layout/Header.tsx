@@ -2,7 +2,6 @@ import { Search } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAdminGuard } from '@/admin/hooks/useAdminGuard';
-import { NotificationBell } from '@/components/notification/NotificationBell';
 import { Button } from '@/components/ui/button';
 import { useLogout } from '@/hooks';
 import { useAuthStore } from '@/store/authStore';
@@ -135,14 +134,11 @@ export function Header() {
                         variant="ghost"
                         size="icon"
                         className="floating-nav__icon-btn"
-                        onClick={() => navigate('/search')}
+                        onClick={() => navigate('/products')}
                         aria-label="搜索"
                     >
                         <Search size={19} />
                     </Button>
-
-                    {/* 通知铃铛（仅登录可见）— 未读数走 /messages/unread-count，实时推送走 WebSocket */}
-                    {isLoggedIn && <NotificationBell />}
 
                     {/* 消息入口（仅登录可见）—— 未读数取会话列表求和，与消息中心同一份数据，
                         不额外发请求；会话列表随 WS 帧失效，数字跟着实时更新 */}
@@ -208,25 +204,6 @@ export function Header() {
                                     <circle cx="12" cy="7" r="4" />
                                 </svg>
                                 <span>个人中心</span>
-                            </Link>
-                            <Link
-                                to="/my-products"
-                                className="floating-nav__menu-item"
-                                onClick={() => setIsUserMenuOpen(false)}
-                                data-testid="menu-item-my-products"
-                            >
-                                <svg
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2"
-                                    aria-hidden="true"
-                                >
-                                    <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
-                                    <path d="m3.3 7 8.7 5 8.7-5" />
-                                    <path d="M12 22V12" />
-                                </svg>
-                                <span>我的发布</span>
                             </Link>
                             <Link
                                 to="/orders"

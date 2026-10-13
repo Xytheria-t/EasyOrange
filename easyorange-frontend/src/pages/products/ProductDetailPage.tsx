@@ -12,7 +12,6 @@ import {
     MapPin,
     MessageCircle,
     PackageOpen,
-    Pencil,
     Shield,
     ShieldCheck,
     ShoppingCart,
@@ -360,14 +359,6 @@ function ProductDetailPage() {
                             <div className="pdp-actions">
                                 {isOwner ? (
                                     <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                                        <Button
-                                            className="pdp-btn pdp-btn-primary"
-                                            onClick={() => navigate(`/products/${id}/edit`)}
-                                            disabled={isPendingReview}
-                                        >
-                                            <Pencil size={18} />
-                                            编辑商品
-                                        </Button>
                                         {isRejected && (
                                             <Button
                                                 className="pdp-btn pdp-btn-primary"

@@ -9,8 +9,8 @@ import type { ChatSession } from '@/types';
 /**
  * 顶栏消息入口 —— 带会话未读汇总。
  *
- * <p>未读数直接由会话列表求和：铃铛管系统通知，这里管跟人的对话，两处各读自己那一份，
- * 不必为这个角标再发一次 unread-count 请求。会话列表由 WS 帧失效，数字随之刷新。
+ * <p>未读数直接由会话列表求和（含系统通知会话），不必为这个角标再发一次 unread-count
+ * 请求。会话列表由 Layout 上的 useChatUnreadSocket 收 WS 帧失效，数字随之刷新。
  */
 export function MessagesEntry() {
     const navigate = useNavigate();

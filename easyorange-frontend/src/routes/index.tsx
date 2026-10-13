@@ -19,10 +19,6 @@ const MessagesPage = lazy(() => import('@/pages/messages/MessagesPage'));
 const OrdersPage = lazy(() => import('@/pages/orders/OrdersPage'));
 const OrderDetailPage = lazy(() => import('@/pages/orders/OrderDetailPage'));
 const PublishPage = lazy(() => import('@/pages/products/PublishPage'));
-const MyProductsPage = lazy(() => import('@/pages/products/MyProductsPage'));
-const SearchPage = lazy(() => import('@/pages/profile/SearchPage'));
-const EditProductPage = lazy(() => import('@/pages/products/EditProductPage'));
-const NotificationsPage = lazy(() => import('@/pages/notifications/NotificationsPage'));
 const PlaygroundPage = lazy(() => import('@/pages/playground/PlaygroundPage'));
 const LoginPage = lazy(() => import('@/pages/auth/LoginPage'));
 const ForgotPasswordPage = lazy(() => import('@/pages/auth/ForgotPasswordPage'));
@@ -46,7 +42,6 @@ const R = {
     home: { title: '首页', description: 'EasyOrange - C2C 资产流转平台' },
     products: { title: '商品', description: '浏览全部商品' },
     productDetail: { title: '商品详情', description: '查看商品详细信息' },
-    search: { title: '搜索', description: '搜索商品' },
     login: { title: '登录', description: '登录 EasyOrange' },
     forgotPwd: { title: '忘记密码' },
     profile: { title: '个人中心' },
@@ -55,9 +50,6 @@ const R = {
     orders: { title: '我的订单' },
     orderDetail: { title: '订单详情' },
     publish: { title: '提交资产' },
-    myProducts: { title: '我的发布' },
-    editProduct: { title: '编辑商品' },
-    notifications: { title: '通知中心' },
     playground: { title: 'AI 找货', description: '多轮 Agent 对话 · SSE 流式 · 知识库引用溯源' },
     notFound: { title: '404' },
     admin: { title: '管理后台', description: 'EasyOrange 管理控制台' },
@@ -72,11 +64,6 @@ export const router = createBrowserRouter(
             <Route path="/" element={<MinimalLayout />}>
                 <Route path="products" element={withSuspense(ProductsPage, R.products)} />
                 <Route path="products/:id" element={withSuspense(ProductDetailPage, R.productDetail)} />
-                <Route path="search" element={withSuspense(SearchPage, R.search)} />
-                <Route
-                    path="products/:id/edit"
-                    element={<ProtectedRoute>{withSuspense(EditProductPage, R.editProduct)}</ProtectedRoute>}
-                />
                 <Route path="login" element={withSuspense(LoginPage, R.login)} />
                 <Route path="forgot-password" element={withSuspense(ForgotPasswordPage, R.forgotPwd)} />
                 <Route
@@ -100,14 +87,6 @@ export const router = createBrowserRouter(
                 <Route
                     path="publish"
                     element={<ProtectedRoute>{withSuspense(PublishPage, R.publish)}</ProtectedRoute>}
-                />
-                <Route
-                    path="my-products"
-                    element={<ProtectedRoute>{withSuspense(MyProductsPage, R.myProducts)}</ProtectedRoute>}
-                />
-                <Route
-                    path="notifications"
-                    element={<ProtectedRoute>{withSuspense(NotificationsPage, R.notifications)}</ProtectedRoute>}
                 />
                 {/* AI 对话依赖登录身份：长期偏好靠它加载、remember_preference 靠它落库，
                     匿名访问这些能力会静默失效。后端 /api/ai/** 也一直要求 JWT（不在

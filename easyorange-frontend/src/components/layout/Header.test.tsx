@@ -5,11 +5,6 @@ import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Header } from './Header';
 
-// Mock NotificationBell since it uses React Query hooks
-vi.mock('@/components/notification/NotificationBell', () => ({
-    NotificationBell: () => <div data-testid="notification-bell" />,
-}));
-
 // Mock stores
 const mockAuthStore = vi.fn();
 vi.mock('@/store/authStore', () => ({
@@ -95,20 +90,6 @@ describe('Header', () => {
 
         await userEvent.click(userButton);
         expect(screen.getByText('Test User')).toBeInTheDocument();
-    });
-
-    it('mounts NotificationBell when logged in', () => {
-        setupLoggedIn();
-        renderWithProviders(<Header />);
-
-        expect(screen.getByTestId('notification-bell')).toBeInTheDocument();
-    });
-
-    it('hides NotificationBell when logged out', () => {
-        setupLoggedOut();
-        renderWithProviders(<Header />);
-
-        expect(screen.queryByTestId('notification-bell')).not.toBeInTheDocument();
     });
 
     it('shows admin link when user is admin', async () => {

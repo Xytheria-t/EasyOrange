@@ -10,11 +10,6 @@ const LoadingFallback = () => (
     </div>
 );
 
-const UserManagePage = lazy(() => import('./pages/users/UserManagePage'));
-const ProductReviewPage = lazy(() => import('./pages/products/ProductReviewPage'));
-const OrderManagePage = lazy(() => import('./pages/orders/OrderManagePage'));
-const StatsPage = lazy(() => import('./pages/stats/StatsPage'));
-const CategoryManagePage = lazy(() => import('./pages/categories/CategoryManagePage'));
 const KnowledgePage = lazy(() => import('./pages/knowledge/KnowledgePage'));
 const RetrievalQualityPage = lazy(() => import('./pages/retrieval/RetrievalQualityPage'));
 
@@ -24,14 +19,10 @@ export function AdminRoutes() {
             <Routes>
                 <Route element={<AdminRouteGuard />}>
                     <Route element={<AdminLayout />}>
-                        <Route index element={<StatsPage />} />
-                        {/* /admin/stats 深链别名：与 index 同页。缺它时该 URL 在内层 Routes
-                            无匹配 → 整棵树渲染 null → 白屏（无链接指向时也兜住手输地址） */}
-                        <Route path="stats" element={<StatsPage />} />
-                        <Route path="users" element={<UserManagePage />} />
-                        <Route path="products" element={<ProductReviewPage />} />
-                        <Route path="orders" element={<OrderManagePage />} />
-                        <Route path="categories" element={<CategoryManagePage />} />
+                        {/* 管理端前端只留 AI 运维两个面：知识库管理 + 检索质量回看（ADR-0012 的
+                            兑现位）。业务 CRUD（用户/商品审核/订单/分类/统计）由后端 REST +
+                            Swagger 承载，前端重复一份只摊薄维护预算——其余未知路径回首页 */}
+                        <Route index element={<RetrievalQualityPage />} />
                         <Route path="knowledge" element={<KnowledgePage />} />
                         <Route path="retrieval-quality" element={<RetrievalQualityPage />} />
                         {/* 后台内未知路径回数据统计，绝不给演示留白屏 */}
