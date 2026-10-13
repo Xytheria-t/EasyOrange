@@ -13,6 +13,7 @@ import com.cartethyia.easyorange.message.domain.valueobject.MessageQuery;
 import com.cartethyia.easyorange.message.domain.valueobject.SystemConversation;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,5 +69,27 @@ class MessagePersistenceIT extends AbstractIntegrationTest {
         assertThat(pending).as("接收方离线时写入离线行").hasSize(1);
         assertThat(pending.getFirst().id()).as("离线行主键由应用层生成").isNotBlank();
         assertThat(pending.getFirst().messageId()).as("离线行指向刚落库的消息").isEqualTo(saved.id());
+    }
+
+    @Test
+    @DisplayName("会话历史限窗 500：超过分页拦截器 max-limit=100 也不被截断（TD-030）")
+    void conversationHistory_beyondPaginationMaxLimit_notTruncated() {
+        String receiverId = UUID.randomUUID().toString();
+        // 150 > max-limit 100：Page(size=500) 旧实现会被拦截器静默截到 100 行，
+        // 用户翻历史「莫名到底」；.last("LIMIT n") 自控 SQL 后按窗口全量返回
+        for (int i = 0; i < 150; i++) {
+            messageCommandHandler.sendSystemMessage(new SendSystemMessageCommand(
+                    receiverId, TITLE + "-" + i, "内容 " + i, "product-1", MessageBizType.PRODUCT));
+        }
+
+        List<Message> thread = messageQueryRepository.findConversation(receiverId, SystemConversation.ID);
+
+        assertThat(thread).as("150 条全部返回，未被 100 行上限截断").hasSize(150);
+        // create_time 是秒级精度，同秒大批插入时序不可排序，故按集合断言（本用例盯的是条数不丢）
+        assertThat(thread.stream().map(Message::title).collect(Collectors.toSet()))
+                .as("窗口内的消息一条不少")
+                .containsAll(java.util.stream.IntStream.range(0, 150)
+                        .mapToObj(i -> TITLE + "-" + i)
+                        .collect(Collectors.toSet()));
     }
 }

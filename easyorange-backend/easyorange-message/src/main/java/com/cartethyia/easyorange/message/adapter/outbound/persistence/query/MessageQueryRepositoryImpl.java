@@ -88,6 +88,14 @@ public class MessageQueryRepositoryImpl extends BaseRepository<MessageMapper, Me
     /** 会话详情窗口上限：只取最近 N 条（降序取页后反转为时间升序），避免长会话全量加载。 */
     private static final int CONVERSATION_HISTORY_LIMIT = 500;
 
+    /**
+     * 限窗不用 {@code Page(size)}：分页拦截器配了 {@code max-limit=100}，会把一切
+     * {@code Page(size>100)} 静默截到 100 行——500 的窗口实际只回 100 条且不报错
+     * （用户翻历史「莫名到底」）。这里整条 SQL 由本方法自控，LIMIT 字面量是编译期常量，
+     * 没有注入面。
+     */
+    private static final String HISTORY_LIMIT_CLAUSE = "LIMIT " + CONVERSATION_HISTORY_LIMIT;
+
     @Override
     public List<Message> findConversation(String userId, String otherUserId) {
         List<MessageDO> recent = isSystemConversation(otherUserId)
@@ -96,8 +104,8 @@ public class MessageQueryRepositoryImpl extends BaseRepository<MessageMapper, Me
                         .eq(MessageDO::getReceiverId, userId)
                         .eq(MessageDO::getDelFlag, 0)
                         .orderByDesc(MessageDO::getCreateTime)
-                        .page(new Page<>(1, CONVERSATION_HISTORY_LIMIT, false))
-                        .getRecords()
+                        .last(HISTORY_LIMIT_CLAUSE)
+                        .list()
                 : lambdaQuery()
                         .and(w -> w.eq(MessageDO::getSenderId, userId)
                                 .eq(MessageDO::getReceiverId, otherUserId)
@@ -106,8 +114,8 @@ public class MessageQueryRepositoryImpl extends BaseRepository<MessageMapper, Me
                                 .eq(MessageDO::getReceiverId, userId))
                         .eq(MessageDO::getDelFlag, 0)
                         .orderByDesc(MessageDO::getCreateTime)
-                        .page(new Page<>(1, CONVERSATION_HISTORY_LIMIT, false))
-                        .getRecords();
+                        .last(HISTORY_LIMIT_CLAUSE)
+                        .list();
         List<Message> chronological = new java.util.ArrayList<>(MessageDataMapper.toAggregateList(recent));
         java.util.Collections.reverse(chronological);
         return chronological;
