@@ -1,7 +1,16 @@
 name: PIT mutation (nightly)
 
-# PIT 变异测试（仅 order 模块 domain 层）—— 慢，nightly + 手动触发，不进 PR 路径。
-# 结果供人工观察变异覆盖率趋势，不阻塞 merge。
+# PIT 变异测试（order + product 两模块 domain 层）—— 慢，nightly + 手动触发，不进 PR 路径。
+#
+# 是门禁不是观测（2026-10-13 起）：-Dpit.*Threshold 三件套按当日实测标定——
+#   mutation ≥ 60 / test strength ≥ 75 / coverage ≥ 70。任一模块低于阈值即构建失败，
+#   「改 domain 不补断言」从此在 CI 可见，而不是只躺在 nightly 的 HTML 报告里等人看。
+#   阈值来源与判据：doc/工程指标.md §2.1「PIT 口径」。
+#
+# 为什么是这两个模块而不是全仓：order 是状态机叙事的主战场（domain 变异基线最高），
+# product 曾是全仓最短的板（67%/74%，251 个变异点里 59 个存活——行覆盖 0.93 却断言浅），
+# 2026-10-13 补值对象/事件/异常工厂的契约测试后实测 83%/89% 转入门禁；
+# 其余模块逐模块数字见 §2.1，域外代码（adapter/config）不搞变异覆盖。
 on:
   schedule:
     - cron: '30 2 * * *'
@@ -25,14 +34,17 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      # 仅 order 模块（domain 变异基线最高 ~70%），避免全仓 PIT 分钟级耗时。
-      # 分两步：先 install 上游依赖模块，再对 order 单独跑 PIT —— 若用 `-am` 一步跑，
+      # 仅 order + product 两模块（domain 变异基线最高与曾最短的各一个），避免全仓 PIT 分钟级耗时。
+      # 分两步：先 install 上游依赖模块，再对两模块单独跑 PIT —— 若用 `-am` 一步跑，
       # pitest:mutationCoverage 直接 goal 会在 reactor 内每个上游模块（common/framework/
-      # product/user/payment）上各跑一遍，耗时数分钟且偏离"仅 order"意图。
+      # product/user/payment）上各跑一遍，耗时数分钟且偏离「仅两模块」意图。
       - name: Build upstream modules (skip PIT)
-        run: ./mvnw -pl easyorange-order -am install -DskipTests -B
+        run: ./mvnw -pl easyorange-order,easyorange-product -am install -DskipTests -B
         working-directory: easyorange-backend
 
-      - name: PIT mutation coverage (order domain)
-        run: ./mvnw -pl easyorange-order -Ppit test-compile pitest:mutationCoverage -B
+      # 阈值按 2026-10-13 实测留了余量标定（order 78/81、product 83/89）：
+      # 卡的是「回归」不是「满分」—— 任模块测试被削弱 / 域逻辑改动不带断言即红。
+      # mutationThreshold=60 是地板：低于它说明覆盖缺口，不是质量问题。
+      - name: PIT mutation coverage (order + product domain, gated)
+        run: ./mvnw -pl easyorange-order,easyorange-product -Ppit test-compile pitest:mutationCoverage -Dpit.mutationThreshold=60 -Dpit.testStrengthThreshold=75 -Dpit.coverageThreshold=70 -B
         working-directory: easyorange-backend
