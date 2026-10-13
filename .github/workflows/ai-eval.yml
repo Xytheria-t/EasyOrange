@@ -18,6 +18,14 @@ name: AI eval gate
 #   DeepSeek 系列 chat + text-embedding-v3）。若只配了纯 chat 供应商的 key，
 #   embedding bean 会退化为 UnconfiguredEmbeddingModel，检索指标走 MySQL LIKE 降级路径。
 # 供应商可换：AI_TEXT_BASE_URL / AI_TEXT_MODEL 由仓库变量提供，缺省仍是 DeepSeek 官方端点。
+#
+# 凭据 preflight（job: preflight）：评测前先花一次零 token 的 GET {base}/models 给 key 定性。
+#   为什么必须单独一步：Guard 空串只拦「没配 secret」，拦不住「配了但已失效」（额度耗尽 / key 过期 /
+#   模型不可达）——那种情况四道门禁全返回 0（分母归零不是低分，是一次调用都没成功），
+#   与真实质量回归在 Actions 上同为红色，观者无法区分（2026-09~10 连续 13 红即此形态）。
+#   key 缺失或不可用时 preflight 以 ::warning:: 显式跳过评测：红 run 由凭据生命周期产生时
+#   不冒充质量信号；warning 里写明「这不是在跑的质量门禁」，不存在假绿。判据同步在
+#   doc/工程指标.md §2.4「ai-eval.yml 当前实况」。
 on:
   # 定时回归已取消（口径见 doc/工程指标.md 工具链表）：单次约 60 次真实模型调用、消耗真实额度，
   # 代码不变时重复评测同一份代码是纯开销。保留注释，需要定期回归时一行恢复——它买的是
@@ -47,25 +55,45 @@ env:
   AI_TEXT_MODEL: ${{ vars.EASYORANGE_AI_MODEL || 'deepseek-chat' }}
 
 jobs:
+  # 凭据定性：missing（没配）/ ok（可用）/ invalid（配了但不可用）。
+  # 只用 GET /models——零 token、不计费，失败时连一次生成调用都不发起。
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      verdict: ${{ steps.classify.outputs.verdict }}
+    steps:
+      - name: Classify EASYORANGE_AI_API_KEY
+        id: classify
+        run: |
+          if [ -z "$EASYORANGE_AI_API_KEY" ]; then
+            echo "verdict=missing" >> "$GITHUB_OUTPUT"
+            echo "::warning::secret EASYORANGE_AI_API_KEY 未配置——评测门禁跳过（不是质量回归）：Settings → Secrets and variables → Actions。配好后本 job 自动恢复跑门禁"
+            exit 0
+          fi
+          # key 只走 header、不回显；非 200 一律落到 invalid，HTTP 码原样带出便于定位
+          code=$(curl -sS --max-time 30 -o /dev/null -w '%{http_code}' \
+            -H "Authorization: Bearer $EASYORANGE_AI_API_KEY" \
+            "$AI_TEXT_BASE_URL/models") || code=000
+          if [ "$code" = "200" ]; then
+            echo "verdict=ok" >> "$GITHUB_OUTPUT"
+            echo "credential ok — running eval gate"
+          else
+            echo "verdict=invalid" >> "$GITHUB_OUTPUT"
+            echo "::warning::EASYORANGE_AI_API_KEY 存在但不可用（GET $AI_TEXT_BASE_URL/models → HTTP $code）——评测门禁跳过。这不是质量回归：真跑出来会是「四道门禁全 0」的假红。换有效期内的 key / 核对账号额度与 AI_TEXT_MODEL 可达性后重跑；修复动作与判据见 doc/工程指标.md §2.4"
+            exit 0
+          fi
+
   eval:
+    needs: preflight
+    # 凭据不可用时整个 job 灰显跳过，run 仍记 preflight 的 warning——
+    # 「没跑的门禁」与「跑过且通过的门禁」在 Actions 上一眼可辨
+    if: needs.preflight.outputs.verdict == 'ok'
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      # key 缺失时 @EnabledIfEnvironmentVariable 会把 IT 静默跳过 → 门禁空转变绿；
-      # 显式守卫把「忘配 secret」变成可见失败而不是假绿。
-      #
-      # ⚠ 本守卫只查空串，查不了「secret 存在但已失效」（额度耗尽 / key 过期 / 模型名不可达）。
-      # 那种情况的症状是下面门禁**四道全返回 0**（评审覆盖率 0/22、路由 0/19 等，分母归零），
-      # 以及日志里知识库文档 ingestion failed 全量失败 —— 是「一次 AI 调用都没成功」，
-      # **不是质量回归**，改阈值没用。判据见 doc/工程指标.md §2.4「ai-eval.yml 当前实况」。
-      - name: Guard API key secret
-        if: ${{ env.EASYORANGE_AI_API_KEY == '' }}
-        run: |
-          echo "::error::secret EASYORANGE_AI_API_KEY 未配置：Settings → Secrets and variables → Actions"
-          exit 1
 
       - name: Setup JDK 25
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
