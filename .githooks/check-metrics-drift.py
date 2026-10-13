@@ -1,6 +1,13 @@
 #!/usr/bin/env python3
 """结构计数漂移校验与单点校准 — 校验「N 模块 / N Port / N ADR / N 消费者 / N 表 / N 条 ArchUnit 规则 / N 个 Prompt 模板 / N 前端测试文件 / N 条金标准集 / N 篇语料」与代码事实。
 
+另校验 **§1.2 测试规模的两行静态计数**（后端测试方法数=注解统计、后端测试文件数）与代码事实：
+测试规模不进结构计数区块（按 doc/工程指标.md §一约定「测试规模数字只在 §1.2 维护」），
+但同样随每次新增测试漂移——此前的形态是五天 +25 个方法无人发现（2026-10-07 写 1,845，
+10-12 实测 1,870）。两行可静态数（grep 口径与文档行内命令逐字一致），`--fix` 一并回写；
+含参数化展开的用例数与前端用例数要跑 `./mvnw test` / `npx vitest run`，无法静态校验，
+按 §四 维护流程人工回填，脚本不假装能查。
+
 背景：这几类计数随代码频繁变动、靠人肉同步，已经漂移过一整轮 —— README 写 11 条 ADR（实际 12）、
 根 AGENTS.md 写 11 个（实际 12）、面试文档写 10 个消费者（实际 12）、mermaid 写 32 表（实际 33）、
 `ArchitectureRulesTest` 被写成 10 条（实际 12，文件 javadoc 自己写着 12）、Prompt 模板一处写 6
@@ -194,6 +201,15 @@ CLAIM_PATTERNS: dict[str, tuple[re.Pattern[str], str]] = {
 # 单点区块的键全集（= CLAIM_PATTERNS + VALUE_PATTERNS，顺序即回写顺序）
 BLOCK_KEYS = [*CLAIM_PATTERNS, *VALUE_PATTERNS]
 
+# §1.2 测试规模里**可静态校验**的两行（doc/工程指标.md §一：测试规模只在 §1.2 维护、
+# 不进结构计数区块，故这里是「按行校验」而非区块键）。行内数字允许千分位。
+# 行首锚 `| 标签` + 全仓唯一（已核），不需要 _cell 的完整表格匹配——
+# 文件数行的值单元后面还挂「（含抽象基类…）」说明文字，尾 `|` 对不上。
+TEST_SCALE_ROWS: dict[str, re.Pattern[str]] = {
+    "backend_test_methods": re.compile(rf"\|\s*后端测试方法数[^|\n]*\|\s*{_B}(\d[\d,]*)"),
+    "backend_test_files": re.compile(rf"\|\s*后端测试文件数[^|\n]*\|\s*{_B}(\d[\d,]*)"),
+}
+
 
 def _java_sources() -> list[Path]:
     return [
@@ -259,6 +275,20 @@ def code_facts() -> dict[str, int]:
         if seed_sql.exists()
         else 0
     )
+
+    # §1.2 测试规模两行静态计数。口径与文档行内命令逐字对齐：
+    #   方法数 = `grep -rhE "^\s*@(Test|ParameterizedTest|RepeatedTest)" --include="*.java" */src/test | wc -l`
+    #   文件数 = `find easyorange-backend -name "*Test.java" | wc -l`（target 下无 .java 源码，两种数法相等，实测）
+    annotation = re.compile(r"^\s*@(?:Test|ParameterizedTest|RepeatedTest)\b", re.MULTILINE)
+    test_sources = [
+        p
+        for p in BACKEND.rglob("*.java")
+        if "target" not in p.parts and "/src/test/" in p.as_posix()
+    ]
+    facts["backend_test_methods"] = sum(
+        len(annotation.findall(p.read_text(encoding="utf-8"))) for p in test_sources
+    )
+    facts["backend_test_files"] = len([p for p in test_sources if p.name.endswith("Test.java")])
 
     return facts
 
@@ -373,6 +403,42 @@ def scan_claims() -> tuple[list[tuple[str, int, str, str, str, str]], int]:
     return hits, checked
 
 
+def check_test_scale(facts: dict[str, int]) -> list[str]:
+    """§1.2 两行静态测试计数 vs 代码事实。单点就是这两行本身，不存在「散落」判定。"""
+    problems: list[str] = []
+    text = SSOT.read_text(encoding="utf-8") if SSOT.exists() else ""
+    for key, pattern in TEST_SCALE_ROWS.items():
+        match = pattern.search(text)
+        if match is None:
+            problems.append(f"  {SSOT.relative_to(ROOT)} §1.2 找不到「{key}」行（行标签变了？同步改本脚本）")
+            continue
+        claimed = int(match.group(1).replace(",", ""))
+        if claimed != facts[key]:
+            problems.append(
+                f"  {SSOT.relative_to(ROOT)} §1.2 写 {claimed:,}，实际 {facts[key]:,}"
+                f"（{key}）；修：{FIX_CMD}"
+            )
+    return problems
+
+
+def fix_test_scale(facts: dict[str, int]) -> list[str]:
+    """回写 §1.2 两行静态计数（幂等）；返回被改动的键。"""
+    text = SSOT.read_text(encoding="utf-8")
+    changed: list[str] = []
+
+    def _sub(match: re.Match[str], key: str) -> str:
+        if int(match.group(1).replace(",", "")) == facts[key]:
+            return match.group(0)
+        changed.append(key)
+        return match.group(0).replace(match.group(1), f"{facts[key]:,}")
+
+    for key, pattern in TEST_SCALE_ROWS.items():
+        text = pattern.sub(lambda m, k=key: _sub(m, k), text, count=1)
+    if changed:
+        SSOT.write_text(text, encoding="utf-8")
+    return changed
+
+
 def main() -> int:
     facts = code_facts()
     fix = "--fix" in sys.argv[1:]
@@ -386,8 +452,12 @@ def main() -> int:
                 file=sys.stderr,
             )
             return 1
-        if current == facts:
-            print(f"[metrics-drift] OK 单点区块已是最新：{render_inline(facts)}")
+        if current == {key: facts[key] for key in BLOCK_KEYS}:
+            changed = fix_test_scale(facts)
+            if not changed:
+                print(f"[metrics-drift] OK 单点区块与 §1.2 测试规模已是最新：{render_inline(facts)}")
+                return 0
+            print(f"[metrics-drift] FIXED 已回写 §1.2 测试规模：{', '.join(changed)}")
             return 0
         region = block_region(SSOT.read_text(encoding="utf-8"))
         assert region is not None
@@ -415,13 +485,17 @@ def main() -> int:
             f" —— 这 10 类结构计数的唯一落点就是它；修：{FIX_CMD}"
         )
     else:
-        for key, value in facts.items():
+        # 只比区块键；§1.2 测试规模两行是另一处单点，走 check_test_scale
+        for key in BLOCK_KEYS:
+            value = facts[key]
             if key not in block:
                 drift.append(f"  {SSOT.relative_to(ROOT)} 单点区块缺 `{key}`（实际 {value}）；修：{FIX_CMD}")
             elif block[key] != value:
                 drift.append(
                     f"  {SSOT.relative_to(ROOT)} 单点区块写 {key}: {block[key]}，实际 {value}；修：{FIX_CMD}"
                 )
+
+    drift.extend(check_test_scale(facts))
 
     hits, checked = scan_claims()
     for rel, lineno, key, raw, text, mode in hits:
