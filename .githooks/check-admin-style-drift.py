@@ -83,7 +83,9 @@ def main() -> int:
         import subprocess
 
         changed = subprocess.run(
-            ["git", "diff", "--name-only", "--cached", "HEAD"],
+            # --diff-filter=ACMR：排除删除文件——删文件是裁剪，没有内容可查，
+            # 读已删路径会直接 FileNotFoundError（2026-10-13 前端裁剪实测）
+            ["git", "diff", "--name-only", "--cached", "--diff-filter=ACMR", "HEAD"],
             cwd=ROOT, capture_output=True, text=True, check=True,
         ).stdout.split()
         files = [

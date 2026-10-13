@@ -102,7 +102,6 @@ HEX_ALLOW = {
     "#fff0e4",
     "#ffe4d4",
     "#ffd4c7",
-    "#fff8f0",
     "#fffaf4",
     "#fff5ea",
     "#f4f7fb",
@@ -110,13 +109,6 @@ HEX_ALLOW = {
     "#fff6f0",
     "#faf8f5",
     "#f7f5f2",
-    # 金银铜热词牌（排行榜前三名）
-    "#ffd700",
-    "#ffa500",
-    "#c0c0c0",
-    "#a0a0a0",
-    "#cd7f32",
-    "#b87333",
 }
 
 # rgba/rgb 白名单按「基色三元组」收，任意 alpha 合法——防的是发明新基色。
@@ -370,7 +362,9 @@ def main() -> int:
         import subprocess
 
         changed = subprocess.run(
-            ["git", "diff", "--name-only", "--cached", "HEAD"],
+            # --diff-filter=ACMR：排除删除文件（同 check-admin-style-drift.py，
+            # 删文件没有内容可查，读已删路径会 FileNotFoundError）
+            ["git", "diff", "--name-only", "--cached", "--diff-filter=ACMR", "HEAD"],
             cwd=ROOT, capture_output=True, text=True, check=True,
         ).stdout.split()
         c_side = [
