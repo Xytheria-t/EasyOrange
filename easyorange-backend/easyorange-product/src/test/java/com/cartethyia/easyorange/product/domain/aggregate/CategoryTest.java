@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.product.domain.aggregate;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.product.domain.enums.CategoryStatus;
 import com.cartethyia.easyorange.product.domain.exception.ProductDomainException;
 import com.cartethyia.easyorange.product.domain.valueobject.CategoryId;
@@ -172,6 +173,19 @@ class CategoryTest {
             assertThat(shifted.getLevel()).isEqualTo(3);
             assertThat(shifted.getName()).isEqualTo(root().getName());
             assertThat(shifted.getParentId()).isEqualTo(root().getParentId());
+        }
+
+        @Test
+        @DisplayName("isRoot 按 parentId == null 判：二级分类为 false")
+        void isRoot_whenChild_shouldReturnFalse() {
+            assertThat(root().isRoot()).isTrue();
+            assertThat(child(root(), MID_ID, "手机").isRoot()).isFalse();
+        }
+
+        @Test
+        @DisplayName("rename 传 null 名称应抛异常（改名是替换不是置空）")
+        void rename_withNullName_shouldThrow() {
+            assertThatThrownBy(() -> root().rename(null)).isInstanceOf(BusinessException.class);
         }
     }
 }

@@ -98,6 +98,19 @@ class ProductTest {
     }
 
     @Test
+    @DisplayName("扣减量恰好等于库存时放行（判定口径是「扣完仍非负」，不是「还有剩」）")
+    void decrementStock_whenQuantityEqualsStock_shouldPass() {
+        var p = Product.create(ProductTestFixture.aProduct().stock(2).build())
+                .aggregate()
+                .assignId("1");
+
+        var t = p.decrementStock(2);
+
+        assertThat(t.aggregate().getStock().value()).isZero();
+        assertThat(t.event()).isInstanceOf(StockDecreasedEvent.class);
+    }
+
+    @Test
     @DisplayName("恢复库存成功时应增加库存并发布事件")
     void restoreStock_shouldIncreaseAndEmitEvent() {
         var p = ProductTestFixture.defaultProduct();
