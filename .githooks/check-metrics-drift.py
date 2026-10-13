@@ -452,13 +452,28 @@ def main() -> int:
                 file=sys.stderr,
             )
             return 1
-        if current == {key: facts[key] for key in BLOCK_KEYS}:
-            changed = fix_test_scale(facts)
-            if not changed:
-                print(f"[metrics-drift] OK 单点区块与 §1.2 测试规模已是最新：{render_inline(facts)}")
-                return 0
-            print(f"[metrics-drift] FIXED 已回写 §1.2 测试规模：{', '.join(changed)}")
+        scale_changed = fix_test_scale(facts)
+        block_changed = current != {key: facts[key] for key in BLOCK_KEYS}
+        if not (block_changed or scale_changed):
+            print(f"[metrics-drift] OK 单点区块与 §1.2 测试规模已是最新：{render_inline(facts)}")
             return 0
+        if block_changed:
+            region = block_region(SSOT.read_text(encoding="utf-8"))
+            assert region is not None
+            start, end = region
+            lines = SSOT.read_text(encoding="utf-8").splitlines(keepends=True)
+            body = "".join(lines[start:end])
+            patched = re.sub(
+                r"^```[a-z]*\n.*?^```",
+                f"```text\n{render_block(facts)}\n```",
+                body,
+                count=1,
+                flags=re.MULTILINE | re.DOTALL,
+            )
+            SSOT.write_text("".join(lines[:start]) + patched + "".join(lines[end:]), encoding="utf-8")
+        done = [k for k in (["单点区块"] if block_changed else []) + scale_changed]
+        print(f"[metrics-drift] FIXED 已回写：{'、'.join(done)}")
+        return 0
         region = block_region(SSOT.read_text(encoding="utf-8"))
         assert region is not None
         start, end = region
