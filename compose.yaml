@@ -145,6 +145,10 @@ services:
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-easyorange123}
       # 压测透传开关：RATE_LIMIT_FILTER_ENABLED=false docker compose up -d --scale easyorange-app=2
       RATE_LIMIT_FILTER_ENABLED: ${RATE_LIMIT_FILTER_ENABLED:-true}
+      # AI 预算存储：fullstack 是多实例形态（--scale easyorange-app=N），而本栈跑 dev profile，
+      # 基础 yaml 的 memory 默认值会让每个副本各记各的、日限被放大 N 倍——同 prod 口径（见
+      # application-prod.yaml 的 ai.budget.store）。单实例下 Redis 版与内存版判定式一致，无行为差异。
+      EASYORANGE_AI_BUDGET_STORE: redis
       # dev profile 默认启用 ES 搜索，容器内 DNS 名覆盖宿主机视角的 localhost
       ES_URIS: http://elasticsearch:9200
       # LLM trace 上报 → compose 内 Langfuse（host 视角 :3001，容器内 DNS 是 3000）
