@@ -36,9 +36,7 @@ public class ChatModelContentObservationFilter implements ObservationFilter {
 
             if (chat.getResponse() != null) {
                 List<String> completions = chat.getResponse().getResults().stream()
-                        .map(generation -> generation.getOutput() == null
-                                ? null
-                                : generation.getOutput().getText())
+                        .map(generation -> generation.getOutput().getText())
                         .filter(StringUtils::hasText)
                         .toList();
                 addHighCardinality(chat, COMPLETION_KEY, completions);

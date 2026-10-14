@@ -189,12 +189,10 @@ public class ModelSupport {
         return list;
     }
 
-    /** 模型文本输出；可能没有结果（流式分片尤其常见只有 metadata 没有 output），统一回退空串。 */
+    /** 模型文本输出；可能没有结果（流式分片尤其常见只有 metadata 没有 result），统一回退空串。 */
     private static String outputText(@Nullable ChatResponse response) {
         var result = response == null ? null : response.getResult();
-        return result == null || result.getOutput() == null
-                ? ""
-                : result.getOutput().getText();
+        return result == null ? "" : result.getOutput().getText();
     }
 
     private static CallOutcome<String> chatOutcome(@Nullable ChatResponse response) {
@@ -203,9 +201,7 @@ public class ModelSupport {
 
     /** 模型请求的工具调用（可能为空：模型直接回了文本）；供应商未回结果同样为空。 */
     private static List<AssistantMessage.ToolCall> toolCallsOf(@Nullable ChatResponse response) {
-        if (response == null
-                || response.getResult() == null
-                || response.getResult().getOutput() == null) {
+        if (response == null || response.getResult() == null) {
             return List.of();
         }
         return response.getResult().getOutput().getToolCalls();
@@ -249,8 +245,8 @@ public class ModelSupport {
     /** 继承模型的连接与模型名 —— 只设业务字段时 {@code model} 为 null，openai-java 回退到 SDK 默认模型名（{@code
      * gpt-5-mini}），非 OpenAI 供应商直接 404、AI 决策点整体静默降级。 */
     private static OpenAiChatOptions.Builder inheritConnection(OpenAiChatOptions.Builder builder, ChatModel chatModel) {
-        if (chatModel instanceof OpenAiChatModel openAiModel
-                && openAiModel.getDefaultOptions() instanceof OpenAiChatOptions defaults) {
+        if (chatModel instanceof OpenAiChatModel openAiModel) {
+            OpenAiChatOptions defaults = openAiModel.getOptions();
             builder.baseUrl(defaults.getBaseUrl()).apiKey(defaults.getApiKey()).model(defaults.getModel());
         }
         return builder;
