@@ -13,12 +13,9 @@ export {
     useCategories,
     useCreateProduct,
     useDeleteProduct,
-    useHotKeywords,
     useInfiniteProducts,
     useProduct,
-    useProductSearch,
     useProducts,
-    useSearchSuggestions,
     useSimilarProducts,
     useUpdateProduct,
 } from './product';

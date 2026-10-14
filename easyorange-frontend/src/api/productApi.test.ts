@@ -34,7 +34,6 @@ describe('productApi', () => {
     it.each([
         ['getProducts', () => productApi.getProducts(), '/products'],
         ['getMyProducts', () => productApi.getMyProducts(), '/products/my'],
-        ['searchProducts', () => productApi.searchProducts(), '/products/search'],
     ])('%s 把线上字符串 total 收敛成 number', async (_name, call, path) => {
         mockRequest.mockResolvedValue(pageOf('70'));
 

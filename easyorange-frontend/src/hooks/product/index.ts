@@ -8,4 +8,3 @@ export {
     useSimilarProducts,
     useUpdateProduct,
 } from './useProducts';
-export { useHotKeywords, useProductSearch, useSearchSuggestions } from './useSearch';

@@ -14,11 +14,8 @@ export type {
 export type {
     Category,
     CreateProductRequest,
-    FacetBucket,
     Product,
     ProductQueryParams,
-    ProductSearchParams,
-    ProductSearchResult,
     ProductStatus,
     UpdateProductRequest,
 } from './product';

@@ -94,37 +94,3 @@ export interface Category {
     status?: number;
     productCount?: number;
 }
-
-/** ES facet aggregation bucket（label：后端聚合出的展示名，分类为类目名、价格为区间文案） */
-export interface FacetBucket {
-    code: string;
-    label?: string;
-    count: number;
-}
-
-/** ES-powered product search result */
-export interface ProductSearchResult {
-    records: Product[];
-    total: number;
-    current: number;
-    size: number;
-    pages: number;
-    facets: FacetBucket[];
-}
-
-/** Product search query parameters for ES search */
-export interface ProductSearchParams {
-    keyword?: string;
-    categoryId?: string;
-    status?: number;
-    minPrice?: number;
-    maxPrice?: number;
-    conditionLevel?: number;
-    sort?: 'default' | 'price_asc' | 'price_desc' | 'newest';
-    /** 后端 /products/search 绑定的是 PageRequest.sortField（relevance 不传即可） */
-    sortField?: 'relevance' | 'newest' | 'price_asc' | 'price_desc' | 'popular';
-    pageNum?: number;
-    pageSize?: number;
-    /** 语义检索开关：打开且按相关度排序时启用 kNN + BM25 + RRF 混合召回 */
-    aiEnhanced?: boolean;
-}
