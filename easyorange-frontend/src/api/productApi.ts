@@ -34,7 +34,8 @@ export const productApi = {
     },
 
     getProductById(id: string) {
-        return request<RawProduct>(`/products/${id}`);
+        // 详情页未包 ProtectedRoute、按「匿名可逛」设计；缺 skipAuth 会让匿名访问 401 并被请求层强制跳登录
+        return request<RawProduct>(`/products/${id}`, { skipAuth: true });
     },
 
     createProduct(data: CreateProductRequest) {

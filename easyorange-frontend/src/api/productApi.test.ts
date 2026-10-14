@@ -55,4 +55,14 @@ describe('productApi', () => {
 
         expect(res.data?.total).toBe(0);
     });
+
+    // 详情页路由没包 ProtectedRoute、按「匿名可逛」设计。少带 skipAuth 时匿名 GET 会 401，
+    // 请求层的 handleUnauthorized 随即把用户弹去登录页——一条本该可匿名访问的公开读路径。
+    it('getProductById 走匿名可读的公开路径', () => {
+        mockRequest.mockResolvedValue({ code: 'A0000', message: '成功' });
+
+        productApi.getProductById('123');
+
+        expect(mockRequest).toHaveBeenCalledWith('/products/123', { skipAuth: true });
+    });
 });
