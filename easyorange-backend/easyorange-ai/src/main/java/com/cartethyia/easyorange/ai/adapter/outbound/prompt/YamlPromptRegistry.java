@@ -175,6 +175,8 @@ public class YamlPromptRegistry implements PromptRegistryPort {
             try {
                 result[i] = Integer.parseInt(parts[i]);
             } catch (NumberFormatException ignored) {
+                // 非数字段（如 "v1.0.0-SNAPSHOT" 的后缀）保持 0：只影响同模板多版本的排序，
+                // 不参与请求装配，也不做大小比较——留 0 比抛异常安全
             }
         }
         return result;
