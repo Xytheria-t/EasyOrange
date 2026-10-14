@@ -216,10 +216,12 @@ class ArchitectureRulesTest {
             .resideInAPackage("..mapper..")
             .because("Web/controller 层禁止直接依赖 mapper，必须经由 application 服务");
 
-    // ==================== Rule 9: 统一 SLF4J 日志 ====================
+    // ==================== Rule 9: 禁止 System.out / System.err ====================
 
     @ArchTest
     static final ArchRule no_standard_streams = NO_CLASSES_SHOULD_ACCESS_STANDARD_STREAMS;
+
+    // ==================== Rule 10: 禁止 e.printStackTrace() ====================
 
     @ArchTest
     static final ArchRule no_print_stack_trace = noClasses()
@@ -227,7 +229,7 @@ class ArchitectureRulesTest {
             .callMethod(Throwable.class, "printStackTrace")
             .because("禁止 e.printStackTrace() — 统一走 SLF4J(org.slf4j) 日志");
 
-    // ==================== Rule 10: 持久化技术异常不得越过端口 ====================
+    // ==================== Rule 11: 持久化技术异常不得越过端口 ====================
 
     @ArchTest
     static final ArchRule persistence_exceptions_stay_in_adapters = noClasses()
@@ -241,7 +243,7 @@ class ArchitectureRulesTest {
                     + "org.springframework.jdbc 一并禁是因为 application 层直连 JdbcTemplate + 内联 SQL 是绕过端口"
                     + "最省事也最难被发现的破口（历史上 FeedbackAppService / CostReportAppService 各出现过一处）");
 
-    // ==================== Rule 11: 每个模块一套领域异常层级 ====================
+    // ==================== Rule 12: 每个模块一套领域异常层级 ====================
 
     @ArchTest
     static void domain_exception_roots_are_unique_per_module(JavaClasses classes) {
