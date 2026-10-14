@@ -474,21 +474,6 @@ def main() -> int:
         done = [k for k in (["单点区块"] if block_changed else []) + scale_changed]
         print(f"[metrics-drift] FIXED 已回写：{'、'.join(done)}")
         return 0
-        region = block_region(SSOT.read_text(encoding="utf-8"))
-        assert region is not None
-        start, end = region
-        lines = SSOT.read_text(encoding="utf-8").splitlines(keepends=True)
-        body = "".join(lines[start:end])
-        patched = re.sub(
-            r"^```[a-z]*\n.*?^```",
-            f"```text\n{render_block(facts)}\n```",
-            body,
-            count=1,
-            flags=re.MULTILINE | re.DOTALL,
-        )
-        SSOT.write_text("".join(lines[:start]) + patched + "".join(lines[end:]), encoding="utf-8")
-        print(f"[metrics-drift] FIXED 已回写单点区块：{render_inline(facts)}")
-        return 0
 
     drift: list[str] = []
     scattered: list[str] = []
