@@ -198,18 +198,14 @@ public class ModelCallRecorder {
         }
     }
 
-    /** chat 响应的用量；无响应或无 metadata 时为 null。 */
+    /** chat 响应的用量；无响应时为 null。 */
     static @Nullable Usage usageOf(@Nullable ChatResponse response) {
-        return response == null || response.getMetadata() == null
-                ? null
-                : response.getMetadata().getUsage();
+        return response == null ? null : response.getMetadata().getUsage();
     }
 
     /** embedding 响应的用量挂在与 chat 同一套 metadata 结构上，取法一致。 */
     static @Nullable Usage usageOf(@Nullable EmbeddingResponse response) {
-        return response == null || response.getMetadata() == null
-                ? null
-                : response.getMetadata().getUsage();
+        return response == null ? null : response.getMetadata().getUsage();
     }
 
     /** 「供应商真的回报了 token」的判据 —— null、空壳、全 0 都算没回报，下游据此退化为按场景上限估算。 */
