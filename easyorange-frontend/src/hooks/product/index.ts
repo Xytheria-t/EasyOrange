@@ -1,4 +1,5 @@
 export {
+    PRODUCT_KEYS,
     useCategories,
     useCreateProduct,
     useDeleteProduct,

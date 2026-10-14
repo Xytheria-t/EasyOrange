@@ -45,7 +45,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Image, preloadImages } from '@/components/ui/Image';
 import { CONDITION_LABEL_MAP, STATUS_LABEL_MAP } from '@/constants';
-import { useCreateOrder, useProduct, useSimilarProducts } from '@/hooks';
+import { PRODUCT_KEYS, useCreateOrder, useProduct, useSimilarProducts } from '@/hooks';
 import { chatMessagesQueryKey, fetchChatMessages } from '@/hooks/chat/chatMessagesQuery';
 import { type OrderFormData, orderFormSchema } from '@/schemas/productDetailSchema';
 import { useAuthStore } from '@/store/authStore';
@@ -108,7 +108,7 @@ function ProductDetailPage() {
         },
         onSuccess: () => {
             addToast({ type: 'success', message: '已重新提交审核' });
-            queryClient.invalidateQueries({ queryKey: ['product', productId] });
+            queryClient.invalidateQueries({ queryKey: PRODUCT_KEYS.detail(productId) });
         },
         onError: () => {
             addToast({ type: 'error', message: '重新提交失败，请重试' });

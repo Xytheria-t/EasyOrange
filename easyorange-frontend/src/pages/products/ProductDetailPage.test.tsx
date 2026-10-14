@@ -57,6 +57,13 @@ vi.mock('@/hooks', () => ({
     useProduct: mockUseProduct,
     useSimilarProducts: mockUseSimilarProducts,
     useCreateOrder: mockUseCreateOrder,
+    // 页面用 PRODUCT_KEYS.detail 构造失效键，键的形状必须与 useProducts 同源，
+    // 否则这条断言会对着一个和生产缓存无关的 key 通过
+    PRODUCT_KEYS: {
+        all: ['products'] as const,
+        details: () => [...['products'], 'detail'] as const,
+        detail: (id: string) => [...['products'], 'detail', id] as const,
+    },
 }));
 
 vi.mock('@/store/authStore', () => ({
@@ -69,7 +76,7 @@ vi.mock('@/store/uiStore', () => ({
 
 vi.mock('react-router-dom', async () => {
     const actual = await vi.importActual('react-router-dom');
-    return { ...(actual as object), useNavigate: () => mockNavigate };
+    return { ...(actual as object), useNavigate: () => mockNavigate, useParams: () => ({ id: '123' }) };
 });
 
 vi.mock('@/api/favoriteApi', () => ({
@@ -298,6 +305,35 @@ describe('ProductDetailPage', () => {
         renderPage();
 
         expect(screen.getByText('修改并重新提交')).toBeInTheDocument();
+    });
+
+    it('重新提交审核后按 useProduct 的 key 失效缓存', async () => {
+        const product = createMockProduct({ sellerId: 'currentUser', status: 'REJECTED' });
+        mockUseProduct.mockReturnValue({ data: product, isLoading: false });
+        mockUseSimilarProducts.mockReturnValue({ data: [], isLoading: false });
+        mockUseAuthStore.mockReturnValue({
+            user: createMockUser({ userId: 'currentUser' }),
+            token: 'mock-token',
+            isAuthenticated: true,
+        });
+
+        const queryClient = createTestQueryClient();
+        const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
+        render(
+            <QueryClientProvider client={queryClient}>
+                <MemoryRouter initialEntries={['/products/123']}>
+                    <ProductDetailPage />
+                </MemoryRouter>
+            </QueryClientProvider>
+        );
+
+        await userEvent.click(screen.getByText('修改并重新提交'));
+
+        // 曾经的 bug：写成 ['product', id]——与 useProduct 实际用的 ['products','detail',id] 不匹配，
+        // 失效静默落空，详情页停在旧的 REJECTED 状态
+        expect(invalidateSpy).toHaveBeenCalledWith({
+            queryKey: ['products', 'detail', '123'],
+        });
     });
 
     it('shows contact seller button when user is not the owner', () => {

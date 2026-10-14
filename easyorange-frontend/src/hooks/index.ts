@@ -10,6 +10,7 @@ export {
     useSoldOrders,
 } from './order';
 export {
+    PRODUCT_KEYS,
     useCategories,
     useCreateProduct,
     useDeleteProduct,
