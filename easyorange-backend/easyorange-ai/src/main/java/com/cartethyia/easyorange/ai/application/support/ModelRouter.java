@@ -33,7 +33,7 @@ public class ModelRouter {
                 .routing()
                 .scenarios()
                 .getOrDefault(scenario, aiProperties.routing().defaultModel());
-        // 场景键缺失回 default-model 是设计内路径；键配了但 bean 解析不到是配置错误 —— 静默回退 primary
+        // 角色键缺失回 default-model 是设计内路径；键配了但 bean 解析不到是配置错误 —— 静默回退 primary
         // 会把「vision 配错」伪装成「图片分析走文本模型」，fail-fast 让错误显式暴露
         try {
             return applicationContext.getBean(beanName, ChatModel.class);

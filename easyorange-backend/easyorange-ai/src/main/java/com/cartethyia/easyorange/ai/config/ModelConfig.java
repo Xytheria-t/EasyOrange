@@ -78,7 +78,7 @@ public class ModelConfig {
     }
 
     /**
-     * 评审模型（LLM-as-Judge）— 金标准集回归的打分员，由 {@code judge} 场景路由到这里。
+     * 评审模型（LLM-as-Judge）— 金标准集回归的打分员，由 {@code judge} 路由角色指向这里。
      * 与生成模型分家族的理由：同一模型给自己风格的输出打分系统性偏高，Judge 分数要对外可引用
      * 就必须换评审员；默认落百炼qwen（与视觉槽同账号同 key），换评审员只改 yaml。
      */

@@ -11,8 +11,8 @@ import tools.jackson.databind.ObjectMapper;
 /**
  * LLM-as-Judge 评审器 — 用 ChatModel 给 AI 输出打 1-5 分，唯一消费方是金标准集回归
  * （{@link GoldenSetEvaluator}，CI 的 {@code ai-eval.yml} 触发），与检索指标共同构成 EvalGate 双门禁；
- * 调用不落调用日志（避免「谁来评估评估者」的套娃）。评审模型走场景路由（{@code judge}）：自评有偏差
- * （同一模型倾向给自己风格的输出高分），场景名在 {@link ModelRouter} 单点定义，换评审模型只改 yaml。
+ * 调用不落调用日志（避免「谁来评估评估者」的套娃）。评审模型走 {@code judge} 路由角色：自评有偏差
+ * （同一模型倾向给自己风格的输出高分），角色名在 {@link ModelRouter} 单点定义，换评审模型只改 yaml。
  * <p>
  * 只保留「对照参考回答评审」一条：chat 用例在 {@code GoldenSetLoader} 加载期就强制要求
  * {@code reference_answer}，无参考回答的通用评分标准没有生产可达路径，留着只是一份改不到、也测不到的旁支口径。

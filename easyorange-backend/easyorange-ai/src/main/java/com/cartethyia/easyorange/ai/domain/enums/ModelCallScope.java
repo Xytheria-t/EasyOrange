@@ -4,10 +4,12 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * AI 调用场景 — 一次模型调用属于哪条业务链路；场景名（枚举名小写）在限流、预算、缓存键三处必须一致，
+ * AI 调用归属的业务链路 — 一次模型调用属于哪条链路；枚举名（小写）在限流、预算、缓存键三处必须一致，
  * 否则治理各算各的：{@link #budgetScenario()} 对 {@code easyorange.ai.budget.scenarios} 的键与
  * {@code @TokenBudget(scenario=...)}，{@link #rateLimitKeyPrefix()} 对令牌桶 key，{@code uriSuffix} 对
  * HTTP 入口映射（{@link #fromUri}）。
+ * <p>
+ * 与模型路由是两条轴（{@code ModelRouter} 按任务性质选模型）：本枚举归的是成本与限流的账，不决定用哪个模型。
  */
 @Getter
 @RequiredArgsConstructor

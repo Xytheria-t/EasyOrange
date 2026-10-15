@@ -141,7 +141,7 @@ public record AiProperties(
     }
 
     /**
-     * 模型路由配置 — 键为场景名（常量定义见 {@link ModelRouter}），值为 Spring bean 名；未配置的场景
+     * 模型路由配置 — 键为模型角色名（常量定义见 {@link ModelRouter}），值为 Spring bean 名；未配置的角色
      * 回退 {@code defaultModel}，换模型只改配置代码零改动，judge 指向独立评审模型即可消除自评偏差。
      */
     public record Routing(@DefaultValue("chatModel") String defaultModel, Map<String, String> scenarios) {

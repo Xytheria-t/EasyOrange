@@ -192,7 +192,7 @@
 | **tool_call / tool_call_id** | 模型回复里「请调哪个函数、传什么参数」的请求，每条带唯一编号；执行结果回填时必须带回同一编号配对。 | 一轮回填 = 1 条 assistant（`tool_calls` 数组）+ N 条回执；少一条配对供应商直接 400 |
 | **工具 schema** | 工具说明书：叫什么、收什么参数、返回什么，随请求下发给模型。 | 由 `ChatTools` 的 `@Tool` 注解生成；模型照它决定调哪个、传什么参数 |
 | **ChatModel / ChatClient** | Spring AI 两个入口：`ChatModel` 只调模型，`ChatClient` 会替你把工具也执行掉。 | 工具循环用 `ChatModel`——执行权与循环控制权必须在编排器手里 |
-| **模型路由** | 一个应用挂多个模型实例，按「场景名」取用；换模型改配置不改代码。 | `ModelRouter` 按 yaml 场景名取 bean：`decision`→decisionChatModel / `vision`→visionChatModel / `judge`→judgeChatModel，未配场景回落 `default-model`（chatModel），bean 名配错当场抛错不静默回退。与评估里的「路由准确率」（模型选工具）不同义 |
+| **模型路由** | 一个应用挂多个模型实例，按「模型角色」取用；换模型改配置不改代码。 | `ModelRouter` 按 yaml 里配的角色名取 bean：`decision`→decisionChatModel / `vision`→visionChatModel / `judge`→judgeChatModel，未配角色回落 `default-model`（chatModel），bean 名配错当场抛错不静默回退。与评估里的「路由准确率」（模型选工具）不同义 |
 | **KV cache / 前缀缓存** | 供应商缓存「前缀没变的部分」，下次只按新增部分计费；前缀动一个字节，折扣全作废。 | 首两条消息固定、轮间只在尾部追加，才吃得到折扣（`ToolLoopTranscript` javadoc） |
 | **SSE / 流式** | 边生成边推给前端：一次 HTTP 长连接持续吐事件；选它不选 WebSocket——单向 + 自带重连。 | 最终回答走流式口；循环每步还推 SSE step 事件给前端画步骤 |
 | **幻觉** | 模型编造出看起来合理但不存在的事实。 | 引用溯源（答案带 `[来源:标题]`）让幻觉当场可核 |
