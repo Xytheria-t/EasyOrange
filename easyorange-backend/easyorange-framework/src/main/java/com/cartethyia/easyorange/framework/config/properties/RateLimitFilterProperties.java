@@ -64,7 +64,8 @@ public record RateLimitFilterProperties(
 
     /**
      * @param intervalMs 防重间隔（毫秒）
-     * @param methods 需要防重的 HTTP 方法（不区分大小写）；为空表示所有写操作方法
+     * @param methods 需要防重的 HTTP 方法（不区分大小写）；为空表示所有写操作方法。只有写方法真正生效 ——
+     *     防重键含请求体 hash，非写方法不缓存 body，配了也不会触发
      * @param excludePathPatterns 豁免路径（Ant 风格）——机器协议端点（如 MCP 的 /mcp）重复请求体是协议内合法行为
      *     （JSON-RPC 超时重试复用同一请求体），拦掉会把 client 卡死在错误循环里
      */

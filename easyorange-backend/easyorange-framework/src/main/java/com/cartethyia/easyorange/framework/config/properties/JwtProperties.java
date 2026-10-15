@@ -19,7 +19,6 @@ import org.springframework.validation.annotation.Validated;
  * @param refreshCookiePath Refresh Token Cookie 生效路径（建议收窄到 auth 端点）
  * @param refreshCookieSecure Refresh Token Cookie 是否带 Secure 标志（生产必须 true；本地 http 开发设 false）
  * @param refreshCookieSameSite Refresh Token Cookie SameSite 策略，{@code OMITTED} 表示不输出该属性
- * @author cartethyia
  */
 @Validated
 @ConfigurationProperties(prefix = "jwt")

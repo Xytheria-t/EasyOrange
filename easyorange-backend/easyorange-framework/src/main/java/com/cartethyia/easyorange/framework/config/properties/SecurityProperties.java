@@ -38,17 +38,13 @@ public record SecurityProperties(
         int passwordEncoderStrength) {
 
     public SecurityProperties {
-        ignorePaths = copyOrEmpty(ignorePaths);
-        productPaths = copyOrEmpty(productPaths);
-        staticPaths = copyOrEmpty(staticPaths);
-        allowedOrigins = copyOrEmpty(allowedOrigins);
+        ignorePaths = ignorePaths == null ? List.of() : List.copyOf(ignorePaths);
+        productPaths = productPaths == null ? List.of() : List.copyOf(productPaths);
+        staticPaths = staticPaths == null ? List.of() : List.copyOf(staticPaths);
+        allowedOrigins = allowedOrigins == null ? List.of() : List.copyOf(allowedOrigins);
         csrfProtectedPaths = csrfProtectedPaths == null
                 ? List.of("/api/auth/refresh", "/api/auth/logout")
                 : List.copyOf(csrfProtectedPaths);
-    }
-
-    private static List<String> copyOrEmpty(List<String> paths) {
-        return paths == null ? List.of() : List.copyOf(paths);
     }
 
     /**

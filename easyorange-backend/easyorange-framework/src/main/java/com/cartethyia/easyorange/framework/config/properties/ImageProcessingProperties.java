@@ -12,6 +12,8 @@ import org.springframework.validation.annotation.Validated;
  * <p>默认输出质量与响应式尺寸由 {@code FileController} 的 {@code q} / {@code w} 请求参数按次决定，
  * 属于「调用方要什么就给什么」而非「服务端统一策略」；渐进式 JPEG 与智能裁剪尚未实现。
  * 这几项曾以配置项形态存在但无任何消费方，读配置的人会误以为功能已生效，故不再声明。
+ *
+ * @param thumbnailQuality 缩略图 JPEG 输出质量（0~1）
  */
 @Validated
 @ConfigurationProperties(prefix = "easyorange.file.image")

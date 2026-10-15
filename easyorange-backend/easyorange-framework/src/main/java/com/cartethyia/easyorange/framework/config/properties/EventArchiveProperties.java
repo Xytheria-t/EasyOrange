@@ -10,7 +10,7 @@ import org.springframework.validation.annotation.Validated;
  *
  * <p>控制 Spring Modulith {@code EVENT_PUBLICATION} 中已完成事件的归档时机：
  * 超过保留天数的 COMPLETED 行由 {@code EventPublicationArchiveTask} 搬入
- * {@code EVENT_PUBLICATION_ARCHIVE} 后从源表删除（同事务）。</p>
+ * {@code EVENT_PUBLICATION_ARCHIVE} 后从源表删除（同事务）。
  *
  * @param archiveAfterDays 已完成事件在源表的保留天数，超期归档
  */
