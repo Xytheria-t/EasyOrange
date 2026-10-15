@@ -12,7 +12,7 @@ import org.springframework.validation.annotation.Validated;
  * 路径模式 + 写方法约定式启用，零注解覆盖。
  *
  * @param pathPatterns 启用幂等的路径模式（Ant 风格，如 {@code /api/orders}）；空列表视为不启用
- * @param methods 启用幂等的 HTTP 方法；未配置时默认 POST/PUT/PATCH
+ * @param methods 启用幂等的 HTTP 方法（不区分大小写）；未配置时默认 POST/PUT/PATCH
  * @param defaultTtlSeconds 缓存 TTL（秒），默认 86400 即 24 小时
  * @param lockTtlSeconds 处理锁 TTL（秒）；超时仍未完成视为持有者崩溃，允许其它请求重新执行
  * @param lockPollIntervalMs 输家轮询等待赢家结果的间隔（毫秒）

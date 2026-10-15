@@ -41,7 +41,7 @@ public class IdempotencyKeyFilter extends OncePerRequestFilter {
         if (!properties.enabled()) {
             return true;
         }
-        if (!properties.methods().contains(request.getMethod())) {
+        if (properties.methods().stream().noneMatch(m -> m.equalsIgnoreCase(request.getMethod()))) {
             return true;
         }
         String key = request.getHeader(properties.headerName());

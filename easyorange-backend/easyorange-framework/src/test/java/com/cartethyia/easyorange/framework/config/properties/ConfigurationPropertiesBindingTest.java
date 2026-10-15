@@ -94,6 +94,29 @@ class ConfigurationPropertiesBindingTest {
     }
 
     @Test
+    @DisplayName("HTTP 方法列表：标量与逗号串都是合法写法（yml 写 methods: GET 不是绑定错误，逗号串按元素拆开）")
+    void bindsHttpMethodListFromScalarAndDelimitedString() {
+        runner.withPropertyValues(
+                        "rate-limit-filter.rules[0].path-pattern=/api/**",
+                        "rate-limit-filter.rules[0].methods=GET",
+                        "rate-limit-filter.repeat-submit.methods=get,post",
+                        "idempotency.methods=post")
+                .run(context -> {
+                    assertThat(context.getBean(RateLimitFilterProperties.class)
+                                    .rules()
+                                    .getFirst()
+                                    .methods())
+                            .containsExactly("GET");
+                    assertThat(context.getBean(RateLimitFilterProperties.class)
+                                    .repeatSubmit()
+                                    .methods())
+                            .containsExactly("get", "post");
+                    assertThat(context.getBean(IdempotencyProperties.class).methods())
+                            .containsExactly("post");
+                });
+    }
+
+    @Test
     @DisplayName("项目前缀生效：easyorange.mybatis-plus 与 MyBatis-Plus 自身的 mybatis-plus 前缀各绑各的")
     void bindsProjectScopedPrefix() {
         runner.withPropertyValues("easyorange.mybatis-plus.max-limit=50")
