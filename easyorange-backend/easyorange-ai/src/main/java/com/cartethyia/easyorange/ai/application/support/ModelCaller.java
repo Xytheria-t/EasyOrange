@@ -55,10 +55,12 @@ public class ModelCaller {
 
     // ── 文本生成 ──
 
+    /** 文本生成：system + user 两条消息，最常用的一档。 */
     public String callText(ChatModel chatModel, ModelCallScope scope, String systemPrompt, String userMessage) {
         return callText(chatModel, scope, systemUser(systemPrompt, userMessage));
     }
 
+    /** 文本生成：消息列表由调用方给全。 */
     public String callText(ChatModel chatModel, ModelCallScope scope, List<Message> messages) {
         return callRecorder.record(
                 scope,

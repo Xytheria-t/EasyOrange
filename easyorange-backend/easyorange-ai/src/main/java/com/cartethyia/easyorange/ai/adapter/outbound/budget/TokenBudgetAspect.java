@@ -30,6 +30,7 @@ public class TokenBudgetAspect {
     private final TokenBudgetGuard tokenBudgetGuard;
 
     @Around("@annotation(tokenBudget)")
+    /** 切面入口：调目标方法前原子预留；预留失败即抛异常、目标方法不执行。 */
     public Object aroundBudget(ProceedingJoinPoint pjp, TokenBudget tokenBudget) throws Throwable {
         var scenario = tokenBudget.scenario();
         var budget = tokenBudgetGuard.resolve(scenario, tokenBudget.maxTokensPerCall(), tokenBudget.dailyTokenLimit());

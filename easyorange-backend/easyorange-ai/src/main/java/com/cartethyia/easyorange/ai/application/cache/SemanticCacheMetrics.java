@@ -49,6 +49,7 @@ public class SemanticCacheMetrics {
         }
     }
 
+    /** 记一次缓存结局 —— 四结局各自计数，命中率分母只由 hit + miss 构成。 */
     public void record(Outcome outcome) {
         counters.get(outcome).increment();
     }

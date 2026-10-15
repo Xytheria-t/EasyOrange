@@ -34,6 +34,7 @@ public class GoldenSetLoader {
     /** 发布链路路由用例的 scope 值（多步工具循环，只跑循环不生成）。 */
     public static final String SCOPE_LISTING = "listing";
 
+    /** 读 eval/golden-set.yaml 成用例集；缺 cases 段即报错。 */
     public GoldenSet load() {
         try (var in = new ClassPathResource(GOLDEN_SET_PATH).getInputStream()) {
             Map<String, Object> root = new Yaml().load(in);

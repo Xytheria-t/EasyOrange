@@ -17,6 +17,7 @@ public class ListingAdoptionAppService {
     private final ListingAdoptionPort adoptionPort;
 
     @Transactional(readOnly = true)
+    /** 读采纳率报表（只读委托，口径在端口实现侧）。 */
     public ListingAdoptionReport report() {
         return adoptionPort.report();
     }

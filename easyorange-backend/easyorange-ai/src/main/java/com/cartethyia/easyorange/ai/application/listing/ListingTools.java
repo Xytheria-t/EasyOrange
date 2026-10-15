@@ -97,6 +97,7 @@ public class ListingTools {
             description = "对已召回的在售资产算行情（在售件数 / 均价 / 价格区间），作为建议售价的依据。"
                     + "必须在 product_search 之后的轮次调用（同一轮里它会排在 product_search 前面而统计到空集）",
             resultConverter = RetrievalObservations.ObservationTextConverter.class)
+    /** 对资产累加器里的召回物算行情，零模型调用；累加器为空即统计到空集。 */
     public String summarizeMarketPrice(@ToolParam(description = "本步理由，不超过 20 字的中文概括") String thought) {
         return RetrievalObservations.priceStatsObservation(assetHits);
     }
@@ -105,6 +106,7 @@ public class ListingTools {
             name = TOOL_LIST_CATEGORIES,
             description = "取平台可用分类清单；产出上架信息时 categoryName 必须原样取自这份清单",
             resultConverter = RetrievalObservations.ObservationTextConverter.class)
+    /** 取平台可用分类清单原样回给模型；平台没配分类时给空集提示。 */
     public String listCategories(@ToolParam(description = "本步理由，不超过 20 字的中文概括") String thought) {
         List<String> categories = categoryCatalogPort.listAvailableCategoryNames();
         if (categories.isEmpty()) {
@@ -114,6 +116,7 @@ public class ListingTools {
     }
 
     @Tool(name = TOOL_FINISH, description = "合规结论与行情基准已足够产出上架信息，不再调用任何工具")
+    /** 收敛信号 —— 模型调它即表示信息已够；本方法无副作用，参数只进 schema。 */
     public String finish(@ToolParam(description = "收敛理由，不超过 20 字的中文概括") String thought) {
         // 方法体永不执行，只为让 finish 出现在发给供应商的工具 schema 里
         return TOOL_FINISH;

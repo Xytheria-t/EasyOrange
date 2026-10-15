@@ -40,12 +40,14 @@ public final class RetrievalObservations {
         return foundCount > 0 && (double) alreadySeenCount / foundCount >= 0.6;
     }
 
+    /** 只留本轮新命中的知识（累加器里已有的滤掉）。 */
     public static List<KnowledgeHit> freshKnowledge(List<KnowledgeHit> accumulated, List<KnowledgeHit> found) {
         Set<String> seen =
                 accumulated.stream().map(RetrievalObservations::knowledgeHitId).collect(Collectors.toSet());
         return found.stream().filter(hit -> seen.add(knowledgeHitId(hit))).collect(Collectors.toList());
     }
 
+    /** 只留本轮新命中的资产（累加器里已有的滤掉）。 */
     public static List<AssetHit> freshAssets(List<AssetHit> accumulated, List<AssetHit> found) {
         Set<String> seen =
                 accumulated.stream().map(RetrievalObservations::assetHitId).collect(Collectors.toSet());
@@ -55,6 +57,7 @@ public final class RetrievalObservations {
     /** 一次检索的工具产物 — fresh 追加进累加器、observation 回给模型；fresh 在判冗余前算好，两步共用一次判定。 */
     public record SearchTurn<T>(List<T> fresh, String observation) {}
 
+    /** 知识检索一轮的产物：新增项 + 回给模型的观察（整体重复时换成「无新增」文案）。 */
     public static SearchTurn<KnowledgeHit> knowledgeTurn(List<KnowledgeHit> accumulated, List<KnowledgeHit> found) {
         List<KnowledgeHit> fresh = freshKnowledge(accumulated, found);
         String observation = isRedundant(found.size() - fresh.size(), found.size())
@@ -63,6 +66,7 @@ public final class RetrievalObservations {
         return new SearchTurn<>(fresh, observation);
     }
 
+    /** 资产检索一轮的产物：新增项 + 回给模型的观察（整体重复时换成「无新增」文案）。 */
     public static SearchTurn<AssetHit> assetTurn(List<AssetHit> accumulated, List<AssetHit> found) {
         List<AssetHit> fresh = freshAssets(accumulated, found);
         String observation = isRedundant(found.size() - fresh.size(), found.size())
@@ -71,6 +75,7 @@ public final class RetrievalObservations {
         return new SearchTurn<>(fresh, observation);
     }
 
+    /** 知识命中的观察文本：命中数 + 前几条标题；空集提示换词或 finish。 */
     public static String knowledgeObservation(List<KnowledgeHit> found) {
         if (found.isEmpty()) {
             return "知识库未命中，可换关键词重试或直接 finish";
@@ -82,6 +87,7 @@ public final class RetrievalObservations {
         return "命中 %d 条：%s".formatted(found.size(), titles);
     }
 
+    /** 资产命中的观察文本：条数 + 前几件的 [id] 标题 价格；价格缺失显示「面议」。 */
     public static String assetObservation(List<AssetHit> found) {
         if (found.isEmpty()) {
             return "在售资产未召回，可换更宽泛的关键词重试或直接 finish";

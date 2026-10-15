@@ -31,6 +31,7 @@ public class ModelRouter {
     private final AiProperties aiProperties;
     private final ApplicationContext applicationContext;
 
+    /** 取该角色对应的模型 bean。 */
     public ChatModel choose(String scenario) {
         String beanName = aiProperties
                 .routing()

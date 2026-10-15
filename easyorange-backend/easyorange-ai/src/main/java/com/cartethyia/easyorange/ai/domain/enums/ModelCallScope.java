@@ -30,6 +30,7 @@ public enum ModelCallScope {
     /** 限流拦截器 URI 片段 — fromUri 按 {@code /api/ + uriSuffix} 路径段精确匹配，禁子串（防未来 URI 意外命中）。 */
     private final String uriSuffix;
 
+    /** 请求 URI → 业务链路；路径段精确匹配，认不出来按 chat 记。 */
     public static ModelCallScope fromUri(String uri) {
         if (uri == null) return CHAT;
         for (var scope : values()) {

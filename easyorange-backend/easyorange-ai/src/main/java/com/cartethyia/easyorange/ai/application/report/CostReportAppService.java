@@ -22,6 +22,7 @@ public class CostReportAppService {
     private final CostReportPort costReportPort;
     private final AiPricingProperties pricing;
 
+    /** 近 N 小时的成本报表 —— 窗口入参先夹到合法区间，再按 token 换算出金额。 */
     public List<CostReportRow> report(int hours) {
         return costReportPort.report(clampWindow(hours)).stream()
                 .map(this::withCost)
