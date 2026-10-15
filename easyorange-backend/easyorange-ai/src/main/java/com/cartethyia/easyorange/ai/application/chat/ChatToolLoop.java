@@ -28,10 +28,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
- * 买家侧多步工具调用循环（ReAct）— 找货对话的编排器：注入首轮上下文、工具面与降级口径，循环机制交给 {@link ToolLoopKernel}
- * （与 listing 链路共用）。
+ * 买家「找货对话」的多步工具循环（ReAct 编排器）—— 一次提问进来，逐轮「决策 → 执行工具 → 回填观察」，直到模型收敛。
  * <p>
- * 降级口径 = 已积累观察不丢弃：轮数 / 预算超限用观察直接生成；决策失败补一次检索（白名单未含检索的消融臂跳过 —— 补检索会把该臂的检索来源加回来）。
+ * 在链路里的位置：上游 {@code ChatAppService} 装配好问题、历史、偏好与工具白名单传进来；循环机制（for 循环、四条出口、
+ * 协议回填）在 {@link ToolLoopKernel}，与卖家发布链路共用。本类只提供「买家这条链路的口径」：system prompt、首轮上下文、
+ * 工具面、轮数上限、预算判定与降级动作；不写循环、不调模型、不查库。
+ * <p>
+ * 降级口径 = 已积累观察不丢弃：轮数 / 预算超限 → 用已积累观察直接生成；决策失败 → 补一次检索（白名单未含检索的消融臂
+ * 跳过 —— 补检索会把该臂的检索来源加回来）。
  */
 @Slf4j
 @Component
@@ -127,12 +131,14 @@ public class ChatToolLoop {
 
     // ── 入口与装配 ──
 
+    /** 入口：跑完一次完整的多步循环，返回召回物（知识 / 资产 / 详情）与出口、轮数、工具轨迹。 */
     public Result run(Input input) {
         ChatTools tools = toolsFactory.create(attributedUserId(input));
         ToolLoopKernel.Result result = loopKernel.run(spec(input, tools), roundDecider());
         return Result.of(tools, result.outcome(), result.rounds(), result.toolPath());
     }
 
+    /** 组装内核所需的规格 —— 十项按位置对应 {@link ToolLoopKernel.Spec} 的十个字段。 */
     private ToolLoopKernel.Spec spec(Input input, ChatTools tools) {
         return new ToolLoopKernel.Spec(
                 promptRegistry.require(CHAT_TOOL_PROMPT),
