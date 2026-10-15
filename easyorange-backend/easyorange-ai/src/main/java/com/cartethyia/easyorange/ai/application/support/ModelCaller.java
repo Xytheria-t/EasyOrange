@@ -21,8 +21,8 @@ import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.embedding.Embedding;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.openai.OpenAiChatModel;
@@ -32,8 +32,8 @@ import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * Spring AI 调用小工具 — 收敛 system+user 双消息、JSON 结构化输出、原生 tool calling、Embedding、多模态结构化输出
- * 几类重复调用模式，避免每个服务重复组装 {@link Prompt}。
+ * 所有 LLM / Embedding 调用的唯一入口 —— 收敛 system+user 双消息、JSON 结构化输出、原生 tool calling、Embedding、
+ * 多模态结构化输出几类重复调用模式，避免每个服务重复组装 {@link Prompt}。
  * <p>
  * 带 {@link ModelCallScope} 的方法一律经 {@link ModelCallRecorder} 执行（落 eo_ai_call_log 与场景预算记账），治理出口唯一；
  * 唯一例外是 {@link #callJson}，专供 LLM-as-Judge 离线评估、刻意不记账。按角色分隔多轮消息走 {@link
@@ -51,6 +51,8 @@ public class ModelCaller {
     private final AiProperties aiProperties;
     private final ObjectMapper objectMapper;
 
+    // ── 文本生成 ──
+
     public String callText(ChatModel chatModel, ModelCallScope scope, String systemPrompt, String userMessage) {
         return callText(chatModel, scope, systemUser(systemPrompt, userMessage));
     }
@@ -61,23 +63,6 @@ public class ModelCaller {
                 chatModel,
                 joinTexts(messages),
                 () -> chatOutcome(chatModel.call(new Prompt(messages, scopedOptions(chatModel, scope)))));
-    }
-
-    /** JSON 结构化输出（唯一不记账的调用）：追加 {@code response_format=json_object}，解析与降级由调用方承担。唯一调用方
-     * {@code Judge} 只在金标准集回归跑批里跑，记账会让成本报表套娃、还要额外配评估场景预算，故刻意账外。 */
-    public String callJson(ChatModel chatModel, String systemPrompt, String userMessage) {
-        return outputText(
-                chatModel.call(new Prompt(systemUser(systemPrompt, userMessage), jsonOptions(chatModel, null))));
-    }
-
-    /** 原生 tool calling（带记账）：空列表 = 模型没调工具，由调用方按决策失败处理；只发请求不执行工具。 */
-    public List<AssistantMessage.ToolCall> callWithTools(
-            ChatModel chatModel, ModelCallScope scope, List<Message> messages, List<ToolCallback> toolCallbacks) {
-        return callRecorder.record(scope, chatModel, joinTexts(messages), () -> {
-            ChatResponse response =
-                    chatModel.call(new Prompt(messages, toolOptions(chatModel, toolCallbacks, maxTokensOf(scope))));
-            return new CallOutcome<>(toolCallsOf(response), usageOf(response));
-        });
     }
 
     /** 流式文本生成：逐 token 回调，阻塞至流结束返回完整文本；记账口径同 {@link #callText}（Judge 不走流式调用）。 */
@@ -99,7 +84,7 @@ public class ModelCaller {
                 chatModel.stream(new Prompt(messages, scopedOptions(chatModel, scope)))
                         .doOnNext(response -> {
                             usage.accept(response);
-                            String token = outputText(response);
+                            String token = textOf(response);
                             if (!token.isEmpty()) {
                                 collected.append(token);
                                 tokenConsumer.accept(token);
@@ -114,26 +99,22 @@ public class ModelCaller {
         });
     }
 
-    /** 文本向量化（ES kNN 需要的 {@code List<Float>} 形态），响应不落库只记成功与否。必须走 {@code embedForResponse}：
-     * {@code embed(String)} 把 metadata 丢在中间层、usage 取不到，报表里 embedding 一行永远是 0。 */
-    public List<Float> embed(EmbeddingModel embeddingModel, ModelCallScope scope, String text) {
-        // 加前缀把 embedding 与 chat 的 prompt 摘要在报表里隔开，同段文本两种调用的 hash 不撞
-        return callRecorder.record(scope, embeddingModel, "embed:" + text, () -> {
-            EmbeddingResponse response = embeddingModel.embedForResponse(List.of(text));
-            return new CallOutcome<>(toFloatList(response.getResult().getOutput()), usageOf(response));
+    // ── 工具调用与结构化输出 ──
+
+    /** 原生 tool calling（带记账）：空列表 = 模型没调工具，由调用方按决策失败处理；只发请求不执行工具。 */
+    public List<AssistantMessage.ToolCall> callWithTools(
+            ChatModel chatModel, ModelCallScope scope, List<Message> messages, List<ToolCallback> toolCallbacks) {
+        return callRecorder.record(scope, chatModel, joinTexts(messages), () -> {
+            ChatResponse response =
+                    chatModel.call(new Prompt(messages, toolOptions(chatModel, toolCallbacks, maxTokensOf(scope))));
+            return new CallOutcome<>(toolCallsOf(response), usageOf(response));
         });
     }
 
-    /** 批量向量化 — 整批一条供应商调用、一条记账日志（摄取侧一次 N 块），返回顺序与入参一致；失败整批抛出。 */
-    public List<List<Float>> embedBatch(EmbeddingModel embeddingModel, ModelCallScope scope, List<String> texts) {
-        return callRecorder.record(scope, embeddingModel, "embed-batch:" + texts.size() + " items", () -> {
-            EmbeddingResponse response = embeddingModel.embedForResponse(texts);
-            var vectors = new ArrayList<List<Float>>(texts.size());
-            for (Embedding embedding : response.getResults()) {
-                vectors.add(toFloatList(embedding.getOutput()));
-            }
-            return new CallOutcome<>(List.copyOf(vectors), usageOf(response));
-        });
+    /** JSON 结构化输出（唯一不记账的调用）：追加 {@code response_format=json_object}，解析与降级由调用方承担。唯一调用方
+     * {@code Judge} 只在金标准集回归跑批里跑，记账会让成本报表套娃、还要额外配评估场景预算，故刻意账外。 */
+    public String callJson(ChatModel chatModel, String systemPrompt, String userMessage) {
+        return textOf(chatModel.call(new Prompt(systemUser(systemPrompt, userMessage), jsonOptions(chatModel, null))));
     }
 
     /** 多模态结构化输出：图片与「要哪些字段」同一次请求给到视觉模型。刻意不做「视觉模型写自由文本、文本模型再转
@@ -154,9 +135,74 @@ public class ModelCaller {
                 chatModel,
                 systemPrompt + userText,
                 () -> chatOutcome(chatModel.call(new Prompt(
-                        List.of(new SystemMessage(systemPrompt), userMessage),
-                        jsonOptions(chatModel, maxTokensOf(scope))))));
+                        systemUser(systemPrompt, userMessage), jsonOptions(chatModel, maxTokensOf(scope))))));
         return parseJson(scope, json, responseType);
+    }
+
+    // ── 向量化 ──
+
+    /** 文本向量化（ES kNN 需要的 {@code List<Float>} 形态），响应不落库只记成功与否。必须走 {@code embedForResponse}：
+     * {@code embed(String)} 把 metadata 丢在中间层、usage 取不到，报表里 embedding 一行永远是 0。 */
+    public List<Float> embed(EmbeddingModel embeddingModel, ModelCallScope scope, String text) {
+        // 加前缀把 embedding 与 chat 的 prompt 摘要在报表里隔开，同段文本两种调用的 hash 不撞
+        return callRecorder.record(scope, embeddingModel, "embed:" + text, () -> {
+            EmbeddingResponse response = embeddingModel.embedForResponse(List.of(text));
+            return new CallOutcome<>(toFloatList(response.getResult().getOutput()), usageOf(response));
+        });
+    }
+
+    /** 批量向量化 — 整批一条供应商调用、一条记账日志（摄取侧一次 N 块），返回顺序与入参一致；失败整批抛出。 */
+    public List<List<Float>> embedBatch(EmbeddingModel embeddingModel, ModelCallScope scope, List<String> texts) {
+        return callRecorder.record(scope, embeddingModel, "embed-batch:" + texts.size() + " items", () -> {
+            EmbeddingResponse response = embeddingModel.embedForResponse(texts);
+            var vectors = response.getResults().stream()
+                    .map(embedding -> toFloatList(embedding.getOutput()))
+                    .toList();
+            return new CallOutcome<>(vectors, usageOf(response));
+        });
+    }
+
+    // ── 消息与响应搬运 ──
+
+    private static List<Message> systemUser(String systemPrompt, String userMessage) {
+        return systemUser(systemPrompt, new UserMessage(userMessage));
+    }
+
+    private static List<Message> systemUser(String systemPrompt, Message userMessage) {
+        return List.of(new SystemMessage(systemPrompt), userMessage);
+    }
+
+    private static String joinTexts(List<Message> messages) {
+        return messages.stream().map(Message::getText).collect(Collectors.joining("\n"));
+    }
+
+    /** 响应的结果槽位；没有结果时为 null（流式分片尤其常见只有 metadata 没有 result），两个取值方法共用这一处判空。 */
+    private static @Nullable Generation resultOf(@Nullable ChatResponse response) {
+        return response == null ? null : response.getResult();
+    }
+
+    /** 模型文本输出；没有结果时回退空串。 */
+    private static String textOf(@Nullable ChatResponse response) {
+        var result = resultOf(response);
+        return result == null ? "" : result.getOutput().getText();
+    }
+
+    private static CallOutcome<String> chatOutcome(@Nullable ChatResponse response) {
+        return new CallOutcome<>(textOf(response), usageOf(response));
+    }
+
+    /** 模型请求的工具调用（可能为空：模型直接回了文本）；供应商未回结果同样为空。 */
+    private static List<AssistantMessage.ToolCall> toolCallsOf(@Nullable ChatResponse response) {
+        var result = resultOf(response);
+        return result == null ? List.of() : result.getOutput().getToolCalls();
+    }
+
+    private static List<Float> toFloatList(float[] vector) {
+        var list = new ArrayList<Float>(vector.length);
+        for (float value : vector) {
+            list.add(value);
+        }
+        return list;
     }
 
     /** 解析模型返回的 JSON；空内容或解析失败返回 empty（调用方据此降级，不打断业务链路）；不合 schema 与「模型不可用」同一结果，需要区分用 {@link #callJson}。 */
@@ -173,64 +219,7 @@ public class ModelCaller {
         }
     }
 
-    private static List<Message> systemUser(String systemPrompt, String userMessage) {
-        return List.of(new SystemMessage(systemPrompt), new UserMessage(userMessage));
-    }
-
-    private static String joinTexts(List<Message> messages) {
-        return messages.stream().map(Message::getText).collect(Collectors.joining("\n"));
-    }
-
-    private static List<Float> toFloatList(float[] vector) {
-        var list = new ArrayList<Float>(vector.length);
-        for (float value : vector) {
-            list.add(value);
-        }
-        return list;
-    }
-
-    /** 模型文本输出；可能没有结果（流式分片尤其常见只有 metadata 没有 result），统一回退空串。 */
-    private static String outputText(@Nullable ChatResponse response) {
-        var result = response == null ? null : response.getResult();
-        return result == null ? "" : result.getOutput().getText();
-    }
-
-    private static CallOutcome<String> chatOutcome(@Nullable ChatResponse response) {
-        return new CallOutcome<>(outputText(response), usageOf(response));
-    }
-
-    /** 模型请求的工具调用（可能为空：模型直接回了文本）；供应商未回结果同样为空。 */
-    private static List<AssistantMessage.ToolCall> toolCallsOf(@Nullable ChatResponse response) {
-        if (response == null || response.getResult() == null) {
-            return List.of();
-        }
-        return response.getResult().getOutput().getToolCalls();
-    }
-
-    private static OpenAiChatOptions jsonOptions(ChatModel chatModel, @Nullable Integer maxTokens) {
-        return options(chatModel, maxTokens)
-                .responseFormat(OpenAiChatModel.ResponseFormat.builder()
-                        .type(OpenAiChatModel.ResponseFormat.Type.JSON_OBJECT)
-                        .build())
-                .build();
-    }
-
-    /** 工具决策请求选项 —— {@code tool_choice} 显式 {@code required}：ReAct 每轮的产物契约就是「一个工具调用」，
-     * {@code auto} 下模型仍可能回纯文本，协议层要求后失败模式从「降级」变成「不可能发生」。 */
-    private static OpenAiChatOptions toolOptions(
-            ChatModel chatModel, List<ToolCallback> toolCallbacks, @Nullable Integer maxTokens) {
-        return options(chatModel, maxTokens)
-                .toolCallbacks(toolCallbacks)
-                .toolChoice(TOOL_CHOICE_REQUIRED)
-                .build();
-    }
-
-    /** scoped 调用的 per-request options —— 输出上限按场景预算真下发（{@code max_tokens}），与预算前置检查 / 记账共用同一份
-     * 配置：供应商侧截断输出，最坏单次成本由此封顶；无配置返回 null 且不继承连接，避免只有连接字段的 options 把「没配」伪装成「配了」。 */
-    private @Nullable OpenAiChatOptions scopedOptions(ChatModel chatModel, ModelCallScope scope) {
-        Integer maxTokens = maxTokensOf(scope);
-        return maxTokens == null ? null : options(chatModel, maxTokens).build();
-    }
+    // ── per-request options ──
 
     /** per-request options 统一入口：先下发场景 {@code max_tokens} 再继承模型名 —— 只有这个顺序能让三种 options
      * 复用同一段模板。 */
@@ -257,5 +246,30 @@ public class ModelCaller {
     private @Nullable Integer maxTokensOf(ModelCallScope scope) {
         var configured = aiProperties.budget().resolve(scope.budgetScenario());
         return configured != null && configured.maxTokensPerCall() > 0 ? configured.maxTokensPerCall() : null;
+    }
+
+    /** scoped 调用的 per-request options —— 输出上限按场景预算真下发（{@code max_tokens}），与预算前置检查 / 记账共用同一份
+     * 配置：供应商侧截断输出，最坏单次成本由此封顶；无配置返回 null 且不继承连接，避免只有连接字段的 options 把「没配」伪装成「配了」。 */
+    private @Nullable OpenAiChatOptions scopedOptions(ChatModel chatModel, ModelCallScope scope) {
+        Integer maxTokens = maxTokensOf(scope);
+        return maxTokens == null ? null : options(chatModel, maxTokens).build();
+    }
+
+    private static OpenAiChatOptions jsonOptions(ChatModel chatModel, @Nullable Integer maxTokens) {
+        return options(chatModel, maxTokens)
+                .responseFormat(OpenAiChatModel.ResponseFormat.builder()
+                        .type(OpenAiChatModel.ResponseFormat.Type.JSON_OBJECT)
+                        .build())
+                .build();
+    }
+
+    /** 工具决策请求选项 —— {@code tool_choice} 显式 {@code required}：ReAct 每轮的产物契约就是「一个工具调用」，
+     * {@code auto} 下模型仍可能回纯文本，协议层要求后失败模式从「降级」变成「不可能发生」。 */
+    private static OpenAiChatOptions toolOptions(
+            ChatModel chatModel, List<ToolCallback> toolCallbacks, @Nullable Integer maxTokens) {
+        return options(chatModel, maxTokens)
+                .toolCallbacks(toolCallbacks)
+                .toolChoice(TOOL_CHOICE_REQUIRED)
+                .build();
     }
 }
