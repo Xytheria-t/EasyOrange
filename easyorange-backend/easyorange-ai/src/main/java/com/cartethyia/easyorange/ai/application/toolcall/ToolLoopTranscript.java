@@ -9,8 +9,11 @@ import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 
 /**
- * 工具循环的决策侧对话记录 — 首两条（system + user）每请求固定，每轮按「assistant tool_calls + role=tool
- * 观察」回填；前缀跨轮逐字不变，供应商 KV cache 折扣靠它命中。
+ * 工具循环的决策侧对话记录 —— 循环每轮要重发给模型的那串消息，随轮次增长：首两条（system + user）每请求固定，
+ * 之后每轮追加「assistant tool_calls + role=tool 观察」。
+ * <p>
+ * 在链路里的位置：由 {@code ToolLoopKernel} 持有，每轮把 {@link #messages()} 全量交给决策函数 —— 本项目不做增量
+ * 续传，靠「前缀跨轮逐字不变」命中供应商 KV cache 折扣。
  * <p>
  * 一轮的多个调用合成一条 assistant 消息（{@code tool_calls} 数组）+ 一条 tool 消息（多份响应）：协议要求每个
  * {@code tool_call_id} 都有对应观察，少一条供应商直接 400。

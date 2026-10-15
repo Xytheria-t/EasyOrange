@@ -20,12 +20,14 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.stereotype.Component;
 
 /**
- * 多步工具调用循环（ReAct）的编排内核 — 逐轮「决策 → 工具 → 观察」推进到模型判定信息足够。
+ * 多步工具调用循环（ReAct）的编排内核 —— 逐轮「决策 → 工具 → 观察」，推进到模型判定信息足够为止。
  * <p>
- * 手写循环 + 原生 tool calling：{@code ChatModel.call} 不自动执行工具，轮数上限与降级控制权留在本类。内核只持
- * 链路无关的机制（四条出口、协议回填、步级 trace/SSE、toolPath），首轮上下文、模型路由与降级动作由
- * {@link Spec} / {@link RoundDecider} 注入 —— chat 与 listing 共用，不改写各自的工具语义；trace/step/
- * 指标失败不碰主链路。
+ * 在链路里的位置：被两条链路的编排器调用（买家 {@code ChatToolLoop} / 卖家 {@code AutoListingAppService}），
+ * 只持链路无关的机制：for 循环与四条出口、协议回填、步级 trace / SSE、toolPath。首轮上下文、模型路由、记账场景与
+ * 降级动作全由 {@link Spec} 与 {@link RoundDecider} 注入 —— 内核不认业务语义，两条链路因此共用一份实现。
+ * <p>
+ * 手写循环而非 {@code ChatClient} 自动循环：{@code ChatModel.call} 不自动执行工具，轮数上限与降级控制权必须留在
+ * 本类；trace / step / 指标是观测副产物，失败不碰主链路。
  */
 @Slf4j
 @RequiredArgsConstructor
@@ -39,8 +41,14 @@ public class ToolLoopKernel {
     private final IdGenerator idGenerator;
 
     /**
-     * 一次循环的规格 — 链路差异全在这里注入；{@code userId} 是已归属的值（评估跑批传 null），归属判定
-     * 留在各链路编排器（同一口径还管工具面的偏好归属）。
+     * 一次循环的规格 —— 两条链路的差异全在这里注入，内核不认识业务语义。
+     * <p>
+     * 十项分三类：① 首轮上下文（{@code systemPrompt} / {@code firstUserMessage}）；② 每轮要用什么
+     * （{@code toolCallbacks} / {@code maxRounds}）；③ 出事与观测（{@code budgetExhausted} 每轮问一次、
+     * {@code decisionFailedFallback} 决策失败时调、{@code sessionId} / {@code userId} / {@code streamHandler} /
+     * {@code listener}）。
+     * <p>
+     * {@code userId} 是已归属的值（评估跑批传 null），归属判定留在各链路编排器（同一口径还管工具面的偏好归属）。
      */
     public record Spec(
             String systemPrompt,
@@ -68,9 +76,10 @@ public class ToolLoopKernel {
         List<ToolLoopCall> decide(@Nullable String sessionId, List<Message> messages, List<ToolCallback> callbacks);
     }
 
-    /** 循环结果 — outcome / rounds 供指标与降级归因；toolPath 含 finish 轮，供路由准确率评估对照金标准集。 */
+    /** 循环结果 —— 从哪条出口出来（outcome）、跑了几轮（rounds）、按顺序调过哪些工具（toolPath，含 finish 轮）。前两项供指标与降级归因，toolPath 供路由准确率评估对照金标准集。 */
     public record Result(ToolLoopOutcome outcome, int rounds, List<String> toolPath) {}
 
+    /** 入口：跑一次完整循环并回报结局；异常原样抛出，但先把「故障」记进指标（它没有循环出口、轮数不可知）。 */
     public Result run(Spec spec, RoundDecider roundDecider) {
         try {
             Result result = executeLoop(spec, roundDecider);
@@ -82,6 +91,7 @@ public class ToolLoopKernel {
         }
     }
 
+    /** 主循环 —— 四条出口都在这里：预算尽 / 决策失败 / 模型收敛（finish）/ 轮数用尽。 */
     private Result executeLoop(Spec spec, RoundDecider roundDecider) {
         String traceId = idGenerator.generateId();
         var dispatcher = ToolDispatcher.of(spec.toolCallbacks());
@@ -121,7 +131,7 @@ public class ToolLoopKernel {
     }
 
     /**
-     * 执行一轮的全部调用并落成观测副产物（trace / SSE step / 步级指标），再按对话协议回填；步序跨轮连续，
+     * 执行一轮的全部调用，落成观测副产物（trace / SSE step / 步级指标），再按对话协议回填。步序跨轮连续，
      * 否则一轮内多个工具挤进同一 stepIndex，trace 里两个动作看起来是同一步。
      */
     private RoundResult executeCalls(
@@ -159,6 +169,7 @@ public class ToolLoopKernel {
         return new RoundResult(stepIndex, toolPath, false);
     }
 
+    /** 执行单个工具：计时、记工具指标、落一步 trace 与 SSE。 */
     private DispatchResult executeOneTool(
             Spec spec, String traceId, int stepIndex, ToolDispatcher dispatcher, ToolLoopCall call) {
         long start = System.nanoTime();
@@ -205,6 +216,7 @@ public class ToolLoopKernel {
         emitStep(spec, stepIndex, finish, null);
     }
 
+    /** 推一条 SSE step 事件；非流式路径 streamHandler 为 null，直接跳过。 */
     private void emitStep(Spec spec, int stepIndex, ToolLoopCall call, @Nullable String observation) {
         ChatStreamHandler streamHandler = spec.streamHandler();
         if (streamHandler != null) {
@@ -215,6 +227,7 @@ public class ToolLoopKernel {
     /** 一轮的执行结果 — nextStepIndex 跨轮连续（1 起）；toolPath 含 finish 轮，路径上「模型选了什么」保持完整。 */
     private record RoundResult(int nextStepIndex, List<String> toolPath, boolean finished) {}
 
+    /** 一次工具执行的结果 —— 成败 + 给模型看的观察文本；失败时观察文本即错误原因。 */
     private record DispatchResult(boolean succeeded, String observation) {
 
         @Nullable
