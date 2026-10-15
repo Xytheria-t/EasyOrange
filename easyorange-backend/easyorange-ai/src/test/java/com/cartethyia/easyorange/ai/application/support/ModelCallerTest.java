@@ -200,6 +200,31 @@ class ModelCallerTest {
 
             assertThat(result).containsExactly(1.0f, 2.5f, -3.0f);
         }
+
+        @Test
+        @DisplayName("批量向量化 -> 记账摘要随整批文本变化（同块数不同内容不能并成报表同一条）")
+        void embedBatch_promptHashTracksContent() {
+            when(embeddingModel.embedForResponse(anyList()))
+                    .thenReturn(new EmbeddingResponse(List.of(new Embedding(new float[] {1.0f}, 0))));
+
+            modelCaller.embedBatch(embeddingModel, ModelCallScope.KNOWLEDGE, List.of("第一块", "第二块"));
+            modelCaller.embedBatch(embeddingModel, ModelCallScope.KNOWLEDGE, List.of("第三块", "第四块"));
+
+            var captor = ArgumentCaptor.forClass(String.class);
+            verify(callLogRecorder, times(2))
+                    .record(
+                            eq("KNOWLEDGE"),
+                            anyString(),
+                            captor.capture(),
+                            isNull(),
+                            anyLong(),
+                            anyInt(),
+                            anyInt(),
+                            anyInt(),
+                            eq(true),
+                            isNull());
+            assertThat(captor.getAllValues()).doesNotHaveDuplicates();
+        }
     }
 
     @Nested

@@ -130,6 +130,7 @@ public class ModelCaller {
                 .text(userText)
                 .media(MediaResolver.of(imageUrls))
                 .build();
+        // 记账摘要只含文本：图片是 data URL（MB 级、每次上传都不同），进摘要既算不动也无去重价值
         String json = callRecorder.record(
                 scope,
                 chatModel,
@@ -153,7 +154,8 @@ public class ModelCaller {
 
     /** 批量向量化 — 整批一条供应商调用、一条记账日志（摄取侧一次 N 块），返回顺序与入参一致；失败整批抛出。 */
     public List<List<Float>> embedBatch(EmbeddingModel embeddingModel, ModelCallScope scope, List<String> texts) {
-        return callRecorder.record(scope, embeddingModel, "embed-batch:" + texts.size() + " items", () -> {
+        // 摘要取整批文本：prompt_hash 的用途是去重与回归取回原文，只记块数会让所有同规模批次并成报表一行
+        return callRecorder.record(scope, embeddingModel, "embed-batch:" + String.join("\n", texts), () -> {
             EmbeddingResponse response = embeddingModel.embedForResponse(texts);
             var vectors = response.getResults().stream()
                     .map(embedding -> toFloatList(embedding.getOutput()))
