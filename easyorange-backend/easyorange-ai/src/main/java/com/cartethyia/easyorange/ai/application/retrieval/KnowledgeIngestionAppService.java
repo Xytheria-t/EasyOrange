@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.ai.application.retrieval;
 
-import com.cartethyia.easyorange.ai.application.support.ModelSupport;
+import com.cartethyia.easyorange.ai.application.support.ModelCaller;
 import com.cartethyia.easyorange.ai.domain.enums.KnowledgeDocStatus;
 import com.cartethyia.easyorange.ai.domain.enums.ModelCallScope;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeChunk;
@@ -37,7 +37,7 @@ public class KnowledgeIngestionAppService {
     private final KnowledgeRepository repository;
     private final ObjectProvider<KnowledgeIndexPort> indexPortProvider;
     private final ObjectProvider<EmbeddingModel> embeddingModelProvider;
-    private final ModelSupport aiModelSupport;
+    private final ModelCaller modelCaller;
 
     /** 落库 → 建索引，返回文档 ID。 */
     public String ingest(String title, String content, String source) {
@@ -93,7 +93,7 @@ public class KnowledgeIngestionAppService {
             }
             // 整批一次供应商调用（逐块串行是 N 倍往返）；失败整篇 FAILED 待补索引
             List<List<Float>> vectors =
-                    aiModelSupport.embedBatch(embeddingModel, ModelCallScope.KNOWLEDGE, embedTexts(title, chunks));
+                    modelCaller.embedBatch(embeddingModel, ModelCallScope.KNOWLEDGE, embedTexts(title, chunks));
             List<KnowledgeChunk> docs = new ArrayList<>(chunks.size());
             for (int i = 0; i < chunks.size(); i++) {
                 docs.add(new KnowledgeChunk(id, i, title, chunks.get(i), vectors.get(i)));

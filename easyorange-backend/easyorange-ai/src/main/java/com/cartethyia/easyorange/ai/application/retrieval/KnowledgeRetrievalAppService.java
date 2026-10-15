@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.ai.application.retrieval;
 
-import com.cartethyia.easyorange.ai.application.support.ModelSupport;
+import com.cartethyia.easyorange.ai.application.support.ModelCaller;
 import com.cartethyia.easyorange.ai.domain.annotation.TokenBudget;
 import com.cartethyia.easyorange.ai.domain.enums.ModelCallScope;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeChunkHit;
@@ -29,7 +29,7 @@ public class KnowledgeRetrievalAppService {
 
     private final ObjectProvider<KnowledgeIndexPort> indexPortProvider;
     private final ObjectProvider<EmbeddingModel> embeddingModelProvider;
-    private final ModelSupport aiModelSupport;
+    private final ModelCaller modelCaller;
 
     /** 两路召回 + RRF 融合，返回 topK 命中（顺序即最终顺序）；预算闸门挂这一层 —— 向量化是本场景唯一计费
      * 点，匿名 MCP 知识检索也走此路，没有它外部 client 换个 IP 就能无限触发供应商 embedding 计费
@@ -58,7 +58,7 @@ public class KnowledgeRetrievalAppService {
      * 也是调用即抛，这条路径同时承担「AI 密钥可选、不影响启动」的契约。 */
     private List<Float> embedOrEmpty(EmbeddingModel embeddingModel, String query) {
         try {
-            List<Float> embedding = aiModelSupport.embed(embeddingModel, ModelCallScope.KNOWLEDGE, query);
+            List<Float> embedding = modelCaller.embed(embeddingModel, ModelCallScope.KNOWLEDGE, query);
             if (embedding.isEmpty()) {
                 log.warn("Empty embedding for knowledge query, falling back to BM25-only retrieval, query={}", query);
             }

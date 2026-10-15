@@ -42,7 +42,7 @@ import tools.jackson.databind.ObjectMapper;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class ModelSupport {
+public class ModelCaller {
 
     /** OpenAI 兼容协议 {@code tool_choice} 的枚举值：{@code required} = 必须从给定工具里选一个（口径见 {@link #toolOptions}）。 */
     private static final String TOOL_CHOICE_REQUIRED = "required";

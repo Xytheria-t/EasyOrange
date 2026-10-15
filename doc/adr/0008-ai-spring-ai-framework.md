@@ -51,9 +51,9 @@ EasyOrange 的 AI 能力自 2025-11 起基于自研基础设施构建，到 2026
 
 `OpenChatAutoConfiguration` 的 `@ConditionalOnMissingBean`（按返回类型推断）会因自定义 bean 存在而安全退让，不产生重复 bean。
 
-### 2. 调用去重（[ModelSupport.java](../../easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/application/support/ModelSupport.java)）
+### 2. 调用去重（[ModelCaller.java](../../easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/application/support/ModelCaller.java)）
 
-`ModelSupport`（`@Component` 实例 bean，非静态工具类）收敛重复调用模式，**不是**端口/适配器抽象，只是代码去重——当前方法面：`callText`（文本 / 多消息两个重载）/ `callJson`（`response_format=json_object`）/ `callJsonWithImages`（多图 Media + `UserMessage.builder`）/ `callWithTools` / `callTextStream`（两个重载）/ `embed`（`float[] → List<Float>`）/ `embedBatch`。**带 `ModelCallScope` 才记账**（落 `eo_ai_call_log` + 真实 token 入预算），不带不记——`Judge` 刻意走账外防自指。
+`ModelCaller`（`@Component` 实例 bean，非静态工具类）收敛重复调用模式，**不是**端口/适配器抽象，只是代码去重——当前方法面：`callText`（文本 / 多消息两个重载）/ `callJson`（`response_format=json_object`）/ `callJsonWithImages`（多图 Media + `UserMessage.builder`）/ `callWithTools` / `callTextStream`（两个重载）/ `embed`（`float[] → List<Float>`）/ `embedBatch`。**带 `ModelCallScope` 才记账**（落 `eo_ai_call_log` + 真实 token 入预算），不带不记——`Judge` 刻意走账外防自指。
 
 ### 3. 删除清单
 
@@ -93,13 +93,13 @@ EasyOrange 的 AI 能力自 2025-11 起基于自研基础设施构建，到 2026
 ### 缓解措施
 
 - 指标：AI 模块启动时仍注册 `RateLimitInterceptor`（限流）与 `@TokenBudget`（预算），核心治理能力不随自定义指标删除而消失
-- JSON 输出：解析与降级逻辑保留在调用方（ObjectMapper + try/catch），换供应商只需改 `ModelSupport.callJson` 一处
+- JSON 输出：解析与降级逻辑保留在调用方（ObjectMapper + try/catch），换供应商只需改 `ModelCaller.callJson` 一处
 - 并发隔离：openai-java 客户端内置连接池 + `MAX_RETRIES=2`，必要时再按供应商级调优
 
 ## 备选方案（Alternatives Considered）
 
 - **保留自研 Port/Adapter，仅换底层实现**：拒绝。那会保留 7 个 adapter 类 + 自研 DTO + 自研缓存装饰器，只是把「手写 RestClient」换成「手写 Spring AI 包装」，与 STP 精神冲突，且多级缓存装饰器与 Spring AI 内置能力重复。
-- **用 Spring AI ChatClient 而非裸 ChatModel**：拒绝。`ChatClient` 是更上层的流式/函数调用 DSL，本项目场景是「单轮 system+user + JSON 输出 + 多图」，裸 `ChatModel.call(Prompt)` 测试面最小（mock `ChatResponse`），`ModelSupport` 已覆盖去重。
+- **用 Spring AI ChatClient 而非裸 ChatModel**：拒绝。`ChatClient` 是更上层的流式/函数调用 DSL，本项目场景是「单轮 system+user + JSON 输出 + 多图」，裸 `ChatModel.call(Prompt)` 测试面最小（mock `ChatResponse`），`ModelCaller` 已覆盖去重。
 - **Embedding 走非托管自建（BGE-M3 本地）**：拒绝。需自建模型服务 + 运维，与「托管 API」的成本模型不符；仅在 DashScope embedding 服务 不可用（GitHub spring-ai #5647：2.0.0-M2 曾返 404）时作为备选 SiliconFlow BAAI/bge-m3。
 - **保留 Python 侧车作为供应商**：拒绝。`easyorange.ai.provider=python` 是自建供应商路由，Spring AI options 已覆盖；删除侧车简化部署与代码面。
 
@@ -107,5 +107,5 @@ EasyOrange 的 AI 能力自 2025-11 起基于自研基础设施构建，到 2026
 
 - Supersedes ADR 0003（其「用 Spring AI Starter：拒绝」决策翻转）；Related to ADR 0004（`@TokenBudget` 保留，Bulkhead 隔离仓删除）——两份记录均已归档：[已替代决策.md](./已替代决策.md)
 - 相关文档：[easyorange-backend/AGENTS.md](../../easyorange-backend/AGENTS.md)「模块要点 → ai」、根目录 `AGENTS.md`
-- 相关代码：[ModelConfig.java](../../easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/config/ModelConfig.java)、[ModelSupport.java](../../easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/application/support/ModelSupport.java)、[ElasticsearchProductSearchIndexAdapter.java](../../easyorange-backend/easyorange-application/src/main/java/com/cartethyia/easyorange/adapter/outbound/elasticsearch/ElasticsearchProductSearchIndexAdapter.java)
+- 相关代码：[ModelConfig.java](../../easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/config/ModelConfig.java)、[ModelCaller.java](../../easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/application/support/ModelCaller.java)、[ElasticsearchProductSearchIndexAdapter.java](../../easyorange-backend/easyorange-application/src/main/java/com/cartethyia/easyorange/adapter/outbound/elasticsearch/ElasticsearchProductSearchIndexAdapter.java)
 - 后续演进触发：Spring AI 新版本升级时评估 API 变更；上线前 curl 验证 DashScope embedding 服务 endpoint 可用性（#5647），失败则切 SiliconFlow BAAI/bge-m3（同为 OpenAI 兼容线协议）

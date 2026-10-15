@@ -49,7 +49,7 @@ class TokenBudgetAspectTest {
     }
 
     @Test
-    @DisplayName("预留完成即释放 — 切面不落真实用量（真实记账由 ModelSupport 从 ChatResponse 另行累加）")
+    @DisplayName("预留完成即释放 — 切面不落真实用量（真实记账由 ModelCaller 从 ChatResponse 另行累加）")
     void aroundBudget_doesNotRecordUsage() throws Throwable {
         var annotation = mockBudget("pricing", 100, 1000);
         when(pjp.proceed()).thenReturn("AI response");

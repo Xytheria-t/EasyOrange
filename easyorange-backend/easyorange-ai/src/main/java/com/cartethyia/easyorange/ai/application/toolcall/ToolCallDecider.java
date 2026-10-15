@@ -1,8 +1,8 @@
 package com.cartethyia.easyorange.ai.application.toolcall;
 
 import com.cartethyia.easyorange.ai.application.support.FailureReason;
+import com.cartethyia.easyorange.ai.application.support.ModelCaller;
 import com.cartethyia.easyorange.ai.application.support.ModelRouter;
-import com.cartethyia.easyorange.ai.application.support.ModelSupport;
 import com.cartethyia.easyorange.ai.domain.enums.ModelCallScope;
 import java.util.List;
 import java.util.function.Function;
@@ -28,7 +28,7 @@ import tools.jackson.databind.ObjectMapper;
 @Component
 public class ToolCallDecider {
 
-    private final ModelSupport aiModelSupport;
+    private final ModelCaller modelCaller;
     private final ModelRouter modelRouter;
     private final ObjectMapper objectMapper;
 
@@ -74,7 +74,7 @@ public class ToolCallDecider {
 
     private List<ToolCallDecision> decideOnce(
             @Nullable String sessionId, List<Message> messages, List<ToolCallback> callbacks, ModelCallScope scope) {
-        List<AssistantMessage.ToolCall> toolCalls = aiModelSupport.callWithTools(
+        List<AssistantMessage.ToolCall> toolCalls = modelCaller.callWithTools(
                 modelRouter.choose(ModelRouter.SCENARIO_CHAT_TOOL), scope, messages, callbacks);
         if (toolCalls.isEmpty()) {
             log.warn(

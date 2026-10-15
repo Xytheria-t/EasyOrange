@@ -2,10 +2,10 @@ package com.cartethyia.easyorange.ai.application.chat;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.cartethyia.easyorange.ai.application.support.ModelSupport;
+import com.cartethyia.easyorange.ai.application.support.ModelCaller;
 import com.cartethyia.easyorange.ai.application.toolcall.ToolCallArguments;
 import com.cartethyia.easyorange.ai.domain.enums.ModelCallScope;
-import com.cartethyia.easyorange.ai.testsupport.TestModelSupport;
+import com.cartethyia.easyorange.ai.testsupport.TestModelCaller;
 import com.sun.net.httpserver.HttpServer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.micrometer.observation.ObservationRegistry;
@@ -30,7 +30,7 @@ import org.springframework.ai.support.ToolCallbacks;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * 原生 tool calling 的 wire 契约测试 — JDK 自带 {@link HttpServer} 当供应商桩，校验经 {@link ModelSupport#callWithTools}
+ * 原生 tool calling 的 wire 契约测试 — JDK 自带 {@link HttpServer} 当供应商桩，校验经 {@link ModelCaller#callWithTools}
  * 发出的真实请求体与回来的 tool call 解析。覆盖四件会「静默失效」的事（都不是单元测试能看出来的）：工具定义确实进
  * {@code tools}（丢了 = 模型永不调工具，整条对话降级成单步检索）；per-request options 继承模型名（缺 {@code model} 时
  * openai-java 回退 SDK 默认名，对非 OpenAI 供应商直接 404）；工具轮不带 {@code response_format}（与 tools 同发在部分供应商
@@ -116,10 +116,10 @@ class ToolCallingWireTest {
     void callWithTools_wireContract() throws Exception {
         String baseUrl = "http://localhost:" + server.getAddress().getPort();
         ChatModel chatModel = stubChatModel(baseUrl);
-        var support = support();
+        var modelCaller = modelCaller();
         var tools = new ChatTools(null, null, null, null, null);
 
-        List<AssistantMessage.ToolCall> calls = support.callWithTools(
+        List<AssistantMessage.ToolCall> calls = modelCaller.callWithTools(
                 chatModel,
                 ModelCallScope.CHAT,
                 List.of(new SystemMessage("你是多步工具决策器"), new UserMessage("<user_question>\n怎么退款？\n</user_question>")),
@@ -153,12 +153,12 @@ class ToolCallingWireTest {
     void callWithTools_toolHistoryWireContract() throws Exception {
         String baseUrl = "http://localhost:" + server.getAddress().getPort();
         ChatModel chatModel = stubChatModel(baseUrl);
-        var support = support();
+        var modelCaller = modelCaller();
         var tools = new ChatTools(null, null, null, null, null);
         var historyCall = new AssistantMessage.ToolCall(
                 "call-9", "function", ChatTools.TOOL_KNOWLEDGE_SEARCH, "{\"thought\":\"查退款规则\",\"query\":\"退款\"}");
 
-        List<AssistantMessage.ToolCall> calls = support.callWithTools(
+        List<AssistantMessage.ToolCall> calls = modelCaller.callWithTools(
                 chatModel,
                 ModelCallScope.CHAT,
                 List.of(
@@ -188,14 +188,14 @@ class ToolCallingWireTest {
         stubResponse.set(PARALLEL_TOOL_CALL_RESPONSE);
         String baseUrl = "http://localhost:" + server.getAddress().getPort();
         ChatModel chatModel = stubChatModel(baseUrl);
-        var support = support();
+        var modelCaller = modelCaller();
         var tools = new ChatTools(null, null, null, null, null);
         var knowledgeCall = new AssistantMessage.ToolCall(
                 "call-1", "function", ChatTools.TOOL_KNOWLEDGE_SEARCH, "{\"thought\":\"查退款规则\",\"query\":\"退款\"}");
         var productCall = new AssistantMessage.ToolCall(
                 "call-2", "function", ChatTools.TOOL_PRODUCT_SEARCH, "{\"thought\":\"找笔记本\",\"query\":\"笔记本\"}");
 
-        List<AssistantMessage.ToolCall> calls = support.callWithTools(
+        List<AssistantMessage.ToolCall> calls = modelCaller.callWithTools(
                 chatModel,
                 ModelCallScope.CHAT,
                 List.of(
@@ -256,8 +256,8 @@ class ToolCallingWireTest {
     }
 
     /** 只关心请求体形状，用例不校验记账 —— 走统一夹具，日志端口空实现、预算记内存。 */
-    private static ModelSupport support() {
-        return TestModelSupport.create(
+    private static ModelCaller modelCaller() {
+        return TestModelCaller.create(
                 (scope,
                         model,
                         promptHash,

@@ -6,7 +6,7 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 import com.cartethyia.easyorange.ai.application.support.ModelRouter;
-import com.cartethyia.easyorange.ai.testsupport.TestModelSupport;
+import com.cartethyia.easyorange.ai.testsupport.TestModelCaller;
 import com.cartethyia.easyorange.ai.testsupport.TestPromptRegistry;
 import java.util.List;
 import java.util.Optional;
@@ -38,7 +38,7 @@ class JudgeTest {
     @BeforeEach
     void setUp() {
         lenient().when(modelRouter.choose(ModelRouter.SCENARIO_JUDGE)).thenReturn(chatModel);
-        aiJudge = new Judge(modelRouter, new TestPromptRegistry(), TestModelSupport.create(), new ObjectMapper());
+        aiJudge = new Judge(modelRouter, new TestPromptRegistry(), TestModelCaller.create(), new ObjectMapper());
     }
 
     private static ChatResponse textResponse(String text) {

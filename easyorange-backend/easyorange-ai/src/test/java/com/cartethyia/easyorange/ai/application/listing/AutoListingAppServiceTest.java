@@ -29,7 +29,7 @@ import com.cartethyia.easyorange.ai.domain.port.PromptRegistryPort;
 import com.cartethyia.easyorange.ai.domain.port.TokenBudgetStorePort;
 import com.cartethyia.easyorange.ai.domain.port.ToolCallStepTracePort;
 import com.cartethyia.easyorange.ai.testsupport.PropertyBindings;
-import com.cartethyia.easyorange.ai.testsupport.TestModelSupport;
+import com.cartethyia.easyorange.ai.testsupport.TestModelCaller;
 import com.cartethyia.easyorange.ai.testsupport.TestPromptRegistry;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
@@ -54,7 +54,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * 发布助手全链路测试 — 视觉预识别 → 工具循环 → 生成，模型全部走桩（真内核 + 真 ModelSupport +
+ * 发布助手全链路测试 — 视觉预识别 → 工具循环 → 生成，模型全部走桩（真内核 + 真 ModelCaller +
  * 桩 ChatModel），覆盖步骤事件、降级口径与取图失败语义。
  */
 @ExtendWith(MockitoExtension.class)
@@ -108,7 +108,7 @@ class AutoListingAppServiceTest {
         return new AutoListingAppService(
                 modelRouter,
                 promptRegistry,
-                TestModelSupport.create(),
+                TestModelCaller.create(),
                 categoryCatalogPort,
                 visionImageLoader,
                 new ToolLoopKernel(mock(ToolCallStepTracePort.class), stubIdGenerator()),
@@ -116,7 +116,7 @@ class AutoListingAppServiceTest {
                         mock(KnowledgeRetrievalAppService.class),
                         mock(AssetSourcingAppService.class),
                         categoryCatalogPort),
-                new ToolCallDecider(TestModelSupport.create(), modelRouter, new ObjectMapper()),
+                new ToolCallDecider(TestModelCaller.create(), modelRouter, new ObjectMapper()),
                 new TokenBudgetGuard(mock(TokenBudgetStorePort.class), PropertyBindings.bind(AiProperties.class)),
                 PropertyBindings.bind(AiProperties.class),
                 new ListingLoopMetrics(new SimpleMeterRegistry()));

@@ -1,8 +1,8 @@
 package com.cartethyia.easyorange.ai.application.listing;
 
 import com.cartethyia.easyorange.ai.application.dto.AutoListingResult;
+import com.cartethyia.easyorange.ai.application.support.ModelCaller;
 import com.cartethyia.easyorange.ai.application.support.ModelRouter;
-import com.cartethyia.easyorange.ai.application.support.ModelSupport;
 import com.cartethyia.easyorange.ai.application.support.TokenBudgetGuard;
 import com.cartethyia.easyorange.ai.application.toolcall.ToolCallDecider;
 import com.cartethyia.easyorange.ai.application.toolcall.ToolCallDecision;
@@ -54,7 +54,7 @@ public class AutoListingAppService {
 
     private final ModelRouter modelRouter;
     private final PromptRegistryPort promptRegistry;
-    private final ModelSupport aiModelSupport;
+    private final ModelCaller modelCaller;
     private final CategoryCatalogPort categoryCatalogPort;
     private final VisionImageLoader visionImageLoader;
     private final ToolLoopKernel loopKernel;
@@ -134,7 +134,7 @@ public class AutoListingAppService {
 
     /** 视觉预识别 — 循环前的一次多模态调用，产出决策轮线索；识别不出即显式失败，不给半张表。 */
     private ImageClues recognizeClues(String cluePrompt, List<String> dataUrls) {
-        return aiModelSupport
+        return modelCaller
                 .callJsonWithImages(
                         modelRouter.choose(ModelRouter.SCENARIO_VISION),
                         ModelCallScope.AUTO_LISTING,
@@ -151,7 +151,7 @@ public class AutoListingAppService {
                 ListingPromptAssembler.generatorUserText(loop.knowledgeHits(), loop.assetHits(), availableCategories());
         // clues 只服务决策轮，不进生成消息：生成器 prompt 的上下文只有 <observations> 与 <category_options>，
         // 画面信息由随请求的原图承担
-        Optional<AutoListingResult> listing = aiModelSupport.callJsonWithImages(
+        Optional<AutoListingResult> listing = modelCaller.callJsonWithImages(
                 modelRouter.choose(ModelRouter.SCENARIO_VISION),
                 ModelCallScope.AUTO_LISTING,
                 generatorPrompt,

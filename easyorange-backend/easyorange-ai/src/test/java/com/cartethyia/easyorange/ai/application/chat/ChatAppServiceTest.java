@@ -15,7 +15,7 @@ import com.cartethyia.easyorange.ai.application.chat.ChatToolLoop.Input;
 import com.cartethyia.easyorange.ai.application.chat.ChatToolLoop.Result;
 import com.cartethyia.easyorange.ai.application.dto.ChatAnswer;
 import com.cartethyia.easyorange.ai.application.dto.ChatRequest;
-import com.cartethyia.easyorange.ai.application.support.ModelSupport;
+import com.cartethyia.easyorange.ai.application.support.ModelCaller;
 import com.cartethyia.easyorange.ai.application.toolcall.ToolLoopOutcome;
 import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.domain.enums.ModelCallScope;
@@ -78,7 +78,7 @@ class ChatAppServiceTest {
     private final PromptRegistryPort promptRegistry = new TestPromptRegistry();
 
     @Mock
-    private ModelSupport aiModelSupport;
+    private ModelCaller modelCaller;
 
     @Mock
     private SemanticCachePort semanticCache;
@@ -159,7 +159,7 @@ class ChatAppServiceTest {
                         ToolLoopOutcome.FINISHED,
                         2,
                         List.of()));
-        when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("签收后 7 天内支持无理由退货 [来源:退款规则]");
+        when(modelCaller.callText(any(), any(), anyList())).thenReturn("签收后 7 天内支持无理由退货 [来源:退款规则]");
 
         ChatAnswer answer = chatService.answer(new ChatRequest("怎么退款？", "sess-1", false), AUTH_USER.userId());
 
@@ -193,7 +193,7 @@ class ChatAppServiceTest {
                         ToolLoopOutcome.FINISHED,
                         2,
                         List.of()));
-        when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("这几件在预算内：MacBook Air M1 [来源:MacBook Air M1]");
+        when(modelCaller.callText(any(), any(), anyList())).thenReturn("这几件在预算内：MacBook Air M1 [来源:MacBook Air M1]");
 
         ChatAnswer answer = chatService.answer(new ChatRequest("想找 5000 以内的笔记本", "sess-1", false), AUTH_USER.userId());
 
@@ -201,7 +201,7 @@ class ChatAppServiceTest {
 
         // 循环召回的在售资产必须真的进 prompt（块内形状见 ChatPromptAssemblerTest）
         ArgumentCaptor<List<Message>> captor = ArgumentCaptor.forClass(List.class);
-        verify(aiModelSupport).callText(any(), any(), captor.capture());
+        verify(modelCaller).callText(any(), any(), captor.capture());
         assertThat(captor.getValue().getLast().getText()).contains("<asset_hits>", "[p-1]");
     }
 
@@ -228,13 +228,13 @@ class ChatAppServiceTest {
                         ToolLoopOutcome.FINISHED,
                         3,
                         List.of()));
-        when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("推荐 MacBook [来源:MacBook Air M1]");
+        when(modelCaller.callText(any(), any(), anyList())).thenReturn("推荐 MacBook [来源:MacBook Air M1]");
 
         chatService.answer(new ChatRequest("想找 5000 以内的笔记本", "sess-1", false), AUTH_USER.userId());
 
         // product_detail 轮次的观察要真的进 prompt（块内形状见 ChatPromptAssemblerTest）
         ArgumentCaptor<List<Message>> captor = ArgumentCaptor.forClass(List.class);
-        verify(aiModelSupport).callText(any(), any(), captor.capture());
+        verify(modelCaller).callText(any(), any(), captor.capture());
         assertThat(captor.getValue().getLast().getText()).contains("<asset_details>", "[p-1]");
     }
 
@@ -251,7 +251,7 @@ class ChatAppServiceTest {
                         ToolLoopOutcome.FINISHED,
                         3,
                         List.of()));
-        when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("担保交易保障双方 [来源:交易规则]");
+        when(modelCaller.callText(any(), any(), anyList())).thenReturn("担保交易保障双方 [来源:交易规则]");
 
         ChatAnswer answer =
                 chatService.answer(new ChatRequest("5000 的笔记本有吗？平台怎么保障交易？", "sess-1", false), AUTH_USER.userId());
@@ -279,7 +279,7 @@ class ChatAppServiceTest {
                         ToolLoopOutcome.FINISHED,
                         4,
                         List.of()));
-        when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("回答");
+        when(modelCaller.callText(any(), any(), anyList())).thenReturn("回答");
 
         ChatAnswer answer = chatService.answer(new ChatRequest("问题", "sess-1", false), AUTH_USER.userId());
 
@@ -291,7 +291,7 @@ class ChatAppServiceTest {
     void answer_noTool() {
         when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
         when(semanticCache.lookUp(any(), any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
-        when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("在的，有什么可以帮你？");
+        when(modelCaller.callText(any(), any(), anyList())).thenReturn("在的，有什么可以帮你？");
 
         ChatAnswer answer = chatService.answer(new ChatRequest("在吗？", "sess-1", false), AUTH_USER.userId());
 
@@ -309,7 +309,7 @@ class ChatAppServiceTest {
         ChatAnswer answer = chatService.answer(new ChatRequest("怎么退款？", "sess-1", false), AUTH_USER.userId());
 
         assertThat(answer).isEqualTo(cached);
-        verify(aiModelSupport, never()).callText(any(), any(), anyList());
+        verify(modelCaller, never()).callText(any(), any(), anyList());
         verify(toolCallLoop, never()).run(any());
         verify(semanticCache, never()).store(any(), any(), anyString(), anyList(), any());
     }
@@ -319,7 +319,7 @@ class ChatAppServiceTest {
     void answer_cacheUsesUserBucket() {
         when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
         when(semanticCache.lookUp(any(), any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
-        when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("回答");
+        when(modelCaller.callText(any(), any(), anyList())).thenReturn("回答");
 
         chatService.answer(new ChatRequest("问题", "sess-1", false), AUTH_USER.userId());
 
@@ -332,11 +332,11 @@ class ChatAppServiceTest {
     void answer_staleFallbackIsUserScoped() {
         when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
         when(semanticCache.lookUp(any(), any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
-        when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("A 的回答");
+        when(modelCaller.callText(any(), any(), anyList())).thenReturn("A 的回答");
 
         // A 成功一次（写入 stale），B 同样问一遍并让模型故障 -> B 拿不到 A 的旧回答
         chatService.answer(new ChatRequest("问题", "sess-1", false), "user-a");
-        when(aiModelSupport.callText(any(), any(), anyList())).thenThrow(new RuntimeException("供应商超时"));
+        when(modelCaller.callText(any(), any(), anyList())).thenThrow(new RuntimeException("供应商超时"));
         ChatAnswer degraded = chatService.answer(new ChatRequest("问题", "sess-2", false), "user-b");
 
         assertThat(degraded.degraded()).isTrue();
@@ -363,7 +363,7 @@ class ChatAppServiceTest {
     void answer_cacheMiss_embedsOnce() {
         when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
         when(semanticCache.lookUp(any(), any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
-        when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("回答");
+        when(modelCaller.callText(any(), any(), anyList())).thenReturn("回答");
 
         chatService.answer(new ChatRequest("问题", "sess-1", false), AUTH_USER.userId());
 
@@ -374,7 +374,7 @@ class ChatAppServiceTest {
     @Test
     @DisplayName("forceFresh -> 跳过语义缓存（评估回归用），连查询向量化都不做")
     void answer_forceFreshSkipsCache() {
-        when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("回答");
+        when(modelCaller.callText(any(), any(), anyList())).thenReturn("回答");
 
         chatService.answer(new ChatRequest("问题", "sess-1", true), AUTH_USER.userId());
 
@@ -397,7 +397,7 @@ class ChatAppServiceTest {
                     2,
                     List.of());
         });
-        when(aiModelSupport.callTextStream(any(), any(), anyList(), any(Consumer.class)))
+        when(modelCaller.callTextStream(any(), any(), anyList(), any(Consumer.class)))
                 .thenAnswer(invocation -> {
                     Consumer<String> consumer = invocation.getArgument(3);
                     consumer.accept("可以");
@@ -491,7 +491,7 @@ class ChatAppServiceTest {
 
         // 命中即回放：不进循环、不再调模型、不写会话记忆、不再写回缓存（与非流式命中同口径）
         verify(toolCallLoop, never()).run(any());
-        verify(aiModelSupport, never()).callTextStream(any(), any(), anyList(), any());
+        verify(modelCaller, never()).callTextStream(any(), any(), anyList(), any());
         verify(sessionStore, never()).saveTurns(anyString(), anyString(), anyList());
         verify(semanticCache, never()).store(any(), any(), anyString(), anyList(), any());
         // 查找走同一分桶与类型契约（缓存按用户分桶，回答注入了该用户的偏好）
@@ -528,7 +528,7 @@ class ChatAppServiceTest {
                         ToolLoopOutcome.FINISHED,
                         1,
                         List.of()));
-        when(aiModelSupport.callTextStream(any(), any(), anyList(), any(Consumer.class)))
+        when(modelCaller.callTextStream(any(), any(), anyList(), any(Consumer.class)))
                 .thenReturn("生成的回答");
 
         AtomicReference<String> done = new AtomicReference<>();
@@ -571,7 +571,7 @@ class ChatAppServiceTest {
     @Test
     @DisplayName("流式 forceFresh -> 跳过语义缓存读写，连向量化都不做（与非流式同口径）")
     void stream_forceFresh_skipsCache() {
-        when(aiModelSupport.callTextStream(any(), any(), anyList(), any(Consumer.class)))
+        when(modelCaller.callTextStream(any(), any(), anyList(), any(Consumer.class)))
                 .thenReturn("回答");
 
         chatService.streamAnswer(new ChatRequest("问题", "sess-1", true), AUTH_USER.userId(), new StreamHandlerStub());
@@ -586,7 +586,7 @@ class ChatAppServiceTest {
     void stream_machineSubjectPassesThrough() {
         when(toolCallLoop.run(any()))
                 .thenReturn(new Result(List.of(), List.of(), List.of(), ToolLoopOutcome.FINISHED, 1, List.of()));
-        when(aiModelSupport.callTextStream(any(), any(), anyList(), any(Consumer.class)))
+        when(modelCaller.callTextStream(any(), any(), anyList(), any(Consumer.class)))
                 .thenReturn("回答");
 
         chatService.streamAnswer(
@@ -623,7 +623,7 @@ class ChatAppServiceTest {
         });
 
         assertThat(error.get()).contains("预算");
-        verify(aiModelSupport, never()).callTextStream(any(), any(), anyList(), any());
+        verify(modelCaller, never()).callTextStream(any(), any(), anyList(), any());
     }
 
     @Test
@@ -668,7 +668,7 @@ class ChatAppServiceTest {
     @Test
     @DisplayName("生成阶段客户端断流 -> 半截回答照落会话历史后静默收尾（刷新后追问不丢上下文）")
     void stream_clientAbortedDuringGeneration_savesPartialTurn() {
-        when(aiModelSupport.callTextStream(any(), any(), anyList(), any(Consumer.class)))
+        when(modelCaller.callTextStream(any(), any(), anyList(), any(Consumer.class)))
                 .thenThrow(new ChatStreamAbortedException("半截回答", new java.io.IOException("broken pipe")));
 
         chatService.streamAnswer(new ChatRequest("问题", "sess-1", false), AUTH_USER.userId(), noopHandler());
@@ -733,7 +733,7 @@ class ChatAppServiceTest {
     void answer_llmFailureFallsBackToStale() {
         when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
         when(semanticCache.lookUp(any(), any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
-        when(aiModelSupport.callText(any(), any(), anyList()))
+        when(modelCaller.callText(any(), any(), anyList()))
                 .thenReturn("正常回答")
                 .thenThrow(new RuntimeException("DeepSeek 超时"));
 
@@ -744,7 +744,7 @@ class ChatAppServiceTest {
         assertThat(first.degraded()).isFalse();
         assertThat(degraded.answer()).isEqualTo("正常回答");
         assertThat(degraded.degraded()).isTrue();
-        verify(aiModelSupport, times(2)).callText(any(), any(), anyList());
+        verify(modelCaller, times(2)).callText(any(), any(), anyList());
     }
 
     @Test
@@ -752,7 +752,7 @@ class ChatAppServiceTest {
     void answer_staleFallbackUsesCurrentSessionId() {
         when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
         when(semanticCache.lookUp(any(), any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
-        when(aiModelSupport.callText(any(), any(), anyList()))
+        when(modelCaller.callText(any(), any(), anyList()))
                 .thenReturn("正常回答")
                 .thenThrow(new RuntimeException("DeepSeek 超时"));
 
@@ -769,7 +769,7 @@ class ChatAppServiceTest {
     void answer_llmFailureWithoutStaleDegrades() {
         when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
         when(semanticCache.lookUp(any(), any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
-        when(aiModelSupport.callText(any(), any(), anyList())).thenThrow(new RuntimeException("DeepSeek 超时"));
+        when(modelCaller.callText(any(), any(), anyList())).thenThrow(new RuntimeException("DeepSeek 超时"));
 
         ChatAnswer answer = chatService.answer(new ChatRequest("怎么退款？", "sess-1", false), AUTH_USER.userId());
 
@@ -784,7 +784,7 @@ class ChatAppServiceTest {
     void answer_businessExceptionPropagates() {
         when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
         when(semanticCache.lookUp(any(), any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
-        when(aiModelSupport.callText(any(), any(), anyList())).thenThrow(BusinessException.of("AI 调用预算已用尽"));
+        when(modelCaller.callText(any(), any(), anyList())).thenThrow(BusinessException.of("AI 调用预算已用尽"));
 
         Assertions.assertThatThrownBy(
                         () -> chatService.answer(new ChatRequest("怎么退款？", "sess-1", false), AUTH_USER.userId()))
@@ -795,7 +795,7 @@ class ChatAppServiceTest {
     @Test
     @DisplayName("forceFresh 成功回答同样写入降级缓存（后续故障可兜底）")
     void answer_forceFreshWritesStaleCache() {
-        when(aiModelSupport.callText(any(), any(), anyList()))
+        when(modelCaller.callText(any(), any(), anyList()))
                 .thenReturn("新鲜回答")
                 .thenThrow(new RuntimeException("DeepSeek 超时"));
 
@@ -814,7 +814,7 @@ class ChatAppServiceTest {
         when(semanticCache.lookUp(any(), any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
         when(sessionStore.loadRecent(AUTH_USER.userId(), "sess-1"))
                 .thenReturn(List.of(ChatTurn.user("上一轮问题"), ChatTurn.assistant("上一轮回答")));
-        when(aiModelSupport.callText(any(), any(), anyList())).thenAnswer(invocation -> {
+        when(modelCaller.callText(any(), any(), anyList())).thenAnswer(invocation -> {
             List<Message> messages = invocation.getArgument(2);
             assertThat(messages).hasSize(4);
             assertThat(messages.getFirst().getMessageType()).isEqualTo(MessageType.SYSTEM);
@@ -838,7 +838,7 @@ class ChatAppServiceTest {
         return new ChatAppService(
                 chatModel,
                 promptRegistry,
-                aiModelSupport,
+                modelCaller,
                 semanticCache,
                 sessionStore,
                 preferenceRepository,

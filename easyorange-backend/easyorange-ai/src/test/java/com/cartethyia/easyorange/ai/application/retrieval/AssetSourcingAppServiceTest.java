@@ -9,7 +9,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import com.cartethyia.easyorange.ai.application.support.ModelSupport;
+import com.cartethyia.easyorange.ai.application.support.ModelCaller;
 import com.cartethyia.easyorange.ai.domain.enums.ModelCallScope;
 import com.cartethyia.easyorange.ai.domain.model.AssetHit;
 import com.cartethyia.easyorange.ai.domain.port.AssetRetrievalPort;
@@ -37,7 +37,7 @@ class AssetSourcingAppServiceTest {
     private EmbeddingModel embeddingModel;
     private ObjectProvider<AssetRetrievalPort> retrievalPortProvider;
     private AssetRetrievalPort port;
-    private ModelSupport aiModelSupport;
+    private ModelCaller modelCaller;
     private AssetSourcingAppService service;
 
     @BeforeEach
@@ -46,15 +46,15 @@ class AssetSourcingAppServiceTest {
         embeddingModel = mock(EmbeddingModel.class);
         retrievalPortProvider = mock(ObjectProvider.class);
         port = mock(AssetRetrievalPort.class);
-        aiModelSupport = mock(ModelSupport.class);
-        service = new AssetSourcingAppService(embeddingModel, retrievalPortProvider, aiModelSupport);
+        modelCaller = mock(ModelCaller.class);
+        service = new AssetSourcingAppService(embeddingModel, retrievalPortProvider, modelCaller);
     }
 
     @Test
     @DisplayName("向量化抛异常（key 未配置的占位模型 / 供应商故障）-> 退化为 BM25 单路召回，不抛给调用方")
     void search_embedFailed_fallsBackToBm25Only() {
         when(retrievalPortProvider.getIfAvailable()).thenReturn(port);
-        when(aiModelSupport.embed(embeddingModel, ModelCallScope.SEMANTIC, QUERY))
+        when(modelCaller.embed(embeddingModel, ModelCallScope.SEMANTIC, QUERY))
                 .thenThrow(new IllegalStateException("AI 模型未配置：embedding key 为空"));
         when(port.search(eq(QUERY), argThat(List::isEmpty), eq(5))).thenReturn(List.of(HIT));
 
@@ -65,8 +65,7 @@ class AssetSourcingAppServiceTest {
     @DisplayName("检索端口抛异常 -> 返回空列表（对话侧少一次推荐，不整轮失败）")
     void search_portThrows_returnsEmpty() {
         when(retrievalPortProvider.getIfAvailable()).thenReturn(port);
-        when(aiModelSupport.embed(embeddingModel, ModelCallScope.SEMANTIC, QUERY))
-                .thenReturn(List.of(0.1f, 0.2f));
+        when(modelCaller.embed(embeddingModel, ModelCallScope.SEMANTIC, QUERY)).thenReturn(List.of(0.1f, 0.2f));
         when(port.search(eq(QUERY), anyList(), eq(5))).thenThrow(new RuntimeException("ES 不可用"));
 
         assertThat(service.search(QUERY, 5)).isEmpty();
@@ -77,7 +76,7 @@ class AssetSourcingAppServiceTest {
     void search_portMissing_skipsEmbedding() {
         assertThat(service.search(QUERY, 5)).isEmpty();
 
-        verifyNoInteractions(aiModelSupport);
+        verifyNoInteractions(modelCaller);
     }
 
     @Test
@@ -87,15 +86,14 @@ class AssetSourcingAppServiceTest {
         assertThat(service.search("   ", 5)).isEmpty();
         assertThat(service.search(QUERY, 0)).isEmpty();
 
-        verifyNoInteractions(aiModelSupport);
+        verifyNoInteractions(modelCaller);
     }
 
     @Test
     @DisplayName("strict：检索端口抛异常 -> 原样上抛（MCP 协议转错误结果，不伪装成空结果）")
     void searchStrict_portThrows_propagates() {
         when(retrievalPortProvider.getIfAvailable()).thenReturn(port);
-        when(aiModelSupport.embed(embeddingModel, ModelCallScope.SEMANTIC, QUERY))
-                .thenReturn(List.of(0.1f, 0.2f));
+        when(modelCaller.embed(embeddingModel, ModelCallScope.SEMANTIC, QUERY)).thenReturn(List.of(0.1f, 0.2f));
         var failure = new RuntimeException("ES 不可用");
         when(port.search(eq(QUERY), anyList(), eq(5))).thenThrow(failure);
 
@@ -109,14 +107,14 @@ class AssetSourcingAppServiceTest {
                 .isInstanceOf(BaseBusinessException.class)
                 .hasMessageContaining("资产检索服务不可用");
 
-        verifyNoInteractions(aiModelSupport);
+        verifyNoInteractions(modelCaller);
     }
 
     @Test
     @DisplayName("strict：向量化失败仍退化 BM25 单路（部分降级 ≠ 不可用，与对话侧同语义）")
     void searchStrict_embedFailed_stillReturnsBm25Results() {
         when(retrievalPortProvider.getIfAvailable()).thenReturn(port);
-        when(aiModelSupport.embed(embeddingModel, ModelCallScope.SEMANTIC, QUERY))
+        when(modelCaller.embed(embeddingModel, ModelCallScope.SEMANTIC, QUERY))
                 .thenThrow(new IllegalStateException("AI 模型未配置：embedding key 为空"));
         when(port.search(eq(QUERY), argThat(List::isEmpty), eq(5))).thenReturn(List.of(HIT));
 
@@ -130,6 +128,6 @@ class AssetSourcingAppServiceTest {
         assertThat(service.searchStrict("   ", 5)).isEmpty();
         assertThat(service.searchStrict(QUERY, 0)).isEmpty();
 
-        verifyNoInteractions(aiModelSupport);
+        verifyNoInteractions(modelCaller);
     }
 }

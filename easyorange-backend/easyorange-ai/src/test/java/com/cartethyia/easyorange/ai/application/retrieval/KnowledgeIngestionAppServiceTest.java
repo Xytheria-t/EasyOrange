@@ -14,7 +14,7 @@ import com.cartethyia.easyorange.ai.domain.model.KnowledgeChunk;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeDocEntity;
 import com.cartethyia.easyorange.ai.domain.port.KnowledgeIndexPort;
 import com.cartethyia.easyorange.ai.domain.port.KnowledgeRepository;
-import com.cartethyia.easyorange.ai.testsupport.TestModelSupport;
+import com.cartethyia.easyorange.ai.testsupport.TestModelCaller;
 import com.cartethyia.easyorange.common.result.PageResult;
 import java.util.ArrayList;
 import java.util.List;
@@ -63,7 +63,7 @@ class KnowledgeIngestionAppServiceTest {
 
     private void setUpIngestion() {
         ingestionService = new KnowledgeIngestionAppService(
-                repository, indexPortProvider, embeddingModelProvider, TestModelSupport.create());
+                repository, indexPortProvider, embeddingModelProvider, TestModelCaller.create());
     }
 
     // ---------- 分块算法 ----------

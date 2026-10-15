@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.ai.application.retrieval;
 
-import com.cartethyia.easyorange.ai.application.support.ModelSupport;
+import com.cartethyia.easyorange.ai.application.support.ModelCaller;
 import com.cartethyia.easyorange.ai.domain.enums.AiResultCode;
 import com.cartethyia.easyorange.ai.domain.enums.ModelCallScope;
 import com.cartethyia.easyorange.ai.domain.model.AssetHit;
@@ -28,7 +28,7 @@ public class AssetSourcingAppService {
 
     private final EmbeddingModel embeddingModel;
     private final ObjectProvider<AssetRetrievalPort> retrievalPort;
-    private final ModelSupport aiModelSupport;
+    private final ModelCaller modelCaller;
 
     /** 对话语义：检索失败返回空列表而不抛异常（理由见类注释）。 */
     public List<AssetHit> search(String query, int topK) {
@@ -58,7 +58,7 @@ public class AssetSourcingAppService {
      * 「少一路召回」糟；占位模型（key 未配置）也是调用即抛，这条路径同时承担「AI 密钥可选、不影响启动」。 */
     private List<Float> embedOrEmpty(String query) {
         try {
-            List<Float> embedding = aiModelSupport.embed(embeddingModel, ModelCallScope.SEMANTIC, query);
+            List<Float> embedding = modelCaller.embed(embeddingModel, ModelCallScope.SEMANTIC, query);
             if (embedding.isEmpty()) {
                 log.warn("Empty embedding for sourcing query, falling back to BM25-only retrieval, query={}", query);
             }

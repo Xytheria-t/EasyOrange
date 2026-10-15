@@ -7,7 +7,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import com.cartethyia.easyorange.ai.application.support.ModelSupport;
+import com.cartethyia.easyorange.ai.application.support.ModelCaller;
 import com.cartethyia.easyorange.ai.domain.enums.ModelCallScope;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,13 +27,13 @@ class QueryEmbeddingAdapterTest {
     private EmbeddingModel embeddingModel;
 
     @Mock
-    private ModelSupport aiModelSupport;
+    private ModelCaller modelCaller;
 
     private QueryEmbeddingAdapter adapter;
 
     @BeforeEach
     void setUp() {
-        adapter = new QueryEmbeddingAdapter(embeddingModel, aiModelSupport);
+        adapter = new QueryEmbeddingAdapter(embeddingModel, modelCaller);
     }
 
     @Test
@@ -42,13 +42,13 @@ class QueryEmbeddingAdapterTest {
         assertThat(adapter.embed("   ")).isEmpty();
         assertThat(adapter.embed(null)).isEmpty();
 
-        verifyNoInteractions(aiModelSupport);
+        verifyNoInteractions(modelCaller);
     }
 
     @Test
     @DisplayName("模型未配置（调用抛异常）时返回空列表而不是抛出：检索要能退化为纯 BM25")
     void embed_modelFailure_shouldReturnEmptyInsteadOfThrowing() {
-        when(aiModelSupport.embed(any(), any(), anyString()))
+        when(modelCaller.embed(any(), any(), anyString()))
                 .thenThrow(new IllegalStateException("AI 模型未配置：easyorange.ai.embedding.api-key 为空"));
 
         assertThat(adapter.embed("手机")).isEmpty();
@@ -57,7 +57,7 @@ class QueryEmbeddingAdapterTest {
     @Test
     @DisplayName("正常路径按 SEMANTIC 场景记账并返回向量")
     void embed_success_shouldReturnVector() {
-        when(aiModelSupport.embed(any(), eq(ModelCallScope.SEMANTIC), eq("手机"))).thenReturn(List.of(0.1f, 0.2f));
+        when(modelCaller.embed(any(), eq(ModelCallScope.SEMANTIC), eq("手机"))).thenReturn(List.of(0.1f, 0.2f));
 
         assertThat(adapter.embed("手机")).containsExactly(0.1f, 0.2f);
     }

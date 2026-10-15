@@ -8,7 +8,7 @@ import static org.mockito.Mockito.when;
 
 import com.cartethyia.easyorange.ai.domain.enums.ModelCallScope;
 import com.cartethyia.easyorange.ai.domain.exception.ChatStreamAbortedException;
-import com.cartethyia.easyorange.ai.testsupport.TestModelSupport;
+import com.cartethyia.easyorange.ai.testsupport.TestModelCaller;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,17 +25,17 @@ import org.springframework.ai.chat.prompt.Prompt;
 import reactor.core.publisher.Flux;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("ModelSupport 流式调用 -> 测试")
-class ModelSupportStreamTest {
+@DisplayName("ModelCaller 流式调用 -> 测试")
+class ModelCallerStreamTest {
 
     @Mock
     private ChatModel chatModel;
 
-    private ModelSupport aiModelSupport;
+    private ModelCaller modelCaller;
 
     @BeforeEach
     void setUp() {
-        aiModelSupport = TestModelSupport.create();
+        modelCaller = TestModelCaller.create();
     }
 
     private static ChatResponse textResponse(String text) {
@@ -48,8 +48,7 @@ class ModelSupportStreamTest {
         when(chatModel.stream(any(Prompt.class))).thenReturn(Flux.just(textResponse("你"), textResponse("好")));
 
         var collected = new StringBuilder();
-        String full =
-                aiModelSupport.callTextStream(chatModel, ModelCallScope.CHAT, "system", "user", collected::append);
+        String full = modelCaller.callTextStream(chatModel, ModelCallScope.CHAT, "system", "user", collected::append);
 
         assertThat(full).isEqualTo("你好");
         assertThat(collected.toString()).isEqualTo("你好");
@@ -62,8 +61,7 @@ class ModelSupportStreamTest {
                 .thenReturn(Flux.just(textResponse(""), textResponse("答"), textResponse("")));
 
         var collected = new StringBuilder();
-        String full =
-                aiModelSupport.callTextStream(chatModel, ModelCallScope.CHAT, "system", "user", collected::append);
+        String full = modelCaller.callTextStream(chatModel, ModelCallScope.CHAT, "system", "user", collected::append);
 
         assertThat(full).isEqualTo("答");
         assertThat(collected.toString()).isEqualTo("答");
@@ -76,7 +74,7 @@ class ModelSupportStreamTest {
 
         var holder = new AtomicReference<Throwable>();
         try {
-            aiModelSupport.callTextStream(chatModel, ModelCallScope.CHAT, "system", "user", t -> {});
+            modelCaller.callTextStream(chatModel, ModelCallScope.CHAT, "system", "user", t -> {});
         } catch (Exception e) {
             holder.set(e);
         }
@@ -92,7 +90,7 @@ class ModelSupportStreamTest {
 
         var holder = new AtomicReference<Throwable>();
         try {
-            aiModelSupport.callTextStream(chatModel, ModelCallScope.CHAT, "system", "user", token -> {
+            modelCaller.callTextStream(chatModel, ModelCallScope.CHAT, "system", "user", token -> {
                 if (token.equals("你")) {
                     throw new ChatStreamAbortedException(new java.io.IOException("broken pipe"));
                 }

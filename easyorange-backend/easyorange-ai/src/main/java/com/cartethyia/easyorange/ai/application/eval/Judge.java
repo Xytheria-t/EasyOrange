@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.ai.application.eval;
 
+import com.cartethyia.easyorange.ai.application.support.ModelCaller;
 import com.cartethyia.easyorange.ai.application.support.ModelRouter;
-import com.cartethyia.easyorange.ai.application.support.ModelSupport;
 import com.cartethyia.easyorange.ai.domain.port.PromptRegistryPort;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +26,7 @@ public class Judge {
 
     private final ModelRouter modelRouter;
     private final PromptRegistryPort promptRegistry;
-    private final ModelSupport aiModelSupport;
+    private final ModelCaller modelCaller;
     private final ObjectMapper objectMapper;
 
     /** 对照参考回答评审（回答「AI 质量有没有回归」）—— 1-5 五档量表，正文见 {@code prompts/judge.yml}。 */
@@ -39,8 +39,7 @@ public class Judge {
 
     private Optional<Judgement> judgeWith(String systemPrompt, String caseText) {
         try {
-            String json =
-                    aiModelSupport.callJson(modelRouter.choose(ModelRouter.SCENARIO_JUDGE), systemPrompt, caseText);
+            String json = modelCaller.callJson(modelRouter.choose(ModelRouter.SCENARIO_JUDGE), systemPrompt, caseText);
             return parse(json);
         } catch (Exception e) {
             return Optional.empty();

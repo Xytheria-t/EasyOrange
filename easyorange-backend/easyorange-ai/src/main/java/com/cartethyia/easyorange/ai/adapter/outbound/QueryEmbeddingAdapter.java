@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.ai.adapter.outbound;
 
 import com.cartethyia.easyorange.ai.application.support.ModelCallRecorder;
-import com.cartethyia.easyorange.ai.application.support.ModelSupport;
+import com.cartethyia.easyorange.ai.application.support.ModelCaller;
 import com.cartethyia.easyorange.ai.domain.annotation.TokenBudget;
 import com.cartethyia.easyorange.ai.domain.enums.ModelCallScope;
 import com.cartethyia.easyorange.product.application.port.query.QueryEmbeddingPort;
@@ -25,7 +25,7 @@ import org.springframework.stereotype.Component;
 public class QueryEmbeddingAdapter implements QueryEmbeddingPort {
 
     private final EmbeddingModel embeddingModel;
-    private final ModelSupport aiModelSupport;
+    private final ModelCaller modelCaller;
 
     @Override
     @TokenBudget(scenario = "semantic", maxTokensPerCall = 500, dailyTokenLimit = 200_000)
@@ -34,7 +34,7 @@ public class QueryEmbeddingAdapter implements QueryEmbeddingPort {
             return List.of();
         }
         try {
-            return aiModelSupport.embed(embeddingModel, ModelCallScope.SEMANTIC, text);
+            return modelCaller.embed(embeddingModel, ModelCallScope.SEMANTIC, text);
         } catch (Exception e) {
             log.warn("Query embedding unavailable, search degrades to BM25-only, text={}", text, e);
             return List.of();

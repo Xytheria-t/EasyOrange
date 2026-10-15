@@ -10,7 +10,7 @@ import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.domain.enums.ModelCallScope;
 import com.cartethyia.easyorange.ai.domain.port.ModelCallLogPort;
 import com.cartethyia.easyorange.ai.testsupport.PropertyBindings;
-import com.cartethyia.easyorange.ai.testsupport.TestModelSupport;
+import com.cartethyia.easyorange.ai.testsupport.TestModelCaller;
 import com.openai.core.JsonValue;
 import com.openai.models.completions.CompletionUsage;
 import java.util.List;
@@ -39,8 +39,8 @@ import org.springframework.ai.embedding.EmbeddingResponseMetadata;
 import org.springframework.ai.openai.OpenAiChatOptions;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("ModelSupport 调用去重工具测试")
-class ModelSupportTest {
+@DisplayName("ModelCaller 调用去重工具测试")
+class ModelCallerTest {
 
     @Mock
     private ChatModel chatModel;
@@ -51,11 +51,11 @@ class ModelSupportTest {
     @Mock
     private ModelCallLogPort callLogRecorder;
 
-    private ModelSupport aiModelSupport;
+    private ModelCaller modelCaller;
 
     @org.junit.jupiter.api.BeforeEach
     void setUp() {
-        aiModelSupport = TestModelSupport.create(callLogRecorder);
+        modelCaller = TestModelCaller.create(callLogRecorder);
     }
 
     private static ChatResponse textResponse(String text) {
@@ -71,7 +71,7 @@ class ModelSupportTest {
         void callText_success() {
             when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("你好"));
 
-            String result = aiModelSupport.callText(chatModel, ModelCallScope.CHAT, "system", "user");
+            String result = modelCaller.callText(chatModel, ModelCallScope.CHAT, "system", "user");
 
             assertThat(result).isEqualTo("你好");
             var captor = ArgumentCaptor.forClass(Prompt.class);
@@ -84,7 +84,7 @@ class ModelSupportTest {
         void callText_withScope_recordsLog() {
             when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("你好"));
 
-            String result = aiModelSupport.callText(chatModel, ModelCallScope.CHAT, "system", "user");
+            String result = modelCaller.callText(chatModel, ModelCallScope.CHAT, "system", "user");
 
             assertThat(result).isEqualTo("你好");
             verify(callLogRecorder)
@@ -107,7 +107,7 @@ class ModelSupportTest {
             when(chatModel.call(any(Prompt.class))).thenThrow(new RuntimeException("API timeout"));
 
             org.assertj.core.api.Assertions.assertThatThrownBy(
-                            () -> aiModelSupport.callText(chatModel, ModelCallScope.CHAT, "system", "user"))
+                            () -> modelCaller.callText(chatModel, ModelCallScope.CHAT, "system", "user"))
                     .isInstanceOf(RuntimeException.class);
 
             verify(callLogRecorder)
@@ -129,7 +129,7 @@ class ModelSupportTest {
         void callText_success_recordsCallLog() {
             when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("你好"));
 
-            aiModelSupport.callText(chatModel, ModelCallScope.CHAT, "system", "user");
+            modelCaller.callText(chatModel, ModelCallScope.CHAT, "system", "user");
 
             verify(callLogRecorder)
                     .record(
@@ -150,7 +150,7 @@ class ModelSupportTest {
         void callText_truncatesOversizedErrorMessage() {
             when(chatModel.call(any(Prompt.class))).thenThrow(new RuntimeException("x".repeat(5000)));
 
-            assertThatThrownBy(() -> aiModelSupport.callText(chatModel, ModelCallScope.CHAT, "system", "user"))
+            assertThatThrownBy(() -> modelCaller.callText(chatModel, ModelCallScope.CHAT, "system", "user"))
                     .isInstanceOf(RuntimeException.class);
 
             var captor = ArgumentCaptor.forClass(String.class);
@@ -179,7 +179,7 @@ class ModelSupportTest {
         void callJson_success() {
             when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("{\"key\":\"value\"}"));
 
-            String result = aiModelSupport.callJson(chatModel, "system", "user");
+            String result = modelCaller.callJson(chatModel, "system", "user");
 
             assertThat(result).isEqualTo("{\"key\":\"value\"}");
             verify(chatModel).call(any(Prompt.class));
@@ -196,7 +196,7 @@ class ModelSupportTest {
             when(embeddingModel.embedForResponse(List.of("iPhone 14")))
                     .thenReturn(new EmbeddingResponse(List.of(new Embedding(new float[] {1.0f, 2.5f, -3.0f}, 0))));
 
-            List<Float> result = aiModelSupport.embed(embeddingModel, ModelCallScope.SEMANTIC, "iPhone 14");
+            List<Float> result = modelCaller.embed(embeddingModel, ModelCallScope.SEMANTIC, "iPhone 14");
 
             assertThat(result).containsExactly(1.0f, 2.5f, -3.0f);
         }
@@ -211,7 +211,7 @@ class ModelSupportTest {
         void callJsonWithImages_attachesMediaAndParses() {
             when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("{\"title\":\"二手相机\"}"));
 
-            Optional<Listing> result = aiModelSupport.callJsonWithImages(
+            Optional<Listing> result = modelCaller.callJsonWithImages(
                     chatModel,
                     ModelCallScope.AUTO_LISTING,
                     "system",
@@ -236,7 +236,7 @@ class ModelSupportTest {
         void callJsonWithImages_dataUrlMimeFromHeader() {
             when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("{\"title\":\"二手相机\"}"));
 
-            Optional<Listing> result = aiModelSupport.callJsonWithImages(
+            Optional<Listing> result = modelCaller.callJsonWithImages(
                     chatModel,
                     ModelCallScope.AUTO_LISTING,
                     "system",
@@ -257,7 +257,7 @@ class ModelSupportTest {
         void callJsonWithImages_unparsable() {
             when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("{broken}"));
 
-            Optional<Listing> result = aiModelSupport.callJsonWithImages(
+            Optional<Listing> result = modelCaller.callJsonWithImages(
                     chatModel,
                     ModelCallScope.AUTO_LISTING,
                     "system",
@@ -277,12 +277,13 @@ class ModelSupportTest {
     class BudgetAccountingTests {
 
         private InMemoryTokenBudgetStore budgetStore;
-        private ModelSupport support;
+        private ModelCaller modelCaller;
 
         @BeforeEach
         void setUpBudgetStore() {
             budgetStore = new InMemoryTokenBudgetStore();
-            support = TestModelSupport.create(callLogRecorder, budgetStore, PropertyBindings.bind(AiProperties.class));
+            modelCaller =
+                    TestModelCaller.create(callLogRecorder, budgetStore, PropertyBindings.bind(AiProperties.class));
         }
 
         @Test
@@ -290,7 +291,7 @@ class ModelSupportTest {
         void recordsRealUsage() {
             when(chatModel.call(any(Prompt.class))).thenReturn(responseWithUsage("回答", 120, 30));
 
-            support.callText(chatModel, ModelCallScope.CHAT, "system", "user");
+            modelCaller.callText(chatModel, ModelCallScope.CHAT, "system", "user");
 
             var usage = budgetStore.getTodayUsage(ModelCallScope.CHAT.budgetScenario());
             assertThat(usage).isPresent();
@@ -304,9 +305,9 @@ class ModelSupportTest {
         void fallsBackToConfiguredEstimate() {
             when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("回答"));
             var props = PropertyBindings.bind(AiProperties.class, "budget.scenarios.chat.max-tokens-per-call", "1500");
-            support = TestModelSupport.create(callLogRecorder, budgetStore, props);
+            modelCaller = TestModelCaller.create(callLogRecorder, budgetStore, props);
 
-            support.callText(chatModel, ModelCallScope.CHAT, "system", "user");
+            modelCaller.callText(chatModel, ModelCallScope.CHAT, "system", "user");
 
             var usage = budgetStore.getTodayUsage(ModelCallScope.CHAT.budgetScenario());
             assertThat(usage).isPresent();
@@ -318,7 +319,7 @@ class ModelSupportTest {
         void embedding_recordsReportedUsage() {
             when(embeddingModel.embedForResponse(List.of("二手手机"))).thenReturn(embeddingResponseWithUsage(12));
 
-            List<Float> result = support.embed(embeddingModel, ModelCallScope.SEMANTIC, "二手手机");
+            List<Float> result = modelCaller.embed(embeddingModel, ModelCallScope.SEMANTIC, "二手手机");
 
             assertThat(result).containsExactly(0.5f, -0.25f);
             var usage = budgetStore.getTodayUsage(ModelCallScope.SEMANTIC.budgetScenario());
@@ -346,9 +347,9 @@ class ModelSupportTest {
                     .thenReturn(new EmbeddingResponse(List.of(new Embedding(new float[] {0.5f}, 0))));
             var props =
                     PropertyBindings.bind(AiProperties.class, "budget.scenarios.semantic.max-tokens-per-call", "500");
-            support = TestModelSupport.create(callLogRecorder, budgetStore, props);
+            modelCaller = TestModelCaller.create(callLogRecorder, budgetStore, props);
 
-            support.embed(embeddingModel, ModelCallScope.SEMANTIC, "二手手机");
+            modelCaller.embed(embeddingModel, ModelCallScope.SEMANTIC, "二手手机");
 
             var usage = budgetStore.getTodayUsage(ModelCallScope.SEMANTIC.budgetScenario());
             assertThat(usage).isPresent();
@@ -359,10 +360,10 @@ class ModelSupportTest {
         @DisplayName("调用失败不记账 —— 即使场景配置了上限估算也不计（故障期虚烧预算会把恢复后的场景锁死）")
         void failure_recordsNothing() {
             var props = PropertyBindings.bind(AiProperties.class, "budget.scenarios.chat.max-tokens-per-call", "1500");
-            support = TestModelSupport.create(callLogRecorder, budgetStore, props);
+            modelCaller = TestModelCaller.create(callLogRecorder, budgetStore, props);
             when(chatModel.call(any(Prompt.class))).thenThrow(new RuntimeException("provider down"));
 
-            assertThatThrownBy(() -> support.callText(chatModel, ModelCallScope.CHAT, "system", "user"))
+            assertThatThrownBy(() -> modelCaller.callText(chatModel, ModelCallScope.CHAT, "system", "user"))
                     .isInstanceOf(RuntimeException.class);
 
             assertThat(budgetStore.getTodayUsage(ModelCallScope.CHAT.budgetScenario()))
@@ -390,9 +391,9 @@ class ModelSupportTest {
         void scopedCall_sendsScenarioMaxTokens() {
             when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("回答"));
             var props = PropertyBindings.bind(AiProperties.class, "budget.scenarios.chat.max-tokens-per-call", "1500");
-            var support = TestModelSupport.create(callLogRecorder, budgetStore, props);
+            var modelCaller = TestModelCaller.create(callLogRecorder, budgetStore, props);
 
-            support.callText(chatModel, ModelCallScope.CHAT, "system", "user");
+            modelCaller.callText(chatModel, ModelCallScope.CHAT, "system", "user");
 
             var captor = ArgumentCaptor.forClass(Prompt.class);
             verify(chatModel).call(captor.capture());
@@ -407,7 +408,7 @@ class ModelSupportTest {
         void scopedCallWithoutConfig_leavesMaxTokensUnset() {
             when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("回答"));
 
-            aiModelSupport.callText(chatModel, ModelCallScope.CHAT, "system", "user");
+            modelCaller.callText(chatModel, ModelCallScope.CHAT, "system", "user");
 
             var captor = ArgumentCaptor.forClass(Prompt.class);
             verify(chatModel).call(captor.capture());
@@ -425,7 +426,7 @@ class ModelSupportTest {
             when(chatModel.call(any(Prompt.class)))
                     .thenReturn(responseWithUsage("回答", new DefaultUsage(120, 30, 150, null, 96L, null)));
 
-            aiModelSupport.callText(chatModel, ModelCallScope.CHAT, "system", "user");
+            modelCaller.callText(chatModel, ModelCallScope.CHAT, "system", "user");
 
             verify(callLogRecorder)
                     .record(
@@ -453,7 +454,7 @@ class ModelSupportTest {
             when(chatModel.call(any(Prompt.class)))
                     .thenReturn(responseWithUsage("回答", new DefaultUsage(120, 30, 150, nativeUsage, null, null)));
 
-            aiModelSupport.callText(chatModel, ModelCallScope.CHAT, "system", "user");
+            modelCaller.callText(chatModel, ModelCallScope.CHAT, "system", "user");
 
             verify(callLogRecorder)
                     .record(
@@ -474,7 +475,7 @@ class ModelSupportTest {
         void noCacheField_recordsZero() {
             when(chatModel.call(any(Prompt.class))).thenReturn(responseWithUsage("回答", 120, 30));
 
-            aiModelSupport.callText(chatModel, ModelCallScope.CHAT, "system", "user");
+            modelCaller.callText(chatModel, ModelCallScope.CHAT, "system", "user");
 
             verify(callLogRecorder)
                     .record(

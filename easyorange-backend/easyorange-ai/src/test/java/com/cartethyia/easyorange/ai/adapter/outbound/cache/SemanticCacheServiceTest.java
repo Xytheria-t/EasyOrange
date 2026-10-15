@@ -12,7 +12,7 @@ import static org.mockito.Mockito.when;
 import com.cartethyia.easyorange.ai.application.cache.SemanticCacheMetrics;
 import com.cartethyia.easyorange.ai.application.cache.SemanticCacheMetrics.Outcome;
 import com.cartethyia.easyorange.ai.application.dto.ChatAnswer;
-import com.cartethyia.easyorange.ai.application.support.ModelSupport;
+import com.cartethyia.easyorange.ai.application.support.ModelCaller;
 import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.domain.enums.ModelCallScope;
 import com.cartethyia.easyorange.ai.domain.model.ChatSource;
@@ -69,7 +69,7 @@ class SemanticCacheServiceTest {
     private EmbeddingModel embeddingModel;
 
     @Mock
-    private ModelSupport aiModelSupport;
+    private ModelCaller modelCaller;
 
     private SemanticCacheService cache;
 
@@ -86,7 +86,7 @@ class SemanticCacheServiceTest {
         return new SemanticCacheService(
                 redisProvider,
                 embeddingModelProvider,
-                aiModelSupport,
+                modelCaller,
                 aiProperties,
                 new ObjectMapper(),
                 new SemanticCacheMetrics(meterRegistry));
@@ -108,7 +108,7 @@ class SemanticCacheServiceTest {
         @DisplayName("正常 -> 返回查询向量")
         void embedQuery_ok() {
             when(embeddingModelProvider.getIfAvailable()).thenReturn(embeddingModel);
-            when(aiModelSupport.embed(any(), any(), anyString())).thenReturn(QUERY_VECTOR);
+            when(modelCaller.embed(any(), any(), anyString())).thenReturn(QUERY_VECTOR);
 
             assertThat(cache.embedQuery("怎么退款？")).isEqualTo(QUERY_VECTOR);
         }
@@ -134,14 +134,14 @@ class SemanticCacheServiceTest {
         @DisplayName("空白查询 -> 空列表，不调模型")
         void embedQuery_blank() {
             assertThat(cache.embedQuery("  ")).isEmpty();
-            verify(aiModelSupport, never()).embed(any(), any(), anyString());
+            verify(modelCaller, never()).embed(any(), any(), anyString());
         }
 
         @Test
         @DisplayName("向量化异常 -> 空列表（不抛出，缓存失败不阻塞问答）")
         void embedQuery_embeddingThrows() {
             when(embeddingModelProvider.getIfAvailable()).thenReturn(embeddingModel);
-            when(aiModelSupport.embed(any(), any(), anyString())).thenThrow(new RuntimeException("dashscope timeout"));
+            when(modelCaller.embed(any(), any(), anyString())).thenThrow(new RuntimeException("dashscope timeout"));
 
             assertThat(cache.embedQuery("问题")).isEmpty();
         }
@@ -321,7 +321,7 @@ class SemanticCacheServiceTest {
         SemanticCacheService cacheNoRedis = new SemanticCacheService(
                 mock(ObjectProvider.class),
                 embeddingModelProvider,
-                aiModelSupport,
+                modelCaller,
                 PropertyBindings.bind(AiProperties.class),
                 new ObjectMapper(),
                 new SemanticCacheMetrics(meterRegistry));
@@ -369,7 +369,7 @@ class SemanticCacheServiceTest {
         @DisplayName("向量化抛异常 -> error 而非 bypass（钱已付却没查成，与主动不查不是一回事）")
         void embeddingFailureCountsAsErrorNotBypass() {
             when(embeddingModelProvider.getIfAvailable()).thenReturn(embeddingModel);
-            when(aiModelSupport.embed(any(), any(), anyString())).thenThrow(new RuntimeException("供应商超时"));
+            when(modelCaller.embed(any(), any(), anyString())).thenThrow(new RuntimeException("供应商超时"));
 
             assertThat(cache.embedQuery("问题")).isEmpty();
 

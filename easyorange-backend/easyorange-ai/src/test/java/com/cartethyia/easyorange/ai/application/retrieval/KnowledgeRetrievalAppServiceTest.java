@@ -9,7 +9,7 @@ import static org.mockito.Mockito.when;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeChunkHit;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeHit;
 import com.cartethyia.easyorange.ai.domain.port.KnowledgeIndexPort;
-import com.cartethyia.easyorange.ai.testsupport.TestModelSupport;
+import com.cartethyia.easyorange.ai.testsupport.TestModelCaller;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -47,7 +47,7 @@ class KnowledgeRetrievalAppServiceTest {
 
     private void setUpRetrieval() {
         retrievalService =
-                new KnowledgeRetrievalAppService(indexPortProvider, embeddingModelProvider, TestModelSupport.create());
+                new KnowledgeRetrievalAppService(indexPortProvider, embeddingModelProvider, TestModelCaller.create());
     }
 
     @Test

@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.ai.adapter.outbound.cache;
 
 import com.cartethyia.easyorange.ai.application.cache.SemanticCacheMetrics;
-import com.cartethyia.easyorange.ai.application.support.ModelSupport;
+import com.cartethyia.easyorange.ai.application.support.ModelCaller;
 import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.domain.enums.ModelCallScope;
 import com.cartethyia.easyorange.ai.domain.model.VectorUtils;
@@ -44,7 +44,7 @@ public class SemanticCacheService implements SemanticCachePort {
 
     private final ObjectProvider<StringRedisTemplate> redisProvider;
     private final ObjectProvider<EmbeddingModel> embeddingModelProvider;
-    private final ModelSupport aiModelSupport;
+    private final ModelCaller modelCaller;
     private final AiProperties aiProperties;
     private final ObjectMapper objectMapper;
     private final SemanticCacheMetrics metrics;
@@ -62,7 +62,7 @@ public class SemanticCacheService implements SemanticCachePort {
             return List.of();
         }
         try {
-            return aiModelSupport.embed(embeddingModel, ModelCallScope.CHAT, query);
+            return modelCaller.embed(embeddingModel, ModelCallScope.CHAT, query);
         } catch (Exception e) {
             log.warn("Semantic cache query embedding failed, skip cache for this call", e);
             // 失败记 error 而非 bypass：钱已花（供应商已计费）却没换来查找，与主动不查不是一回事，故障期能从曲线看出来

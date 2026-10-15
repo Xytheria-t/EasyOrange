@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.ai.application.chat;
 import com.cartethyia.easyorange.ai.application.cache.SemanticCacheMetrics;
 import com.cartethyia.easyorange.ai.application.dto.ChatAnswer;
 import com.cartethyia.easyorange.ai.application.dto.ChatRequest;
-import com.cartethyia.easyorange.ai.application.support.ModelSupport;
+import com.cartethyia.easyorange.ai.application.support.ModelCaller;
 import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.domain.annotation.TokenBudget;
 import com.cartethyia.easyorange.ai.domain.enums.AiResultCode;
@@ -68,7 +68,7 @@ public class ChatAppService {
 
     private final ChatModel chatModel;
     private final PromptRegistryPort promptRegistry;
-    private final ModelSupport aiModelSupport;
+    private final ModelCaller modelCaller;
     private final SemanticCachePort semanticCache;
     private final ChatSessionPort sessionStore;
     private final UserPreferenceRepository preferenceRepository;
@@ -99,7 +99,7 @@ public class ChatAppService {
     public ChatAppService(
             ChatModel chatModel,
             PromptRegistryPort promptRegistry,
-            ModelSupport aiModelSupport,
+            ModelCaller modelCaller,
             SemanticCachePort semanticCache,
             ChatSessionPort sessionStore,
             UserPreferenceRepository preferenceRepository,
@@ -112,7 +112,7 @@ public class ChatAppService {
             MeterRegistry meterRegistry) {
         this.chatModel = chatModel;
         this.promptRegistry = promptRegistry;
-        this.aiModelSupport = aiModelSupport;
+        this.modelCaller = modelCaller;
         this.semanticCache = semanticCache;
         this.sessionStore = sessionStore;
         this.preferenceRepository = preferenceRepository;
@@ -190,7 +190,7 @@ public class ChatAppService {
      * <p>
      * 身份必须由调用方显式传入而非在这里读安全上下文：流式跑在 Controller 提交的另一线程上，{@code
      * SecurityContextHolder} 的 ThreadLocal 不会跟过去，读恒为空 —— 长期偏好不加载、偏好写不进库、trace 的 userId 为空。
-     * 流末帧用量由 {@link ModelSupport} 记账（本入口只做预留，真实记账按供应商回报）。
+     * 流末帧用量由 {@link ModelCaller} 记账（本入口只做预留，真实记账按供应商回报）。
      */
     public void streamAnswer(ChatRequest request, String userId, ChatStreamHandler handler) {
         if (!StringUtils.hasText(request.question())) {
@@ -327,8 +327,8 @@ public class ChatAppService {
             List<Message> messages = ChatPromptAssembler.assemble(
                     promptRegistry.require(CHAT_PROMPT), request.question(), history, prefs, loopResult);
             String answer = handler != null
-                    ? aiModelSupport.callTextStream(chatModel, ModelCallScope.CHAT, messages, handler::onToken)
-                    : aiModelSupport.callText(chatModel, ModelCallScope.CHAT, messages);
+                    ? modelCaller.callTextStream(chatModel, ModelCallScope.CHAT, messages, handler::onToken)
+                    : modelCaller.callText(chatModel, ModelCallScope.CHAT, messages);
             if (answer == null || answer.isBlank()) {
                 // 空回答 = 模型没给可用结果：抛显式业务码而非裸 IllegalStateException（后者落 500）
                 throw BusinessException.of(AiResultCode.AI_UNAVAILABLE, "模型返回空回答");
