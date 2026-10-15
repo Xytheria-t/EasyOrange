@@ -11,7 +11,10 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 工具循环指标基类 — 买家找货与卖家发布两条链路共用一套埋点形状，只换命名空间与工具名单。
+ * 工具循环指标基类 —— 买家找货与卖家发布两条链路共用一套埋点形状，只换命名空间与工具名单。
+ * <p>
+ * 在链路里的位置：被两条链路的指标类继承（{@code ChatLoopMetrics} / {@code ListingLoopMetrics}），它们实现
+ * {@link ToolLoopListener} 后装进内核的 Spec。
  * <p>
  * 埋点是横切关注点，编排器不该知道指标名与 tag 契约：构造期按名单全集注册（tag 取模型输出开集，一次提示注入就能撑爆
  * 时序基数，故名单外一律记 {@code unknown}），热路径只做 map 查找、零拼接。分位数走 {@code publishPercentileHistogram}

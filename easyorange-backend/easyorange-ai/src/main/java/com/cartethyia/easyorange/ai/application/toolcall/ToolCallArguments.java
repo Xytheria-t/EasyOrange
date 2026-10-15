@@ -5,7 +5,10 @@ import java.util.List;
 import org.jspecify.annotations.Nullable;
 
 /**
- * 一次 tool call 的参数解析视图 — arguments JSON 的只读投影；取值约束见各工具面的 {@code @ToolParam}，不在此重写。
+ * 一次 tool call 的参数解析视图 —— arguments JSON 的只读投影；取值约束见各工具面的 {@code @ToolParam}，不在此重写。
+ * <p>
+ * 在链路里的位置：由 {@link ToolCallDecider} 反序列化产出，挂在 {@link ToolCallDecision} 上交给链路 —— 内核与
+ * 工具面都不直接碰它。
  * <p>
  * 字段取两条链路工具参数的并集而非按工具分型（按名分派要引「名字→解析器」注册表加穷尽 switch，编译器看不见
  * 运行期的名字）；全字段 {@link Nullable}（每次只有 1-2 个有值）；工具名与原始串不入此记录——由

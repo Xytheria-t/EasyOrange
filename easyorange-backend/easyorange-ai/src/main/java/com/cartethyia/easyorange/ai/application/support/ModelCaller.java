@@ -35,9 +35,11 @@ import tools.jackson.databind.ObjectMapper;
  * 所有 LLM / Embedding 调用的唯一入口 —— 收敛 system+user 双消息、JSON 结构化输出、原生 tool calling、Embedding、
  * 多模态结构化输出几类重复调用模式，避免每个服务重复组装 {@link Prompt}。
  * <p>
- * 带 {@link ModelCallScope} 的方法一律经 {@link ModelCallRecorder} 执行（落 eo_ai_call_log 与场景预算记账），治理出口唯一；
- * 唯一例外是 {@link #callJson}，专供 LLM-as-Judge 离线评估、刻意不记账。按角色分隔多轮消息走 {@link
- * #callText(ChatModel, ModelCallScope, List)} 重载 —— 历史不进单条 user 消息，前缀稳定才能命中供应商 KV cache 折扣计价。
+ * 在链路里的位置：调用方先经 {@link ModelRouter} 选好模型 bean，再把「模型 + 记账场景 + 消息」交给本类；决策
+ * （{@code ToolCallDecider}）、生成、检索、评估四条路都从这里出。带 {@link ModelCallScope} 的方法一律经
+ * {@link ModelCallRecorder} 执行（落 eo_ai_call_log 与场景预算记账），治理出口唯一；唯一例外是 {@link #callJson}，
+ * 专供 LLM-as-Judge 离线评估、刻意不记账。按角色分隔多轮消息走 {@link #callText(ChatModel, ModelCallScope, List)}
+ * 重载 —— 历史不进单条 user 消息，前缀稳定才能命中供应商 KV cache 折扣计价。
  */
 @Slf4j
 @Component

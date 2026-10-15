@@ -18,9 +18,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.DigestUtils;
 
 /**
- * AI 调用记账 — 每次 LLM/Embedding 调用落一条 eo_ai_call_log，并把真实 token 用量累加进场景预算；全工程唯一把
- * 供应商回报的 usage 写进 {@link TokenBudgetStorePort} 的地方——切面只做前置检查、拿不到响应体，绕开记账直调
- * {@code ChatModel} 在类型上就不成立（必须经 {@link ModelCaller}），「治理只有一个出口」由此是结构性事实。
+ * AI 调用记账 —— 每次 LLM / Embedding 调用落一条 eo_ai_call_log，并把真实 token 用量累加进场景预算。
+ * <p>
+ * 在链路里的位置：{@link ModelCaller} 每个带 {@link ModelCallScope} 的方法都经它的 {@code record(...)} 包一层。
+ * 全工程唯一把供应商回报的 usage 写进 {@link TokenBudgetStorePort} 的地方——切面只做前置检查、拿不到响应体，
+ * 绕开记账直调 {@code ChatModel} 在类型上就不成立（必须经 {@link ModelCaller}），「治理只有一个出口」由此是结构性事实。
  * <p>
  * 两笔账口径刻意不同，别互相套用：调用日志记 0 而不估算（估算值混进成本报表比缺数据更危险）；预算未回报才退化为
  * 场景上限估算（宁高估也不让预算静默失效）；失败调用两笔都不记——按上限估算会让故障期虚烧日预算（chat 口径约

@@ -9,8 +9,11 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 /**
- * 模型路由 — 按<b>模型角色</b>选模型 bean（decision 决策 / vision 视觉 / judge 评审），角色 → bean 名映射在
+ * 模型路由 —— 按<b>模型角色</b>选模型 bean（decision 决策 / vision 视觉 / judge 评审），角色 → bean 名映射在
  * {@code easyorange.ai.routing.scenarios}（yaml 可热更新），未配置的角色回退 {@code default-model}；接入新模型只改配置。
+ * <p>
+ * 在链路里的位置：调用方先 {@link #choose(String)} 拿到 {@code ChatModel}，再把它作为参数传给 {@link ModelCaller}
+ * —— 本类只挑 bean，不发起调用、不记账。
  * <p>
  * 与 {@link ModelCallScope} 是两条正交轴，别混：本类答「这次调用用哪个模型」（按任务性质），scope 答「这笔钱记谁头上」
  * （按业务链路）。同一次用户请求会跨多个模型角色（决策用快模型、生成用强模型），但只落一个业务链路的账。

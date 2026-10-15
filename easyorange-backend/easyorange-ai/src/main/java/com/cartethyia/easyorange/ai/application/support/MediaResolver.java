@@ -8,7 +8,10 @@ import org.springframework.ai.content.Media;
 import org.springframework.util.MimeType;
 
 /**
- * 图片 URL → Spring AI {@link Media} 的转换 — 纯 URL 形态解析、与「怎么调模型」无关，故独立成类。
+ * 图片 URL → Spring AI {@link Media} 的转换 —— 纯 URL 形态解析、与「怎么调模型」无关，故独立成类。
+ * <p>
+ * 在链路里的位置：包内私有，只被 {@link ModelCaller#callJsonWithImages} 用（卖家发布链路的视觉调用，图片以
+ * data URL 传入）。
  * <p>
  * MIME 靠猜是这条链路唯一的不可信环节（图片本体在供应商那边，客户端只能给声明）：一律标 JPEG 会让 PNG/WebP 被按
  * 错误类型解码（部分视觉模型直接拒答），所以猜不出来时回退 JPEG——猜错类型会报错，标错类型只是可能影响解码质量。
