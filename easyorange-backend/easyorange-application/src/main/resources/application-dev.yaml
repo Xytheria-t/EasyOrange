@@ -172,17 +172,17 @@ rate-limit-filter:
   enabled: true
   rules:
     - path-pattern: /api/products
-      methods: GET
+      methods: [GET]
       strategy: local
       max-requests: 1000
       window-seconds: 60
     - path-pattern: /api/products/{id}
-      methods: GET
+      methods: [GET]
       strategy: local
       max-requests: 1000
       window-seconds: 60
     - path-pattern: /api/products/categories/**
-      methods: GET
+      methods: [GET]
       strategy: local
       max-requests: 1000
       window-seconds: 60
@@ -192,7 +192,7 @@ rate-limit-filter:
       max-requests: 1000
       window-seconds: 60
     - path-pattern: /mcp
-      methods: POST
+      methods: [POST]
       strategy: redis
       max-requests: 1000
       window-seconds: 60

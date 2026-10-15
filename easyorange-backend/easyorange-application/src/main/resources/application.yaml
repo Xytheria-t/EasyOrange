@@ -154,19 +154,19 @@ rate-limit-filter:
   rules:
     # 商品浏览 — GET 走本地限流，零网络开销
     - path-pattern: /api/products
-      methods: GET
+      methods: [GET]
       strategy: local
       max-requests: 200
       window-seconds: 60
       message: "请求过于频繁，请稍后重试"
     - path-pattern: /api/products/{id}
-      methods: GET
+      methods: [GET]
       strategy: local
       max-requests: 200
       window-seconds: 60
       message: "请求过于频繁，请稍后重试"
     - path-pattern: /api/products/categories/**
-      methods: GET
+      methods: [GET]
       strategy: local
       max-requests: 200
       window-seconds: 60
@@ -180,7 +180,7 @@ rate-limit-filter:
       message: "操作过于频繁，请稍后重试"
     # MCP 工具面 — 公开匿名端点（不在 /api 下，需单独限流）
     - path-pattern: /mcp
-      methods: POST
+      methods: [POST]
       strategy: redis
       max-requests: 60
       window-seconds: 60
@@ -291,9 +291,9 @@ management:
         enabled: true
       group:
         readiness:
-          include: readinessState,db,redis,rabbit,ai
+          include: [readinessState, db, redis, rabbit, ai]
         liveness:
-          include: livenessState
+          include: [livenessState]
 
 logging:
   level:
