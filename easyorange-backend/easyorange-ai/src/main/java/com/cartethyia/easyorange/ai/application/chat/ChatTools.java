@@ -23,13 +23,16 @@ import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 
 /**
- * 多步工具循环的内部工具面 — 检索 3 / 计算 2 / 写入 1 / 收敛 1，共 7 个工具（{@code @Tool} / {@code @ToolParam}
- * 注解生成供应商侧校验的 schema，方法分节即此四类）；每次循环实例化一份，召回物累加器是单次请求内的可变状态、
- * 由实例独占。
+ * 多步工具循环的内部工具面 —— 模型可调用的 7 个工具（检索 3 / 计算 2 / 写入 1 / 收敛 1），{@code @Tool} 与
+ * {@code @ToolParam} 注解生成供应商侧的参数 schema；方法的分节即这四类。
+ * <p>
+ * 在链路里的位置：由 {@code ChatToolsFactory} 每次循环造一份（{@code ChatToolLoop.run} 里造），召回物累加器是
+ * 单次请求内的可变状态、由实例独占；出循环时 {@code ChatToolLoop.Result.of} 经下面的快照方法取走产物，可变引用
+ * 不出实例。
  * <p>
  * 约定：thought 是每个工具的必填参数（原生 tool calling 没有独立的「决策理由」通道，只由编排器取出落 trace / SSE）；
- * 抛异常 = 该步失败，「查无此资产」这类有效结果必须返回观察文本；finish 只有 schema 没有执行；remember_preference 是唯一写路径
- * （按 userId + key 幂等 upsert），独立成一步是为了让降级路径下偏好不再静默丢失。
+ * 抛异常 = 该步失败，「查无此资产」这类有效结果必须返回观察文本；finish 只有 schema 没有执行；remember_preference
+ * 是唯一写路径（按 userId + key 幂等 upsert），独立成一步是为了让降级路径下偏好不再静默丢失。
  */
 @SuppressWarnings("unused") // thought 只进工具 schema，方法体不消费（见类注释）
 public class ChatTools {

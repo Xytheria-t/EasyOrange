@@ -7,8 +7,11 @@ import java.util.List;
 import org.springframework.stereotype.Component;
 
 /**
- * 买家找货链路循环指标 — {@code easyorange.ai.chat.*} 命名空间。轮数分布 / 降级率与发布链路分开看，两条链路
- * 各自与自身基线比较。埋点形状与 tag 口径见 {@link ToolLoopMetricsSupport}。
+ * 买家找货链路的循环指标 —— {@code easyorange.ai.chat.*} 命名空间；轮数分布与降级率与发布链路分开看，两条链路
+ * 各自与自身基线比较。
+ * <p>
+ * 在链路里的位置：实现 {@link ToolLoopListener}，由 {@code ChatToolLoop} 装配进内核的 Spec —— 内核在每次出口、
+ * 每个工具步回调它。埋点形状与 tag 口径见 {@link ToolLoopMetricsSupport}。
  */
 @Component
 public class ChatLoopMetrics extends ToolLoopMetricsSupport implements ToolLoopListener {
