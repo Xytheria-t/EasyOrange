@@ -519,21 +519,24 @@ easyorange:
 ---
 # -------------------------------------------------------------------
 # Spring Modulith 事件发布注册表 (Transactional Outbox)
+# 键名以 spring-modulith-events-*.jar 的 spring-configuration-metadata.json 为准：
+# 旧版与网上文档的名字对不上（jdbc.schema-initialization 是点分、check-intervall 是双 L），
+# 拼错不报错也不失败，只是静默失效
 # -------------------------------------------------------------------
 spring:
   modulith:
     events:
-      jdbc-schema-initialization:
-        enabled: false            # 由 Flyway 管理
+      jdbc:
+        schema-initialization:
+          enabled: false            # 由 Flyway 管理
       republish-outstanding-events-on-restart: true
       completion-mode: update     # 完成后更新 COMPLETION_DATE，不删除；超期行由 EventPublicationArchiveTask 搬入 ARCHIVE 表
       externalization:
         enabled: true
-        serialize-externalization: true
       staleness:
         published: PT5M           # PUBLISHED 超过 5 分钟标记为 FAILED
         processing: PT10M         # PROCESSING 超过 10 分钟标记为 FAILED
-        check-interval: PT1M      # 每分钟检查一次
+        check-intervall: PT1M     # 每分钟检查一次；双 L 是上游属性名（StalenessProperties.checkIntervall），别按拼写改回去
 
 easyorange:
   events:
