@@ -8,14 +8,16 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 /**
- * 对话场景的日预算前置判定 —「流式入口预留」与「循环中途降级」两个生效点；解析与判定在
+ * 对话场景的日预算前置判定 ——「流式入口预留」与「循环中途降级」两个生效点；解析与判定在
  * {@link TokenBudgetGuard}（配置优先、此处兜底常量），本类只锁 chat 的场景键与兜底值。
  * <p>
+ * 在链路里的位置：{@code ChatAppService} 的流式入口调 {@link #tryReserve()}，{@code ChatToolLoop} 把它作为
+ * {@code Spec#budgetExhausted} 注入内核、每轮问一次。
+ * <p>
  * 流式路径手动预留而不挂 {@code @TokenBudget}：切面在<b>代理边界</b>抛预算异常、早于方法体，{@code streamAnswer}
- * 转 error 事件的路由接不到，预算提示会落成 Controller 的通用降级文案；预留走 {@link #tryReserve}（与切面同一
- * 原子预留协议，请求结束释放），{@link #exhausted} 是循环中途的只读检查（用量含在途预留）。不放进工具调用循环：
- * 预算是「这次调用还能不能发出去」的治理决策，属 chat 特性而非循环执行器；兜底值须与
- * {@code @TokenBudget(scenario = "chat")} 一致，{@code ChatBudgetGuardTest} 反射断言两者相等。
+ * 转 error 事件的路由接不到，预算提示会落成 Controller 的通用降级文案。不放进工具调用循环：预算是「这次调用还能
+ * 不能发出去」的治理决策，属 chat 特性而非循环执行器；兜底值须与 {@code @TokenBudget(scenario = "chat")} 一致
+ * （{@code ChatBudgetGuardTest} 反射断言两者相等）。
  */
 @Component
 @RequiredArgsConstructor

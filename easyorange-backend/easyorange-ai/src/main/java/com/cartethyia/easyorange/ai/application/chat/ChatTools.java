@@ -130,6 +130,7 @@ public class ChatTools {
             name = TOOL_KNOWLEDGE_SEARCH,
             description = "检索平台规则知识库（交易流程 / 退款 / 运费 / 禁售品类）",
             resultConverter = RetrievalObservations.ObservationTextConverter.class)
+    /** 查平台规则知识库，命中追加进知识累加器；查不到返回空结果观察，不是失败。 */
     public String searchKnowledge(
             @ToolParam(description = "本步理由，不超过 20 字的中文概括") String thought,
             @ToolParam(description = "改写后的检索关键词，3-10 字") String query) {
@@ -143,6 +144,7 @@ public class ChatTools {
             name = TOOL_PRODUCT_SEARCH,
             description = "检索在售资产（找货 / 比价）",
             resultConverter = RetrievalObservations.ObservationTextConverter.class)
+    /** 找在售资产，命中追加进资产累加器；观察文本由 {@link RetrievalObservations} 生成（含「本轮无新增」判据）。 */
     public String searchProducts(
             @ToolParam(description = "本步理由，不超过 20 字的中文概括") String thought,
             @ToolParam(description = "改写后的找货关键词，3-10 字，保留品类与硬约束（预算 / 成色）") String query) {
@@ -156,6 +158,7 @@ public class ChatTools {
             name = TOOL_PRODUCT_DETAIL,
             description = "查看某件在售资产的详情（描述 / 成色 / 位置 / 卖家）",
             resultConverter = RetrievalObservations.ObservationTextConverter.class)
+    /** 查单件资产详情；「查无此资产」返回观察文本而非抛异常 —— 那是有效结果，让模型换目标继续。 */
     public String fetchProductDetail(
             @ToolParam(description = "本步理由，不超过 20 字的中文概括") String thought,
             @ToolParam(description = "资产 ID，必须取自此前 product_search 观察中方括号里的资产 ID") String productId) {
@@ -179,6 +182,7 @@ public class ChatTools {
             description = "对已召回的资产算行情（在售件数 / 均价 / 价格区间），用于判断某件值不值得买；零模型计算。"
                     + "必须在 product_search 之后的轮次调用（同一轮里它会排在 product_search 前面而统计到空集）",
             resultConverter = RetrievalObservations.ObservationTextConverter.class)
+    /** 对资产累加器里的召回物算行情（件数 / 均价 / 区间），零模型调用；累加器为空即统计到空集。 */
     public String summarizeMarketPrice(@ToolParam(description = "本步理由，不超过 20 字的中文概括") String thought) {
         return RetrievalObservations.priceStatsObservation(assetHits);
     }
@@ -187,6 +191,7 @@ public class ChatTools {
             name = TOOL_COMPARE_ASSETS,
             description = "对 2-4 件候选做逐维确定性比对（价格 / 成色 / 地区 / 在售状态），一次替代多次 product_detail",
             resultConverter = RetrievalObservations.ObservationTextConverter.class)
+    /** 逐维比对 2-4 件候选：一次批量取详情，查不到的 ID 在观察里点出而不算失败，超 4 件截断。 */
     public String compareAssets(
             @ToolParam(description = "本步理由，不超过 20 字的中文概括") String thought,
             @ToolParam(description = "要对比的资产 ID 列表，2-4 个，必须取自此前 product_search 观察中方括号里的资产 ID")
@@ -233,6 +238,7 @@ public class ChatTools {
             name = TOOL_REMEMBER_PREFERENCE,
             description = "记录用户的长期偏好（成色 / 价格区间 / 风格 / 地区），跨会话生效；对话中出现明确偏好时调用一次即可，同一偏好不要重复记录",
             resultConverter = RetrievalObservations.ObservationTextConverter.class)
+    /** 写一条长期偏好 —— key 过白名单、值折叠空白并限长后才落库；机器主体或越界入参返回观察文本跳过，不抛异常。 */
     public String rememberPreference(
             @ToolParam(description = "本步理由，不超过 20 字的中文概括") String thought,
             @ToolParam(description = "偏好类别，只允许 condition（成色）/ price_range（价格区间）/ style（风格）/ location（地区）")
@@ -266,6 +272,7 @@ public class ChatTools {
     // ── 收敛 ──
 
     @Tool(name = TOOL_FINISH, description = "信息已足够回答，或无需检索（寒暄 / 闲聊），不再调用任何工具")
+    /** 收敛信号 —— 模型调它即表示信息已够；本方法无副作用，参数只进 schema。 */
     public String finish(@ToolParam(description = "收敛理由，不超过 20 字的中文概括") String thought) {
         // 方法体永不执行，这里只为让 finish 出现在发给供应商的工具 schema 里
         return TOOL_FINISH;

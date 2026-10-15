@@ -12,7 +12,9 @@ import java.util.Map;
 import org.springframework.stereotype.Component;
 
 /**
- * 多轮对话上下文的 token 级裁剪 — 轮数窗口（存储侧）之上的第二道预算：历史注入 prompt 前按估算 token 裁到预算内。
+ * 多轮对话上下文的 token 级裁剪 —— 轮数窗口（存储侧）之上的第二道预算：历史注入 prompt 前按估算 token 裁到预算内。
+ * <p>
+ * 在链路里的位置：由 {@code ChatAppService} 在装配历史时调用一次，裁剪结果进 {@code ChatToolLoop.Input#history}。
  * 从最新一条向前累计，保留放得进预算的<b>最新连续窗口</b>（丢旧不丢新、不跳条——对话连续性比多留一条旧消息值钱）；
  * 单条超预算时仍保最新一条，永不返回空历史。检索片段 / 资产详情等固定块不在裁剪范围——由 topK 与分块上限天然约束，
  * 会无界膨胀的只有对话原文。
@@ -62,6 +64,7 @@ public class ChatContextTrimmer {
                 .register(meterRegistry);
     }
 
+    /** 裁剪入口：预算内原样返回；超预算则保留「最新连续窗口」并一次裁到半额。 */
     public List<ChatTurn> trim(List<ChatTurn> history) {
         int budget = aiProperties.chat().maxHistoryTokens();
         // 预算 <=0 视为关闭 token 裁剪（退回纯轮数窗口），不记数据点
