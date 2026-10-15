@@ -6,6 +6,9 @@ import java.util.Optional;
 
 /**
  * 语义缓存端口 — 按 scope + 查询文本缓存 AI 响应，近似问题命中即跳过模型调用。
+ * <p>
+ * 在链路里的位置：实现在 adapter/outbound 的 {@code SemanticCacheService}；唯一消费方是 {@code ChatAppService}
+ * 的问答入口（{@code forceFresh} 时读写都跳过）。
  * 拆成三步而不是 get/put 两步，是为了让<b>一次查询只算一次向量</b>：查询向量化走供应商接口
  * （按次计费 + 秒级延迟），get 与 put 各自向量化会让未命中的请求对同一个问题算两遍。
  * <p>
