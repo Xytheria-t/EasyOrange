@@ -33,10 +33,10 @@ public class ToolCallDecider {
     private final ObjectMapper objectMapper;
 
     /**
-     * 编排内核的决策入口 — 输出 {@link ToolLoopCall} 视图。模型场景固定 {@code chat_tool}（决策是纯路由任务，
-     * 两条链路共用快模型）；记账口径（{@code scope}）与入参摘要（{@code toolInputOf}）随链路注入：listing 的
-     * 决策调用记进 auto_listing 预算，摘要供 trace 展示。一轮可带回多个调用并全部返回——模型的并行发起（规则 +
-     * 找货同问最常见）在这里省掉一整轮往返。
+     * 编排内核的决策入口 — 输出 {@link ToolLoopCall} 视图。路由角色恒为 {@code decision}（决策是纯路由任务，
+     * chat 与 listing 两条链路共用快模型），故写死；记账 {@code scope} 与入参摘要 {@code toolInputOf} 随链路注入
+     * ——模型选型两条链路相同、记账不同，一个写死一个传参不是疏漏。一轮可带回多个调用并全部返回——模型的并行
+     * 发起（规则 + 找货同问最常见）在这里省掉一整轮往返。
      */
     public List<ToolLoopCall> decide(
             @Nullable String sessionId,
@@ -75,7 +75,7 @@ public class ToolCallDecider {
     private List<ToolCallDecision> decideOnce(
             @Nullable String sessionId, List<Message> messages, List<ToolCallback> callbacks, ModelCallScope scope) {
         List<AssistantMessage.ToolCall> toolCalls = modelCaller.callWithTools(
-                modelRouter.choose(ModelRouter.SCENARIO_CHAT_TOOL), scope, messages, callbacks);
+                modelRouter.choose(ModelRouter.SCENARIO_DECISION), scope, messages, callbacks);
         if (toolCalls.isEmpty()) {
             log.warn(
                     "action=tool_call_decision_failed, fallback=single_step, sessionId={}, reason=模型未返回工具调用",

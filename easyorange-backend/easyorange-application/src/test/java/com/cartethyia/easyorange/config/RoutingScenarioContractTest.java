@@ -26,7 +26,7 @@ class RoutingScenarioContractTest {
         Map<?, ?> scenarios = routingScenarios();
 
         for (String scenario :
-                Set.of(ModelRouter.SCENARIO_CHAT_TOOL, ModelRouter.SCENARIO_VISION, ModelRouter.SCENARIO_JUDGE)) {
+                Set.of(ModelRouter.SCENARIO_DECISION, ModelRouter.SCENARIO_VISION, ModelRouter.SCENARIO_JUDGE)) {
             Object beanName = scenarios.get(scenario);
             assertThat(beanName)
                     .as("easyorange.ai.routing.scenarios.%s 未配置 —— 该场景会静默回退 default-model", scenario)

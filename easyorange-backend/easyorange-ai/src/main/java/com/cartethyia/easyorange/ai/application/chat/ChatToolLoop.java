@@ -197,7 +197,7 @@ public class ChatToolLoop {
 
     // ── 决策 ──
 
-    /** 决策走 chat 场景快模型、记账进 chat 预算；入参摘要按本链路工具面取。 */
+    /** 决策恒用快模型（路由角色 decision），记账进 chat 预算；入参摘要按本链路工具面取。 */
     private ToolLoopKernel.RoundDecider roundDecider() {
         return (sessionId, messages, callbacks) ->
                 decider.decide(sessionId, messages, callbacks, ModelCallScope.CHAT, ChatToolLoop::toolInputOf);

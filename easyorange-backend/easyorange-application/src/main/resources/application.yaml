@@ -411,7 +411,7 @@ easyorange:
       api-key: ${AI_TEXT_API_KEY:}
       base-url: ${AI_TEXT_BASE_URL:https://api.deepseek.com}
       model: ${AI_TEXT_MODEL:deepseek-chat}
-      # 工具决策专用模型（chat_tool 场景）— 纯路由任务配快模型，生成仍走上面的强模型；留空即同模型
+      # 工具决策专用模型（decision 路由角色）— 纯路由任务配快模型，生成仍走上面的强模型；留空即同模型
       router-model: ${AI_TEXT_ROUTER_MODEL:}
       timeout: 30000
     vision:
@@ -463,10 +463,10 @@ easyorange:
         knowledge:         # 知识库检索与摄入 — 仅 embedding（无生成）
           max-tokens-per-call: 500
           daily-token-limit: 200000
-    routing:               # 模型路由 — 场景 → 模型 bean 名（接入新模型只需改配置）
+    routing:               # 模型路由 — 模型角色 → 模型 bean 名（接入新模型只需改配置）
       default-model: chatModel
       scenarios:
-        chat_tool: decisionChatModel  # 工具决策（多步工具循环）— 快模型，只选工具不写答案
+        decision: decisionChatModel  # 工具决策（多步工具循环）— 快模型，只选工具不写答案
         vision: visionChatModel   # 图片分析（智能上架）— 视觉模型 Qwen-VL
         judge: judgeChatModel     # LLM-as-Judge 评审 — 独立评审模型（家族异于生成模型，消自评偏差）
     semantic-cache:        # 语义缓存 — 相似问题复用历史回答（成本优化）
@@ -488,7 +488,7 @@ easyorange:
       # 历史注入 prompt 的 token 预算（估算口径见 TokenEstimator）— 轮数窗口之上的第二道裁剪，
       # 超限从最新向前保留连续窗口；<=0 关闭。指标：easyorange.ai.chat.context.tokens / .trim
       max-history-tokens: 2000
-    listing:               # 发布助手（卖家侧多步工具循环）— 决策复用 chat_tool 快模型，记账走 auto_listing 场景预算
+    listing:               # 发布助手（卖家侧多步工具循环）— 决策复用 decision 快模型，记账走 auto_listing 场景预算
       # 发布循环单次上限（含 finish 轮）：典型轨迹 禁售查证 → 品类召回 → 行情统计 → finish 需 4 步，
       # 取 6 留出检索换词一轮的余量；比 chat 少一档——检索词由预识别线索锚定，不存在多意图追问撑长轮数的形态
       max-rounds: 6

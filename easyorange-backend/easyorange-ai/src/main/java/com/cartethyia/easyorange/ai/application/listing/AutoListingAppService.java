@@ -207,7 +207,7 @@ public class AutoListingAppService {
         return categoryCatalogPort.listAvailableCategoryNames();
     }
 
-    /** 决策走 chat_tool 快模型（纯路由任务），记账进 auto_listing 预算——成本归业务链路、模型归职责。 */
+    /** 决策恒用 decision 快模型（纯路由任务，与 chat 链路同款），记账进 auto_listing 预算——成本归业务链路、模型归职责。 */
     private ToolLoopKernel.RoundDecider roundDecider() {
         return (sessionId, messages, callbacks) -> decider.decide(
                 sessionId, messages, callbacks, ModelCallScope.AUTO_LISTING, AutoListingAppService::toolInputOf);
