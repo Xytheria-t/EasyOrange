@@ -4,6 +4,7 @@ import com.cartethyia.easyorange.ai.application.dto.AutoListingResult;
 import com.cartethyia.easyorange.ai.application.support.ModelCaller;
 import com.cartethyia.easyorange.ai.application.support.ModelRouter;
 import com.cartethyia.easyorange.ai.application.support.TokenBudgetGuard;
+import com.cartethyia.easyorange.ai.application.toolcall.RoundDecider;
 import com.cartethyia.easyorange.ai.application.toolcall.ToolCallDecider;
 import com.cartethyia.easyorange.ai.application.toolcall.ToolCallDecision;
 import com.cartethyia.easyorange.ai.application.toolcall.ToolLoopKernel;
@@ -209,7 +210,7 @@ public class AutoListingAppService {
     }
 
     /** 决策恒用 decision 快模型（纯路由任务，与 chat 链路同款），记账进 auto_listing 预算——成本归业务链路、模型归职责。 */
-    private ToolLoopKernel.RoundDecider roundDecider() {
+    private RoundDecider roundDecider() {
         return (sessionId, messages, callbacks) -> decider.decide(
                 sessionId, messages, callbacks, ModelCallScope.AUTO_LISTING, AutoListingAppService::toolInputOf);
     }

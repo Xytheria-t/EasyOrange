@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.ai.application.chat;
 
 import com.cartethyia.easyorange.ai.application.support.FailureReason;
 import com.cartethyia.easyorange.ai.application.support.UntrustedText;
+import com.cartethyia.easyorange.ai.application.toolcall.RoundDecider;
 import com.cartethyia.easyorange.ai.application.toolcall.ToolCallArguments;
 import com.cartethyia.easyorange.ai.application.toolcall.ToolCallDecider;
 import com.cartethyia.easyorange.ai.application.toolcall.ToolCallDecision;
@@ -189,7 +190,7 @@ public class ChatToolLoop {
     // ── 决策 ──
 
     /** 决策恒用快模型（路由角色 decision），记账进 chat 预算；入参摘要按本链路工具面取。 */
-    private ToolLoopKernel.RoundDecider roundDecider() {
+    private RoundDecider roundDecider() {
         return (sessionId, messages, callbacks) ->
                 decider.decide(sessionId, messages, callbacks, ModelCallScope.CHAT, ChatToolLoop::toolInputOf);
     }
