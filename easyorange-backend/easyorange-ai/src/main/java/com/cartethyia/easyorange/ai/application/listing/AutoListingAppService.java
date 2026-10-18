@@ -119,6 +119,7 @@ public class AutoListingAppService {
                 ListingPromptAssembler.firstDecisionMessage(clues, sellerNote, availableCategories()),
                 List.of(ToolCallbacks.from(tools)),
                 aiProperties.listing().maxRounds(),
+                roundDecider(),
                 this::listingBudgetExhausted,
                 // 决策失败不补检索：发布链路的失败态就是「行情缺失 → price 置 null 留卖家」，
                 // 强塞一次猜测关键词的检索只会给生成喂噪声
@@ -127,7 +128,7 @@ public class AutoListingAppService {
                 attributedUserId,
                 handler,
                 metrics);
-        ToolLoopKernel.Result result = loopKernel.run(spec, roundDecider());
+        ToolLoopKernel.Result result = loopKernel.run(spec);
         return new ListingLoopResult(
                 tools.knowledgeHits(), tools.assetHits(), result.outcome(), result.rounds(), result.toolPath());
     }

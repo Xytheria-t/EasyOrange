@@ -23,8 +23,8 @@ import org.springframework.stereotype.Component;
  * 多步工具调用循环（ReAct）的编排内核 —— 逐轮「决策 → 工具 → 观察」，推进到模型判定信息足够为止。
  * <p>
  * 在链路里的位置：被两条链路的编排器调用（买家 {@code ChatToolLoop} / 卖家 {@code AutoListingAppService}），
- * 只持链路无关的机制：for 循环与四条出口、协议回填、步级 trace / SSE、toolPath。首轮上下文、模型路由、记账场景与
- * 降级动作全由 {@link Spec} 与 {@link RoundDecider} 注入 —— 内核不认业务语义，两条链路因此共用一份实现。
+ * 只持链路无关的机制：for 循环与四条出口、协议回填、步级 trace / SSE、toolPath。首轮上下文、每轮决策函数、模型路由、
+ * 记账场景与降级动作全由 {@link Spec} 注入 —— 内核不认业务语义，两条链路因此共用一份实现。
  * <p>
  * 手写循环而非 {@code ChatClient} 自动循环：{@code ChatModel.call} 不自动执行工具，轮数上限与降级控制权必须留在
  * 本类；trace / step / 指标是观测副产物，失败不碰主链路。
@@ -41,12 +41,12 @@ public class ToolLoopKernel {
     private final IdGenerator idGenerator;
 
     /**
-     * 一次循环的规格 —— 两条链路的差异全在这里注入，内核不认识业务语义。
+     * 一次循环的规格 —— 两条链路的差异全在这里注入（含每轮的决策函数），内核不认识业务语义。
      * <p>
-     * 十项分三类：① 首轮上下文（{@code systemPrompt} / {@code firstUserMessage}）；② 每轮要用什么
-     * （{@code toolCallbacks} / {@code maxRounds}）；③ 出事与观测（{@code budgetExhausted} 每轮问一次、
-     * {@code decisionFailedFallback} 决策失败时调、{@code sessionId} / {@code userId} / {@code streamHandler} /
-     * {@code listener}）。
+     * 十一项分三类：① 首轮上下文（{@code systemPrompt} / {@code firstUserMessage}）；② 每轮要用什么
+     * （{@code toolCallbacks} / {@code maxRounds} / {@code roundDecider}）；③ 出事与观测（{@code budgetExhausted}
+     * 每轮问一次、{@code decisionFailedFallback} 决策失败时调、{@code sessionId} / {@code userId} /
+     * {@code streamHandler} / {@code listener}）。
      * <p>
      * {@code userId} 是已归属的值（评估跑批传 null），归属判定留在各链路编排器（同一口径还管工具面的偏好归属）。
      */
@@ -55,6 +55,7 @@ public class ToolLoopKernel {
             String firstUserMessage,
             List<ToolCallback> toolCallbacks,
             int maxRounds,
+            RoundDecider roundDecider,
             BooleanSupplier budgetExhausted,
             /* 决策失败出口的降级动作（chat 按原始问题补检索一次、listing 无操作），异常自担不外抛。 */
             Runnable decisionFailedFallback,
@@ -67,7 +68,7 @@ public class ToolLoopKernel {
      * 每轮的决策函数 — 内核收函数不收实现：模型路由、记账场景与重试等协议口径随链路（chat / listing）不同，
      * 由各决策实现自持；返回空列表即本轮决策失败，由内核按 Spec 注入的降级动作收口。
      * <p>
-     * 与 {@link ToolCallDecider}（调模型的决策器）分属两层：链路把它绑定场景与入参摘要后以本接口注入，
+     * 与 {@link ToolCallDecider}（调模型的决策器）分属两层：链路把它绑定场景与入参摘要后填进 {@link Spec}，
      * 内核只认「每轮一批调用」，不认背后是否走了模型。
      */
     @FunctionalInterface
@@ -80,9 +81,9 @@ public class ToolLoopKernel {
     public record Result(ToolLoopOutcome outcome, int rounds, List<String> toolPath) {}
 
     /** 入口：跑一次完整循环并回报结局；异常原样抛出，但先把「故障」记进指标（它没有循环出口、轮数不可知）。 */
-    public Result run(Spec spec, RoundDecider roundDecider) {
+    public Result run(Spec spec) {
         try {
-            Result result = executeLoop(spec, roundDecider);
+            Result result = executeLoop(spec);
             spec.listener().recordLoop(result.outcome(), result.rounds());
             return result;
         } catch (RuntimeException e) {
@@ -92,7 +93,7 @@ public class ToolLoopKernel {
     }
 
     /** 主循环 —— 四条出口都在这里：预算尽 / 决策失败 / 模型收敛（finish）/ 轮数用尽。 */
-    private Result executeLoop(Spec spec, RoundDecider roundDecider) {
+    private Result executeLoop(Spec spec) {
         String traceId = idGenerator.generateId();
         var dispatcher = ToolDispatcher.of(spec.toolCallbacks());
         var transcript = new ToolLoopTranscript(spec.systemPrompt(), spec.firstUserMessage());
@@ -109,7 +110,7 @@ public class ToolLoopKernel {
                 return new Result(ToolLoopOutcome.BUDGET, rounds, List.copyOf(toolPath));
             }
             List<ToolLoopCall> calls =
-                    roundDecider.decide(spec.sessionId(), transcript.messages(), spec.toolCallbacks());
+                    spec.roundDecider().decide(spec.sessionId(), transcript.messages(), spec.toolCallbacks());
             if (calls.isEmpty()) {
                 spec.decisionFailedFallback().run();
                 return new Result(ToolLoopOutcome.DECISION_FAILED, rounds, List.copyOf(toolPath));

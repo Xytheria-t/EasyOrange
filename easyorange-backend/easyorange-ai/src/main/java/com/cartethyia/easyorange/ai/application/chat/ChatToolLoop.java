@@ -118,17 +118,18 @@ public class ChatToolLoop {
     /** 入口：跑完一次完整的多步循环，返回召回物（知识 / 资产 / 详情）与出口、轮数、工具轨迹。 */
     public Result run(Input input) {
         ChatTools tools = toolsFactory.create(attributedUserId(input));
-        ToolLoopKernel.Result result = loopKernel.run(spec(input, tools), roundDecider());
+        ToolLoopKernel.Result result = loopKernel.run(spec(input, tools));
         return Result.of(tools, result.outcome(), result.rounds(), result.toolPath());
     }
 
-    /** 组装内核所需的规格 —— 十项按位置对应 {@link ToolLoopKernel.Spec} 的十个字段。 */
+    /** 组装内核所需的规格 —— 十一项按位置对应 {@link ToolLoopKernel.Spec} 的十一个字段。 */
     private ToolLoopKernel.Spec spec(Input input, ChatTools tools) {
         return new ToolLoopKernel.Spec(
                 promptRegistry.require(CHAT_TOOL_PROMPT),
                 firstUserMessage(input),
                 toolCallbacks(tools, input),
                 aiProperties.chat().maxRounds(),
+                roundDecider(),
                 budgetGuard::exhausted,
                 () -> fallbackSearch(input, tools),
                 input.sessionId(),
