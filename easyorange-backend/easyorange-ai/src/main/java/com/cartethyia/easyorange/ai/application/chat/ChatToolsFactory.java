@@ -4,6 +4,8 @@ import com.cartethyia.easyorange.ai.application.retrieval.AssetSourcingAppServic
 import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalAppService;
 import com.cartethyia.easyorange.ai.domain.port.AssetDetailPort;
 import com.cartethyia.easyorange.ai.domain.port.UserPreferenceRepository;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
@@ -15,23 +17,13 @@ import org.springframework.stereotype.Component;
  * 自己的并发要求（召回累加器是实例独占的可变状态）。
  */
 @Component
+@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 public class ChatToolsFactory {
 
     private final KnowledgeRetrievalAppService retrievalService;
     private final AssetSourcingAppService assetSourcingService;
     private final AssetDetailPort assetDetailPort;
     private final UserPreferenceRepository preferenceRepository;
-
-    ChatToolsFactory(
-            KnowledgeRetrievalAppService retrievalService,
-            AssetSourcingAppService assetSourcingService,
-            AssetDetailPort assetDetailPort,
-            UserPreferenceRepository preferenceRepository) {
-        this.retrievalService = retrievalService;
-        this.assetSourcingService = assetSourcingService;
-        this.assetDetailPort = assetDetailPort;
-        this.preferenceRepository = preferenceRepository;
-    }
 
     ChatTools create(@Nullable String attributedUserId) {
         return new ChatTools(

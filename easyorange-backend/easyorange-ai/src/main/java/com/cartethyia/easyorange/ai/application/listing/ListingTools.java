@@ -9,6 +9,8 @@ import com.cartethyia.easyorange.ai.domain.port.CategoryCatalogPort;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 
@@ -23,6 +25,7 @@ import org.springframework.ai.tool.annotation.ToolParam;
  * 没有写路径：产出都进最终生成的表单由卖家确认；抛异常 = 该步失败，「查无 / 未命中」返回观察文本。
  */
 @SuppressWarnings("unused") // thought 只进工具 schema，方法体不消费
+@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 public class ListingTools {
 
     /** 与 ChatTools 同名常量各写一份（跨能力包不互相引用），字面一致性由 ListingToolsTest 钉住。 */
@@ -47,15 +50,6 @@ public class ListingTools {
     private final List<KnowledgeHit> knowledgeHits = new ArrayList<>();
 
     private final List<AssetHit> assetHits = new ArrayList<>();
-
-    ListingTools(
-            KnowledgeRetrievalAppService retrievalService,
-            AssetSourcingAppService assetSourcingService,
-            CategoryCatalogPort categoryCatalogPort) {
-        this.retrievalService = retrievalService;
-        this.assetSourcingService = assetSourcingService;
-        this.categoryCatalogPort = categoryCatalogPort;
-    }
 
     List<KnowledgeHit> knowledgeHits() {
         return List.copyOf(knowledgeHits);

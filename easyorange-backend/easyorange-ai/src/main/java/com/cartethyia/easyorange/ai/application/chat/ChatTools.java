@@ -18,6 +18,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
@@ -35,6 +37,7 @@ import org.springframework.ai.tool.annotation.ToolParam;
  * 是唯一写路径（按 userId + key 幂等 upsert），独立成一步是为了让降级路径下偏好不再静默丢失。
  */
 @SuppressWarnings("unused") // thought 只进工具 schema，方法体不消费（见类注释）
+@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 public class ChatTools {
 
     // ── 工具名：@Tool(name = ...)、编排器与评测共用这一份字面量 ──
@@ -96,19 +99,6 @@ public class ChatTools {
     /** 偏好归属用户；机器主体（评估跑批）为 null（长期记忆不落库）。 */
     @Nullable
     private final String userId;
-
-    ChatTools(
-            KnowledgeRetrievalAppService retrievalService,
-            AssetSourcingAppService assetSourcingService,
-            AssetDetailPort assetDetailPort,
-            UserPreferenceRepository preferenceRepository,
-            @Nullable String userId) {
-        this.retrievalService = retrievalService;
-        this.assetSourcingService = assetSourcingService;
-        this.assetDetailPort = assetDetailPort;
-        this.preferenceRepository = preferenceRepository;
-        this.userId = userId;
-    }
 
     // ── 累加器只读快照 ──
 

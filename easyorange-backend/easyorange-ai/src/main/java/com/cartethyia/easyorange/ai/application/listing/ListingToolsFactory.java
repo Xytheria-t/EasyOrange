@@ -3,6 +3,8 @@ package com.cartethyia.easyorange.ai.application.listing;
 import com.cartethyia.easyorange.ai.application.retrieval.AssetSourcingAppService;
 import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalAppService;
 import com.cartethyia.easyorange.ai.domain.port.CategoryCatalogPort;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
@@ -12,20 +14,12 @@ import org.springframework.stereotype.Component;
  * 只组装不加工；每次循环一份新实例是 {@link ListingTools} 自己的并发要求（召回累加器实例独占）。
  */
 @Component
+@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 public class ListingToolsFactory {
 
     private final KnowledgeRetrievalAppService retrievalService;
     private final AssetSourcingAppService assetSourcingService;
     private final CategoryCatalogPort categoryCatalogPort;
-
-    ListingToolsFactory(
-            KnowledgeRetrievalAppService retrievalService,
-            AssetSourcingAppService assetSourcingService,
-            CategoryCatalogPort categoryCatalogPort) {
-        this.retrievalService = retrievalService;
-        this.assetSourcingService = assetSourcingService;
-        this.categoryCatalogPort = categoryCatalogPort;
-    }
 
     ListingTools create() {
         return new ListingTools(retrievalService, assetSourcingService, categoryCatalogPort);
