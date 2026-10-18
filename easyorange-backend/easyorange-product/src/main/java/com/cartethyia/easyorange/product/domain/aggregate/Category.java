@@ -13,7 +13,8 @@ import lombok.Getter;
 /**
  * 商品分类聚合根 — 平台的类目树（当前口径两级，允许配置到 {@link #MAX_LEVEL} 级）。
  * <p>
- * 聚合边界 = 一个分类节点，<b>不包含子节点</b>。子节点由 {@link CategoryRepository} 按需加载：类目树是低频写、
+ * 聚合边界 = 一个分类节点，<b>不包含子节点</b>。子节点由 {@link
+ * com.cartethyia.easyorange.product.domain.repository.CategoryRepository} 按需加载：类目树是低频写、
  * 高频读的配置数据，整棵树塞进一个聚合会让改一个叶子都要加载并重写全树。跨节点判断（环、深度）由方法参数
  * {@code descendants} / {@code subtreeHeight} 显式传入——领域对象只判定，不查询。
  * <p>

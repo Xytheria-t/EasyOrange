@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
  * 分类写侧适配器 — 实现 admin 的 {@link AdminCategoryWritePort}，把调用转给 product 模块的
  * {@link CategoryCommandHandler}。
  * <p>
- * 这层只做**翻译**（聚合 → 只含 JDK 类型的 {@link CategoryWriteResult}），不含任何规则：
+ * 这层只做**翻译**（聚合 → 只含 JDK 类型的 {@link AdminCategoryWritePort.CategoryWriteResult}），不含任何规则：
  * 层级、环、重名、删除前置条件都由 product 侧判定。这样 admin 模块无需依赖 product，
  * 分类的业务约束也只有一个事实来源。
  */

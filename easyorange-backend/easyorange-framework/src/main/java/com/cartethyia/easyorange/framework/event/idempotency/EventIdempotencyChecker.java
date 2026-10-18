@@ -13,7 +13,8 @@ import org.springframework.stereotype.Component;
  * <ul>
  *   <li>标记即去重：单命令原子，无需分布式锁；并发投递 / 重复投递时只有一个消费者能拿到标记，其余跳过。</li>
  *   <li>去重窗口 24h（{@code DONE_TTL_HOURS}），需覆盖 Outbox 重投与 DLQ 重试周期。</li>
- *   <li>处理失败由 {@link EventConsumerHandler} 调用 {@link #unmark} 撤销标记，使容器重试 / DLQ 重投可重新处理；
+ *   <li>处理失败由 {@link com.cartethyia.easyorange.framework.event.core.EventConsumerHandler} 调用
+ *       {@link #unmark} 撤销标记，使容器重试 / DLQ 重投可重新处理；
  *       进程在标记后、处理完成前崩溃的残留窗口，由消费者业务副作用幂等兜底。</li>
  * </ul>
  */

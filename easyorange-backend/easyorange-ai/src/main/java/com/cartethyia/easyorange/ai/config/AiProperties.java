@@ -141,8 +141,9 @@ public record AiProperties(
     }
 
     /**
-     * 模型路由配置 — 键为模型角色名（常量定义见 {@link ModelRouter}），值为 Spring bean 名；未配置的角色
-     * 回退 {@code defaultModel}，换模型只改配置代码零改动，judge 指向独立评审模型即可消除自评偏差。
+     * 模型路由配置 — 键为模型角色名（常量定义见
+     * {@link com.cartethyia.easyorange.ai.application.support.ModelRouter}），值为 Spring bean 名；未配置的角色回退
+     * {@code defaultModel}，换模型只改配置代码零改动，judge 指向独立评审模型即可消除自评偏差。
      */
     public record Routing(@DefaultValue("chatModel") String defaultModel, Map<String, String> scenarios) {
 
@@ -172,8 +173,9 @@ public record AiProperties(
      *
      * @param maxRounds 多步 ReAct 循环单次上限（含 finish 轮）：典型轨迹 search → 计算/详情 → remember
      *     → finish 需 4~5 步，取 7 留一轮换词 / 多意图追问的余量——上限过紧会逼富轨迹中途强制收敛
-     * @param maxHistoryTokens 历史注入 prompt 的 token 预算（估算口径见 TokenEstimator），轮数窗口
-     *     之上的第二道裁剪；&lt;=0 关闭。超限只裁历史、不影响生成（生成侧由 maxTokensPerCall 兜底）
+     * @param maxHistoryTokens 历史注入 prompt 的 token 预算（估算口径见
+     *     {@link com.cartethyia.easyorange.ai.domain.model.TokenEstimator}），轮数窗口之上的第二道裁剪；&lt;=0
+     *     关闭。超限只裁历史、不影响生成（生成侧由 maxTokensPerCall 兜底）
      * @param sessionLockWaitSeconds 同会话串行锁的获取等待上限（秒）：同会话 load→loop→save 非原子，
      *     并发请求会互相串写历史；上限需覆盖最坏 7 轮富轨迹的端到端耗时（实测 62s），超时按
      *     「会话处理中」业务提示返回

@@ -19,7 +19,8 @@ import org.springframework.stereotype.Component;
  *   <li>审核日志持久化</li>
  * </ul>
  * <p>
- * 异步投影（CQRS / ES 索引 / 站内信等）由 {@link ProductEventConsumer} 处理。
+ * 异步投影（CQRS / ES 索引 / 站内信等）由 {@link
+ * com.cartethyia.easyorange.product.adapter.inbound.messaging.ProductEventConsumer} 处理。
  */
 @Slf4j
 @Component
