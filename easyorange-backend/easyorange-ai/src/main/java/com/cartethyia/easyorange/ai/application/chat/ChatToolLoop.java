@@ -20,11 +20,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
@@ -39,6 +40,7 @@ import org.springframework.stereotype.Component;
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 public class ChatToolLoop {
 
     /**
@@ -57,24 +59,6 @@ public class ChatToolLoop {
     private final ChatBudgetGuard budgetGuard;
     private final AiProperties aiProperties;
     private final ChatLoopMetrics metrics;
-
-    @Autowired
-    public ChatToolLoop(
-            PromptRegistryPort promptRegistry,
-            ChatToolsFactory toolsFactory,
-            ToolCallDecider decider,
-            ToolLoopKernel loopKernel,
-            ChatBudgetGuard budgetGuard,
-            AiProperties aiProperties,
-            ChatLoopMetrics metrics) {
-        this.promptRegistry = promptRegistry;
-        this.toolsFactory = toolsFactory;
-        this.decider = decider;
-        this.loopKernel = loopKernel;
-        this.budgetGuard = budgetGuard;
-        this.aiProperties = aiProperties;
-        this.metrics = metrics;
-    }
 
     /**
      * 一次循环的输入 — 记忆（历史 / 偏好）由调用方装配，循环只管「决策 → 工具 → 观察」。
