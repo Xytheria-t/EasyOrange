@@ -35,11 +35,12 @@ import tools.jackson.databind.ObjectMapper;
  * 所有 LLM / Embedding 调用的唯一入口 —— 收敛 system+user 双消息、JSON 结构化输出、原生 tool calling、Embedding、
  * 多模态结构化输出几类重复调用模式，避免每个服务重复组装 {@link Prompt}。
  * <p>
- * 在链路里的位置：调用方先经 {@link ModelRouter} 选好模型 bean，再把「模型 + 记账场景 + 消息」交给本类；决策
- * （{@code ToolCallDecider}）、生成、检索、评估四条路都从这里出。带 {@link ModelCallScope} 的方法一律经
- * {@link ModelCallRecorder} 执行（落 eo_ai_call_log 与场景预算记账），治理出口唯一；唯一例外是 {@link #callJson}，
- * 专供 LLM-as-Judge 离线评估、刻意不记账。按角色分隔多轮消息走 {@link #callText(ChatModel, ModelCallScope, List)}
- * 重载 —— 历史不进单条 user 消息，前缀稳定才能命中供应商 KV cache 折扣计价。
+ * 在链路里的位置：决策（{@code ToolCallDecider}）、生成、检索、评估四条路都从这里出。角色化的三类调用（工具 / JSON /
+ * 多模态）自己经 {@link ModelRouter} 解析模型 bean，调用方只声明角色键 —— 生成与向量化各自只有一个候选 bean，套路由
+ * 是空转，仍由调用方直接注入。带 {@link ModelCallScope} 的方法一律经 {@link ModelCallRecorder} 执行（落 eo_ai_call_log
+ * 与场景预算记账），治理出口唯一；唯一例外是 {@link #callJson}，专供 LLM-as-Judge 离线评估、刻意不记账。按角色分隔多轮
+ * 消息走 {@link #callText(ChatModel, ModelCallScope, List)} 重载 —— 历史不进单条 user 消息，前缀稳定才能命中供应商 KV
+ * cache 折扣计价。
  */
 @Slf4j
 @Component
@@ -50,6 +51,7 @@ public class ModelCaller {
     private static final String TOOL_CHOICE_REQUIRED = "required";
 
     private final ModelCallRecorder callRecorder;
+    private final ModelRouter modelRouter;
     private final AiProperties aiProperties;
     private final ObjectMapper objectMapper;
 
@@ -105,9 +107,11 @@ public class ModelCaller {
 
     // ── 工具调用与结构化输出 ──
 
-    /** 原生 tool calling（带记账）：空列表 = 模型没调工具，由调用方按决策失败处理；只发请求不执行工具。 */
+    /** 原生 tool calling（带记账）：空列表 = 模型没调工具，由调用方按决策失败处理；只发请求不执行工具。
+     * {@code scenario} 取 {@link ModelRouter} 的角色键常量。 */
     public List<AssistantMessage.ToolCall> callWithTools(
-            ChatModel chatModel, ModelCallScope scope, List<Message> messages, List<ToolCallback> toolCallbacks) {
+            String scenario, ModelCallScope scope, List<Message> messages, List<ToolCallback> toolCallbacks) {
+        ChatModel chatModel = modelRouter.choose(scenario);
         return callRecorder.record(scope, chatModel, joinTexts(messages), () -> {
             ChatResponse response =
                     chatModel.call(new Prompt(messages, toolOptions(chatModel, toolCallbacks, maxTokensOf(scope))));
@@ -117,19 +121,21 @@ public class ModelCaller {
 
     /** JSON 结构化输出（唯一不记账的调用）：追加 {@code response_format=json_object}，解析与降级由调用方承担。唯一调用方
      * {@code Judge} 只在金标准集回归跑批里跑，记账会让成本报表套娃、还要额外配评估场景预算，故刻意账外。 */
-    public String callJson(ChatModel chatModel, String systemPrompt, String userMessage) {
+    public String callJson(String scenario, String systemPrompt, String userMessage) {
+        ChatModel chatModel = modelRouter.choose(scenario);
         return textOf(chatModel.call(new Prompt(systemUser(systemPrompt, userMessage), jsonOptions(chatModel, null))));
     }
 
     /** 多模态结构化输出：图片与「要哪些字段」同一次请求给到视觉模型。刻意不做「视觉模型写自由文本、文本模型再转
      * JSON」两段式 —— 第二次调用看不到图片，多付一次调用的钱与延迟，还丢掉没写进文字的画面细节。 */
     public <T> Optional<T> callJsonWithImages(
-            ChatModel chatModel,
+            String scenario,
             ModelCallScope scope,
             String systemPrompt,
             String userText,
             List<String> imageUrls,
             Class<T> responseType) {
+        ChatModel chatModel = modelRouter.choose(scenario);
         Message userMessage = UserMessage.builder()
                 .text(userText)
                 .media(MediaResolver.of(imageUrls))

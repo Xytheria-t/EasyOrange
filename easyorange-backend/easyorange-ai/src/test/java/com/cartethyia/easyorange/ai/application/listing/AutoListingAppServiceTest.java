@@ -106,9 +106,8 @@ class AutoListingAppServiceTest {
 
     private AutoListingAppService newService(PromptRegistryPort promptRegistry) {
         return new AutoListingAppService(
-                modelRouter,
                 promptRegistry,
-                TestModelCaller.create(),
+                TestModelCaller.create(modelRouter),
                 categoryCatalogPort,
                 visionImageLoader,
                 new ToolLoopKernel(mock(ToolCallStepTracePort.class), stubIdGenerator()),
@@ -116,7 +115,7 @@ class AutoListingAppServiceTest {
                         mock(KnowledgeRetrievalAppService.class),
                         mock(AssetSourcingAppService.class),
                         categoryCatalogPort),
-                new ToolCallDecider(TestModelCaller.create(), modelRouter, new ObjectMapper()),
+                new ToolCallDecider(TestModelCaller.create(modelRouter), new ObjectMapper()),
                 new TokenBudgetGuard(mock(TokenBudgetStorePort.class), PropertyBindings.bind(AiProperties.class)),
                 PropertyBindings.bind(AiProperties.class),
                 new ListingLoopMetrics(new SimpleMeterRegistry()));

@@ -24,7 +24,6 @@ public class Judge {
     /** 评审 system prompt 键（与 {@code prompts/judge.yml} 的 name 同名）。 */
     private static final String JUDGE_PROMPT = "judge_system";
 
-    private final ModelRouter modelRouter;
     private final PromptRegistryPort promptRegistry;
     private final ModelCaller modelCaller;
     private final ObjectMapper objectMapper;
@@ -39,7 +38,7 @@ public class Judge {
 
     private Optional<Judgement> judgeWith(String systemPrompt, String caseText) {
         try {
-            String json = modelCaller.callJson(modelRouter.choose(ModelRouter.SCENARIO_JUDGE), systemPrompt, caseText);
+            String json = modelCaller.callJson(ModelRouter.SCENARIO_JUDGE, systemPrompt, caseText);
             return parse(json);
         } catch (Exception e) {
             return Optional.empty();

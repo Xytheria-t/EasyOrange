@@ -33,7 +33,6 @@ import tools.jackson.databind.ObjectMapper;
 public class ToolCallDecider {
 
     private final ModelCaller modelCaller;
-    private final ModelRouter modelRouter;
     private final ObjectMapper objectMapper;
 
     /**
@@ -78,8 +77,8 @@ public class ToolCallDecider {
 
     private List<ToolCallDecision> decideOnce(
             @Nullable String sessionId, List<Message> messages, List<ToolCallback> callbacks, ModelCallScope scope) {
-        List<AssistantMessage.ToolCall> toolCalls = modelCaller.callWithTools(
-                modelRouter.choose(ModelRouter.SCENARIO_DECISION), scope, messages, callbacks);
+        List<AssistantMessage.ToolCall> toolCalls =
+                modelCaller.callWithTools(ModelRouter.SCENARIO_DECISION, scope, messages, callbacks);
         if (toolCalls.isEmpty()) {
             log.warn(
                     "action=tool_call_decision_failed, fallback=single_step, sessionId={}, reason=模型未返回工具调用",

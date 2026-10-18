@@ -38,7 +38,7 @@ class JudgeTest {
     @BeforeEach
     void setUp() {
         lenient().when(modelRouter.choose(ModelRouter.SCENARIO_JUDGE)).thenReturn(chatModel);
-        aiJudge = new Judge(modelRouter, new TestPromptRegistry(), TestModelCaller.create(), new ObjectMapper());
+        aiJudge = new Judge(new TestPromptRegistry(), TestModelCaller.create(modelRouter), new ObjectMapper());
     }
 
     private static ChatResponse textResponse(String text) {

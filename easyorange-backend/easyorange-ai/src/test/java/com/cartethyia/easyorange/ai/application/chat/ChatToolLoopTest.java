@@ -20,7 +20,6 @@ import com.cartethyia.easyorange.ai.application.chat.ChatToolLoop.Result;
 import com.cartethyia.easyorange.ai.application.retrieval.AssetSourcingAppService;
 import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalAppService;
 import com.cartethyia.easyorange.ai.application.support.ModelCaller;
-import com.cartethyia.easyorange.ai.application.support.ModelRouter;
 import com.cartethyia.easyorange.ai.application.support.TokenBudgetGuard;
 import com.cartethyia.easyorange.ai.application.toolcall.ToolCallDecider;
 import com.cartethyia.easyorange.ai.application.toolcall.ToolLoopKernel;
@@ -61,7 +60,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
-import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.tool.ToolCallback;
@@ -72,13 +70,7 @@ import tools.jackson.databind.ObjectMapper;
 class ToolCallLoopTest {
 
     @Mock
-    private ChatModel chatModel;
-
-    @Mock
     private ModelCaller modelCaller;
-
-    @Mock
-    private ModelRouter modelRouter;
 
     /** 用真实桩而非 mock：{@code PromptRegistryPort.require} 是接口 default 方法，mock 会把它拦成 null。 */
     private final PromptRegistryPort promptRegistry = new TestPromptRegistry();
@@ -116,7 +108,6 @@ class ToolCallLoopTest {
         // 真实 guard：判定读同一个 budgetStore 桩，预算降级用例不用额外改写
         budgetGuard = new ChatBudgetGuard(new TokenBudgetGuard(budgetStore, aiProperties));
         toolCallLoop = newToolCallLoop();
-        lenient().when(modelRouter.choose(ModelRouter.SCENARIO_DECISION)).thenReturn(chatModel);
         lenient().when(idGenerator.generateId()).thenReturn("trace-1");
         lenient().when(budgetStore.getTodayUsage("chat")).thenReturn(Optional.empty());
     }
@@ -931,7 +922,7 @@ class ToolCallLoopTest {
         return new ChatToolLoop(
                 promptRegistry,
                 new ChatToolsFactory(retrievalService, assetSourcingService, assetDetailPort, preferenceRepository),
-                new ToolCallDecider(modelCaller, modelRouter, new ObjectMapper()),
+                new ToolCallDecider(modelCaller, new ObjectMapper()),
                 new ToolLoopKernel(tracePort, idGenerator),
                 budgetGuard,
                 aiProperties,

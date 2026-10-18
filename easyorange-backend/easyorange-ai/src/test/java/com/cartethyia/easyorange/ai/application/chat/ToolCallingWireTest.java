@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.ai.application.chat;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.cartethyia.easyorange.ai.application.support.ModelCaller;
+import com.cartethyia.easyorange.ai.application.support.ModelRouter;
 import com.cartethyia.easyorange.ai.application.toolcall.ToolCallArguments;
 import com.cartethyia.easyorange.ai.domain.enums.ModelCallScope;
 import com.cartethyia.easyorange.ai.testsupport.TestModelCaller;
@@ -116,11 +117,11 @@ class ToolCallingWireTest {
     void callWithTools_wireContract() throws Exception {
         String baseUrl = "http://localhost:" + server.getAddress().getPort();
         ChatModel chatModel = stubChatModel(baseUrl);
-        var modelCaller = modelCaller();
+        var modelCaller = modelCaller(chatModel);
         var tools = new ChatTools(null, null, null, null, null);
 
         List<AssistantMessage.ToolCall> calls = modelCaller.callWithTools(
-                chatModel,
+                ModelRouter.SCENARIO_DECISION,
                 ModelCallScope.CHAT,
                 List.of(new SystemMessage("你是多步工具决策器"), new UserMessage("<user_question>\n怎么退款？\n</user_question>")),
                 List.of(ToolCallbacks.from(tools)));
@@ -153,13 +154,13 @@ class ToolCallingWireTest {
     void callWithTools_toolHistoryWireContract() throws Exception {
         String baseUrl = "http://localhost:" + server.getAddress().getPort();
         ChatModel chatModel = stubChatModel(baseUrl);
-        var modelCaller = modelCaller();
+        var modelCaller = modelCaller(chatModel);
         var tools = new ChatTools(null, null, null, null, null);
         var historyCall = new AssistantMessage.ToolCall(
                 "call-9", "function", ChatTools.TOOL_KNOWLEDGE_SEARCH, "{\"thought\":\"查退款规则\",\"query\":\"退款\"}");
 
         List<AssistantMessage.ToolCall> calls = modelCaller.callWithTools(
-                chatModel,
+                ModelRouter.SCENARIO_DECISION,
                 ModelCallScope.CHAT,
                 List.of(
                         new SystemMessage("你是多步工具决策器"),
@@ -188,7 +189,7 @@ class ToolCallingWireTest {
         stubResponse.set(PARALLEL_TOOL_CALL_RESPONSE);
         String baseUrl = "http://localhost:" + server.getAddress().getPort();
         ChatModel chatModel = stubChatModel(baseUrl);
-        var modelCaller = modelCaller();
+        var modelCaller = modelCaller(chatModel);
         var tools = new ChatTools(null, null, null, null, null);
         var knowledgeCall = new AssistantMessage.ToolCall(
                 "call-1", "function", ChatTools.TOOL_KNOWLEDGE_SEARCH, "{\"thought\":\"查退款规则\",\"query\":\"退款\"}");
@@ -196,7 +197,7 @@ class ToolCallingWireTest {
                 "call-2", "function", ChatTools.TOOL_PRODUCT_SEARCH, "{\"thought\":\"找笔记本\",\"query\":\"笔记本\"}");
 
         List<AssistantMessage.ToolCall> calls = modelCaller.callWithTools(
-                chatModel,
+                ModelRouter.SCENARIO_DECISION,
                 ModelCallScope.CHAT,
                 List.of(
                         new SystemMessage("你是多步工具决策器"),
@@ -255,8 +256,8 @@ class ToolCallingWireTest {
                 .build();
     }
 
-    /** 只关心请求体形状，用例不校验记账 —— 走统一夹具，日志端口空实现、预算记内存。 */
-    private static ModelCaller modelCaller() {
+    /** 只关心请求体形状，用例不校验记账 —— 走统一夹具，日志端口空实现、预算记内存；路由固定到本次的桩模型。 */
+    private static ModelCaller modelCaller(ChatModel chatModel) {
         return TestModelCaller.create(
                 (scope,
                         model,
@@ -267,6 +268,7 @@ class ToolCallingWireTest {
                         tokenOutput,
                         tokenCacheRead,
                         success,
-                        errorMsg) -> {});
+                        errorMsg) -> {},
+                TestModelCaller.routerReturning(chatModel));
     }
 }

@@ -10,7 +10,6 @@ import static org.mockito.Mockito.when;
 
 import com.cartethyia.easyorange.ai.application.chat.ChatTools;
 import com.cartethyia.easyorange.ai.application.support.ModelCaller;
-import com.cartethyia.easyorange.ai.application.support.ModelRouter;
 import com.cartethyia.easyorange.ai.domain.enums.ModelCallScope;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -26,7 +25,7 @@ class ToolCallDeciderTest {
     private static final ToolCallback UNUSED_CALLBACK = mock(ToolCallback.class);
 
     private ToolCallDecider decider(ModelCaller modelCaller) {
-        return new ToolCallDecider(modelCaller, mock(ModelRouter.class), new ObjectMapper());
+        return new ToolCallDecider(modelCaller, new ObjectMapper());
     }
 
     private List<ToolLoopCall> loopCalls(ModelCaller modelCaller) {
