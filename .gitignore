@@ -75,6 +75,8 @@ easyorange-backend/*/upload/
 .agents/
 .superpowers/
 .zcode/
+# 本地个人记忆（公开仓库不收录）
+AGENTS.private.md
 
 # AI 生成的代码地图
 **/codemap.md
