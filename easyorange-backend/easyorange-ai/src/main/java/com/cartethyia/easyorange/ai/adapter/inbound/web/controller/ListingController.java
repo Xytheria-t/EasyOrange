@@ -6,6 +6,7 @@ import com.cartethyia.easyorange.ai.domain.enums.AiResultCode;
 import com.cartethyia.easyorange.ai.domain.exception.ChatStreamAbortedException;
 import com.cartethyia.easyorange.ai.domain.model.ChatSource;
 import com.cartethyia.easyorange.ai.domain.model.ToolCallStepView;
+import com.cartethyia.easyorange.ai.domain.model.ToolLoopOutcomeView;
 import com.cartethyia.easyorange.ai.domain.port.ChatStreamHandler;
 import com.cartethyia.easyorange.common.annotation.SkipRateLimit;
 import com.cartethyia.easyorange.common.annotation.SkipRepeatSubmit;
@@ -68,10 +69,10 @@ public class ListingController {
         return Result.success(autoListingService.analyzeImages(imageUrls, userId, null));
     }
 
-    /** 流式识别 — 事件协议 step / done / error；身份在 servlet 线程解析后显式带进流式线程（与对话流式同型）。 */
+    /** 流式识别 — 事件协议 step / outcome / done / error；身份在 servlet 线程解析后显式带进流式线程（与对话流式同型）。 */
     @SkipRepeatSubmit
     @PostMapping("/auto-listing/stream")
-    @Operation(summary = "流式识别：只推 step / done / error 事件，预算尽转 error 不落 500")
+    @Operation(summary = "流式识别：只推 step / outcome / done / error 事件，预算尽转 error 不落 500")
     public SseEmitter stream(
             @RequestBody @NotEmpty(message = "请至少上传一张图片") @Size(max = 9, message = "图片数量不能超过 9 张")
                     List<@NotBlank(message = "图片地址不能为空") String> imageUrls) {
@@ -116,6 +117,11 @@ public class ListingController {
             @Override
             public void onStep(ToolCallStepView step) {
                 ChatController.send(emitter, SseEmitter.event().name("step").data(step));
+            }
+
+            @Override
+            public void onLoopOutcome(ToolLoopOutcomeView outcome) {
+                ChatController.send(emitter, SseEmitter.event().name("outcome").data(outcome));
             }
 
             @Override

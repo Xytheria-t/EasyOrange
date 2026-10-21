@@ -68,6 +68,7 @@ function PublishPage() {
     const {
         result: autoListingResult,
         steps: autoListingSteps,
+        outcome: autoListingOutcome,
         isLoading: autoListingLoading,
         failure: autoListingFailure,
         analyzeImages,
@@ -444,6 +445,7 @@ function PublishPage() {
                                                 <ThinkingProcess
                                                     steps={autoListingSteps}
                                                     thinking={autoListingLoading}
+                                                    outcome={autoListingOutcome}
                                                 />
                                             </div>
                                         )}

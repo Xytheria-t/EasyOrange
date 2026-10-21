@@ -63,19 +63,19 @@ describe('PlaygroundPage (AI 找货)', () => {
     });
 
     // 后端 AgentTools 的工具面（单一来源：easyorange-backend 的 AgentTools.TOOL_* 常量）。
-    // 后端加工具必须同步 ThinkingProcess 的 STEP_LABELS，否则该步渲染成裸工具名 —— 本用例就是这条同步的断言。
-    const BACKEND_TOOLS: Record<string, string> = {
-        knowledge_search: '查规则',
-        product_search: '找资产',
-        product_detail: '看详情',
-        list_categories: '查类目',
-        market_price_stats: '看行情',
-        compare_assets: '比候选',
-        remember_preference: '记偏好',
-        finish: '生成回答',
+    // 后端加工具必须同步 ThinkingProcess 的 STEP_META，否则该步渲染成裸工具名 —— 本用例就是这条同步的断言。
+    const BACKEND_TOOLS: Record<string, { label: string; layer: string }> = {
+        knowledge_search: { label: '查规则', layer: '检索' },
+        product_search: { label: '找资产', layer: '检索' },
+        product_detail: { label: '看详情', layer: '检索' },
+        list_categories: { label: '查类目', layer: '检索' },
+        market_price_stats: { label: '看行情', layer: '计算' },
+        compare_assets: { label: '比候选', layer: '计算' },
+        remember_preference: { label: '记偏好', layer: '写入' },
+        finish: { label: '生成回答', layer: '收敛' },
     };
 
-    it('每个后端工具在步骤区都有中文文案，不出现裸工具名', async () => {
+    it('每个后端工具在步骤区都有中文文案与所属层，不出现裸工具名', async () => {
         mockedChatStream.mockResolvedValue(undefined);
         renderWithProviders(<PlaygroundPage />);
 
@@ -91,9 +91,13 @@ describe('PlaygroundPage (AI 找货)', () => {
         );
 
         await waitFor(() => {
-            for (const [tool, label] of Object.entries(BACKEND_TOOLS)) {
+            for (const [tool, { label }] of Object.entries(BACKEND_TOOLS)) {
                 expect(screen.getByText(label)).toBeInTheDocument();
                 expect(screen.queryByText(tool)).not.toBeInTheDocument();
+            }
+            // 四层都要在界面上出现过：层名是「工具面按性质分层」唯一看得见的地方
+            for (const layer of new Set(Object.values(BACKEND_TOOLS).map(meta => meta.layer))) {
+                expect(screen.getAllByText(layer).length).toBeGreaterThan(0);
             }
         });
     });
@@ -122,6 +126,42 @@ describe('PlaygroundPage (AI 找货)', () => {
         expect(within(panel).getByText('查询平台交易流程规则')).toBeInTheDocument();
         expect(within(panel).getByText(/命中 5 条/)).toBeInTheDocument();
         expect(within(panel).getByText('正在决定下一步…')).toBeInTheDocument();
+        // 轮次取 step 事件而非 DOM 次序
+        expect(within(panel).getByText('1', { selector: '.playground-think__ord' })).toBeInTheDocument();
+        expect(within(panel).getByText('2', { selector: '.playground-think__ord' })).toBeInTheDocument();
+        // 观察全文直接铺开：不能再退回「截断 + title 悬浮」那种只有鼠标读得到的写法
+        expect(within(panel).getByText(/命中 5 条/)).not.toHaveAttribute('title');
+    });
+
+    it('outcome 事件：降级结局在面板头部标出（三条降级口径里唯一看得见的地方）', () => {
+        mockedChatStream.mockResolvedValue(undefined);
+        renderWithProviders(<PlaygroundPage />);
+
+        fireEvent.change(screen.getByLabelText('问题输入'), { target: { value: '怎么退款？' } });
+        fireEvent.click(screen.getByRole('button', { name: '发送' }));
+        emit([
+            { type: 'step', data: { step: 1, tool: 'knowledge_search', thought: '查退款规则' } },
+            { type: 'outcome', data: { outcome: 'step_limit', rounds: 3 } },
+        ]);
+
+        const panel = screen.getByRole('region', { name: 'Agent 思考过程' });
+        // 轮数只对轮数超限有意义：它要说的就是跑到第几轮被截断
+        expect(within(panel).getByText('已降级 · 轮数超限（3 轮）')).toBeInTheDocument();
+    });
+
+    it('outcome 事件：正常收敛不标降级 —— 标记缺席是事实，不是没收到事件', () => {
+        mockedChatStream.mockResolvedValue(undefined);
+        renderWithProviders(<PlaygroundPage />);
+
+        fireEvent.change(screen.getByLabelText('问题输入'), { target: { value: '怎么退款？' } });
+        fireEvent.click(screen.getByRole('button', { name: '发送' }));
+        emit([
+            { type: 'step', data: { step: 1, tool: 'knowledge_search', thought: '查退款规则' } },
+            { type: 'outcome', data: { outcome: 'finished', rounds: 1 } },
+        ]);
+
+        const panel = screen.getByRole('region', { name: 'Agent 思考过程' });
+        expect(within(panel).queryByText(/已降级/)).not.toBeInTheDocument();
     });
 
     it('思考面板：正文开始后自动收起为摘要，点击头部可展开回看', async () => {

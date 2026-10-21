@@ -114,15 +114,48 @@
     line-height: 1.5;
 }
 
+/* 降级标记：三条降级都照常产出回答，所以不是错误色——用警示色，与步骤图标同一族 */
+.playground-think__degraded {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    flex-shrink: 0;
+    padding: 0.0625rem 0.375rem;
+    border-radius: var(--radius-full);
+    background: var(--status-warning-bg);
+    color: var(--status-warning);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* 工具所属层：面板是界面上唯一标出「这步在检索 / 计算 / 写入 / 收敛」的地方 */
+.playground-think__layer {
+    margin-left: 0.375rem;
+    padding: 0 0.3125rem;
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-full);
+    font-size: 0.625rem;
+    font-weight: 500;
+    color: var(--text-tertiary);
+    vertical-align: 0.0625rem;
+}
+
+/* 步序：视觉标记，语义顺序由 DOM 次序传达 */
+.playground-think__ord {
+    margin-right: 0.375rem;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-tertiary);
+}
+
 .playground-think__obs {
     margin: 0.125rem 0 0;
     font-size: 0.75rem;
     color: var(--text-tertiary);
     line-height: 1.55;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    overflow: hidden;
+    /* 观察里带 36 位 id（召回文案是 [id] 标题 ¥价格），不折行会顶破面板 */
+    overflow-wrap: break-word;
 }
 
 .playground-think__item--pending .playground-think__thought {

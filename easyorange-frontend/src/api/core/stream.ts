@@ -1,5 +1,5 @@
 import { getStoredToken } from '@/features/auth/session';
-import type { AgentStep, ChatSource, ChatStreamEvent } from '@/types/ai';
+import type { AgentLoopOutcome, AgentStep, ChatSource, ChatStreamEvent } from '@/types/ai';
 
 /**
  * 无进展超时：多久没收到任何新数据就判定流已死。
@@ -59,7 +59,7 @@ function abortError(): Error {
 /**
  * SSE 流式消费（fetch + ReadableStream）— POST 请求可携带 Authorization 头，
  * 这是原生 EventSource（仅 GET、不能带头）无法满足的；逐帧解析 text/event-stream。
- * 事件协议与后端 SseEmitter 对齐：step / token / sources / done / error。
+ * 事件协议与后端 SseEmitter 对齐：step / outcome / token / sources / done / error。
  *
  * 终止事件（done / error）缺失时抛错而不是静默 resolve：调用方靠 Promise 结束来
  * 解锁输入框，静默返回会让「流被中途掐断」和「回答正常结束」在界面上无法区分，
@@ -213,6 +213,14 @@ async function responseErrorMessage(response: Response): Promise<string> {
         case 'token':
             onEvent({ type: 'token', data: parseRaw(raw) });
             return false;
+        case 'outcome': {
+            // 标签认不出就不推事件：宁可不标注，也不让面板拿一个空结局去猜
+            const outcome = parseLoopOutcome(raw);
+            if (outcome) {
+                onEvent({ type: 'outcome', data: outcome });
+            }
+            return false;
+        }
         case 'sources':
             onEvent({ type: 'sources', data: parseSources(raw) });
             return false;
@@ -278,4 +286,20 @@ function parseAgentStep(raw: string): AgentStep {
         // fall through
     }
     return { step: 0, tool: raw };
+}
+
+/** outcome 事件载荷为 JSON 对象（ToolLoopOutcomeView）；标签认不出时返回 null，调用方据此不标注 */
+function parseLoopOutcome(raw: string): AgentLoopOutcome | null {
+    try {
+        const parsed = JSON.parse(raw) as Partial<AgentLoopOutcome>;
+        if (parsed && typeof parsed === 'object' && typeof parsed.outcome === 'string') {
+            return {
+                outcome: parsed.outcome,
+                rounds: typeof parsed.rounds === 'number' ? parsed.rounds : 0,
+            };
+        }
+    } catch {
+        // fall through
+    }
+    return null;
 }

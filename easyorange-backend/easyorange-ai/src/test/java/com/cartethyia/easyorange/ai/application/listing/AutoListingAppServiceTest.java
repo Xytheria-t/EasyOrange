@@ -23,6 +23,7 @@ import com.cartethyia.easyorange.ai.domain.annotation.TokenBudget;
 import com.cartethyia.easyorange.ai.domain.enums.ModelCallScope;
 import com.cartethyia.easyorange.ai.domain.model.ChatSource;
 import com.cartethyia.easyorange.ai.domain.model.ToolCallStepView;
+import com.cartethyia.easyorange.ai.domain.model.ToolLoopOutcomeView;
 import com.cartethyia.easyorange.ai.domain.port.CategoryCatalogPort;
 import com.cartethyia.easyorange.ai.domain.port.ChatStreamHandler;
 import com.cartethyia.easyorange.ai.domain.port.PromptRegistryPort;
@@ -278,6 +279,9 @@ class AutoListingAppServiceTest {
         public void onStep(ToolCallStepView step) {
             tools.add(step.tool());
         }
+
+        @Override
+        public void onLoopOutcome(ToolLoopOutcomeView outcome) {}
 
         @Override
         public void onToken(String token) {}

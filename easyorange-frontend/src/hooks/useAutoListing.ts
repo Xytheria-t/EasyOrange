@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import { type AutoListingResult, aiApi } from '@/api/aiApi';
 import { StreamError } from '@/api/core/stream';
 import { useUIStore } from '@/store/uiStore';
-import type { AgentStep } from '@/types/ai';
+import type { AgentLoopOutcome, AgentStep } from '@/types/ai';
 
 /**
  * 失败文案：后端失败（B8002 等）自带面向用户的说明，优先展示它；
@@ -29,6 +29,8 @@ export function useAutoListing() {
     const [result, setResult] = useState<AutoListingResult | null>(null);
     /** 识别链路的工具步骤 — 流式逐步流入，供思考过程面板可视化 */
     const [steps, setSteps] = useState<AgentStep[]>([]);
+    /** 循环结局 — 面板据此标出这次是正常收敛还是降级收的 */
+    const [outcome, setOutcome] = useState<AgentLoopOutcome | undefined>(undefined);
     const [isLoading, setIsLoading] = useState(false);
     /** 最近一次识别失败的文案 — 持久挂在识别按钮旁给重试入口，不随 toast 消失 */
     const [failure, setFailure] = useState<string | null>(null);
@@ -40,6 +42,7 @@ export function useAutoListing() {
             setFailure(null);
             // 重试清空上一轮步骤：面板原位重新流入，新旧步骤不接在一起
             setSteps([]);
+            setOutcome(undefined);
 
             const fail = (message: string) => {
                 setFailure(message);
@@ -51,6 +54,9 @@ export function useAutoListing() {
                     switch (event.type) {
                         case 'step':
                             setSteps(prev => [...prev, event.data]);
+                            break;
+                        case 'outcome':
+                            setOutcome(event.data);
                             break;
                         case 'done': {
                             const listing = parseResult(event.data);
@@ -85,5 +91,5 @@ export function useAutoListing() {
         setFailure(null);
     }, []);
 
-    return { result, steps, isLoading, failure, analyzeImages, clearResult };
+    return { result, steps, outcome, isLoading, failure, analyzeImages, clearResult };
 }

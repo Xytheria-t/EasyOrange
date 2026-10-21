@@ -16,7 +16,7 @@ import { aiApi } from '@/api/aiApi';
 import { StreamAuthError, StreamIdleTimeoutError, StreamRequestError } from '@/api/core/stream';
 import { ProductCard } from '@/components/product/ProductCard';
 import { useProductsByIds } from '@/hooks/product/useProducts';
-import type { AgentStep, ChatSource, ChatStreamEvent } from '@/types/ai';
+import type { AgentLoopOutcome, AgentStep, ChatSource, ChatStreamEvent } from '@/types/ai';
 import { MarkdownContent } from './MarkdownContent';
 import { ThinkingProcess } from './ThinkingProcess';
 import './playground.css';
@@ -30,6 +30,8 @@ interface ChatMessage {
     content: string;
     sources: ChatSource[];
     steps: AgentStep[];
+    /** 循环结局 — 有它才能把「降级收的」和「正常收敛」分开；没收到事件时不标 */
+    outcome?: AgentLoopOutcome;
     status: MessageStatus;
     /** 失败/中止原因 — 与 content 分开存：流已吐出的部分答案要留着，不能被错误文案覆盖 */
     note?: string;
@@ -281,6 +283,7 @@ export default function PlaygroundPage() {
             content: '',
             sources: [],
             steps: [],
+            outcome: undefined,
             status: 'streaming',
             note: undefined,
             feedback: null,
@@ -298,6 +301,9 @@ export default function PlaygroundPage() {
             switch (event.type) {
                 case 'step':
                     appendStep(assistantId, event.data);
+                    break;
+                case 'outcome':
+                    setMessage(assistantId, { outcome: event.data });
                     break;
                 case 'token':
                     appendToken(assistantId, event.data);
@@ -443,6 +449,7 @@ export default function PlaygroundPage() {
                                     <ThinkingProcess
                                         steps={message.steps}
                                         thinking={message.status === 'streaming' && !message.content}
+                                        outcome={message.outcome}
                                     />
                                 )}
                                 {message.sources.length > 0 && <SourceList sources={message.sources} />}

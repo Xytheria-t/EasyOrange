@@ -26,6 +26,7 @@ import com.cartethyia.easyorange.ai.domain.model.ChatSource;
 import com.cartethyia.easyorange.ai.domain.model.ChatTurn;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeHit;
 import com.cartethyia.easyorange.ai.domain.model.ToolCallStepView;
+import com.cartethyia.easyorange.ai.domain.model.ToolLoopOutcomeView;
 import com.cartethyia.easyorange.ai.domain.port.ChatSessionPort;
 import com.cartethyia.easyorange.ai.domain.port.ChatStreamHandler;
 import com.cartethyia.easyorange.ai.domain.port.PromptRegistryPort;
@@ -418,6 +419,9 @@ class ChatAppServiceTest {
                     }
 
                     @Override
+                    public void onLoopOutcome(ToolLoopOutcomeView outcome) {}
+
+                    @Override
                     public void onToken(String token) {
                         tokens.append(token);
                     }
@@ -467,6 +471,9 @@ class ChatAppServiceTest {
                     public void onStep(ToolCallStepView step) {
                         events.add("step");
                     }
+
+                    @Override
+                    public void onLoopOutcome(ToolLoopOutcomeView outcome) {}
 
                     @Override
                     public void onToken(String token) {
@@ -536,6 +543,9 @@ class ChatAppServiceTest {
                 new ChatRequest("怎么退款？", "sess-1", false), AUTH_USER.userId(), new ChatStreamHandler() {
                     @Override
                     public void onStep(ToolCallStepView step) {}
+
+                    @Override
+                    public void onLoopOutcome(ToolLoopOutcomeView outcome) {}
 
                     @Override
                     public void onToken(String token) {}
@@ -608,6 +618,9 @@ class ChatAppServiceTest {
             public void onStep(ToolCallStepView step) {}
 
             @Override
+            public void onLoopOutcome(ToolLoopOutcomeView outcome) {}
+
+            @Override
             public void onToken(String token) {}
 
             @Override
@@ -637,6 +650,9 @@ class ChatAppServiceTest {
         chatService.streamAnswer(new ChatRequest("问题", "sess-1", false), AUTH_USER.userId(), new ChatStreamHandler() {
             @Override
             public void onStep(ToolCallStepView step) {}
+
+            @Override
+            public void onLoopOutcome(ToolLoopOutcomeView outcome) {}
 
             @Override
             public void onToken(String token) {}
@@ -689,6 +705,9 @@ class ChatAppServiceTest {
             public void onStep(ToolCallStepView step) {}
 
             @Override
+            public void onLoopOutcome(ToolLoopOutcomeView outcome) {}
+
+            @Override
             public void onToken(String token) {}
 
             @Override
@@ -709,6 +728,9 @@ class ChatAppServiceTest {
         chatService.streamAnswer(new ChatRequest("  ", "sess-1", false), AUTH_USER.userId(), new ChatStreamHandler() {
             @Override
             public void onStep(ToolCallStepView step) {}
+
+            @Override
+            public void onLoopOutcome(ToolLoopOutcomeView outcome) {}
 
             @Override
             public void onToken(String token) {}
@@ -884,6 +906,9 @@ class ChatAppServiceTest {
             public void onStep(ToolCallStepView step) {}
 
             @Override
+            public void onLoopOutcome(ToolLoopOutcomeView outcome) {}
+
+            @Override
             public void onToken(String token) {}
 
             @Override
@@ -905,6 +930,9 @@ class ChatAppServiceTest {
     private static final class StreamHandlerStub implements ChatStreamHandler {
         @Override
         public void onStep(ToolCallStepView step) {}
+
+        @Override
+        public void onLoopOutcome(ToolLoopOutcomeView outcome) {}
 
         @Override
         public void onToken(String token) {}

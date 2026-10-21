@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.ai.application.toolcall;
 import com.cartethyia.easyorange.ai.application.support.FailureReason;
 import com.cartethyia.easyorange.ai.domain.model.ToolCallStepTrace;
 import com.cartethyia.easyorange.ai.domain.model.ToolCallStepView;
+import com.cartethyia.easyorange.ai.domain.model.ToolLoopOutcomeView;
 import com.cartethyia.easyorange.ai.domain.port.ChatStreamHandler;
 import com.cartethyia.easyorange.ai.domain.port.ToolCallStepTracePort;
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
@@ -71,6 +72,11 @@ public class ToolLoopKernel {
         try {
             Result result = executeLoop(spec);
             spec.listener().recordLoop(result.outcome(), result.rounds());
+            // 四条出口在这里汇聚，推给流式侧也只在这一处——与上面那行指标同读一个 Result，两边不会各判各的
+            ChatStreamHandler handler = spec.streamHandler();
+            if (handler != null) {
+                handler.onLoopOutcome(new ToolLoopOutcomeView(result.outcome().getTag(), result.rounds()));
+            }
             return result;
         } catch (RuntimeException e) {
             spec.listener().recordLoopFailure();

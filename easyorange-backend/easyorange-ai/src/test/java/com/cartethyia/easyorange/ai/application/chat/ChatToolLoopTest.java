@@ -32,6 +32,7 @@ import com.cartethyia.easyorange.ai.domain.model.ChatTurn;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeHit;
 import com.cartethyia.easyorange.ai.domain.model.ToolCallStepTrace;
 import com.cartethyia.easyorange.ai.domain.model.ToolCallStepView;
+import com.cartethyia.easyorange.ai.domain.model.ToolLoopOutcomeView;
 import com.cartethyia.easyorange.ai.domain.model.UserPreference;
 import com.cartethyia.easyorange.ai.domain.port.AssetDetailPort;
 import com.cartethyia.easyorange.ai.domain.port.ChatStreamHandler;
@@ -194,6 +195,8 @@ class ToolCallLoopTest {
         assertThat(steps.steps).hasSize(1);
         assertThat(steps.steps.getFirst().tool()).isEqualTo(ChatTools.TOOL_FINISH);
         assertThat(steps.steps.getFirst().thought()).isEqualTo("闲聊无需检索");
+        // 收敛也推结局：前端据此判断「没有降级标记」是事实而不是没收到事件
+        assertThat(steps.outcome.outcome()).isEqualTo(ToolLoopOutcome.FINISHED.getTag());
         assertThat(meterRegistry
                         .counter("easyorange.ai.chat.loop", "outcome", "finished")
                         .count())
@@ -429,6 +432,25 @@ class ToolCallLoopTest {
                         .counter("easyorange.ai.chat.loop", "outcome", "step_limit")
                         .count())
                 .isEqualTo(1.0);
+    }
+
+    @Test
+    @DisplayName("降级收口也推结局事件 —— 界面标注与降级率指标同读一个 Result，不会各判各的")
+    void run_degradedOutcomeIsStreamedWithMetricTag() {
+        aiProperties = PropertyBindings.bind(AiProperties.class, "chat.max-rounds", "2");
+        toolCallLoop = newToolCallLoop();
+        stubDecisions(
+                toolCallResponse(ChatTools.TOOL_KNOWLEDGE_SEARCH, searchArgs("退款")),
+                toolCallResponse(ChatTools.TOOL_KNOWLEDGE_SEARCH, searchArgs("退货")));
+        when(retrievalService.search(anyString(), anyInt())).thenReturn(List.of());
+        var handler = new RecordingHandler();
+
+        Result result = run("反复问规则", "user-1", handler);
+
+        assertThat(result.outcome()).isEqualTo(ToolLoopOutcome.ROUND_LIMIT);
+        // 标签取枚举的 tag 而非字面量：与 Prometheus 时序契约同一个来源
+        assertThat(handler.outcome.outcome()).isEqualTo(ToolLoopOutcome.ROUND_LIMIT.getTag());
+        assertThat(handler.outcome.rounds()).isEqualTo(result.rounds());
     }
 
     @Test
@@ -929,14 +951,20 @@ class ToolCallLoopTest {
                 new ChatLoopMetrics(meterRegistry));
     }
 
-    /** 记录 step 事件的回调桩。 */
+    /** 记录 step 与结局事件的回调桩。 */
     private static final class RecordingHandler implements ChatStreamHandler {
 
         private final List<ToolCallStepView> steps = new ArrayList<>();
+        private ToolLoopOutcomeView outcome;
 
         @Override
         public void onStep(ToolCallStepView step) {
             steps.add(step);
+        }
+
+        @Override
+        public void onLoopOutcome(ToolLoopOutcomeView outcome) {
+            this.outcome = outcome;
         }
 
         @Override

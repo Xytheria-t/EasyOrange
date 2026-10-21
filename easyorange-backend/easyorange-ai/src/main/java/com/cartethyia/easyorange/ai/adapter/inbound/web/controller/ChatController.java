@@ -6,6 +6,7 @@ import com.cartethyia.easyorange.ai.application.dto.ChatRequest;
 import com.cartethyia.easyorange.ai.domain.exception.ChatStreamAbortedException;
 import com.cartethyia.easyorange.ai.domain.model.ChatSource;
 import com.cartethyia.easyorange.ai.domain.model.ToolCallStepView;
+import com.cartethyia.easyorange.ai.domain.model.ToolLoopOutcomeView;
 import com.cartethyia.easyorange.ai.domain.port.ChatStreamHandler;
 import com.cartethyia.easyorange.common.annotation.SkipRateLimit;
 import com.cartethyia.easyorange.common.annotation.SkipRepeatSubmit;
@@ -96,6 +97,11 @@ public class ChatController {
                 @Override
                 public void onStep(ToolCallStepView step) {
                     send(emitter, SseEmitter.event().name("step").data(step));
+                }
+
+                @Override
+                public void onLoopOutcome(ToolLoopOutcomeView outcome) {
+                    send(emitter, SseEmitter.event().name("outcome").data(outcome));
                 }
 
                 @Override

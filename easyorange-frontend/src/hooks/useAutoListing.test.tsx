@@ -29,7 +29,8 @@ function sseResponse(frames: string[]) {
 }
 
 const stepFrame = 'event: step\ndata: {"step":1,"tool":"list_categories","thought":"确认品类能不能挂"}\n\n';
-const listingFrames = [stepFrame, `event: done\ndata: ${JSON.stringify(listingResult)}\n\n`];
+const outcomeFrame = 'event: outcome\ndata: {"outcome":"budget","rounds":2}\n\n';
+const listingFrames = [stepFrame, outcomeFrame, `event: done\ndata: ${JSON.stringify(listingResult)}\n\n`];
 
 describe('useAutoListing', () => {
     beforeEach(() => {
@@ -45,6 +46,7 @@ describe('useAutoListing', () => {
         });
 
         expect(result.current.steps).toEqual([{ step: 1, tool: 'list_categories', thought: '确认品类能不能挂' }]);
+        expect(result.current.outcome).toEqual({ outcome: 'budget', rounds: 2 });
         expect(result.current.result).toEqual(listingResult);
         expect(result.current.isLoading).toBe(false);
         expect(useUIStore.getState().toasts.at(-1)).toMatchObject({ type: 'success' });

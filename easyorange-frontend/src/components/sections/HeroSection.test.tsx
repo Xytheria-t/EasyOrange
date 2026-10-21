@@ -33,6 +33,12 @@ vi.stubGlobal(
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', () => ({
     useNavigate: () => mockNavigate,
+    // 裸渲染没有 Router 上下文，真 Link 会抛：替身只留 href，断言的是目的地不是路由行为
+    Link: ({ children, to, ...props }: { children: React.ReactNode; to: string; [key: string]: unknown }) => (
+        <a href={to} {...props}>
+            {children}
+        </a>
+    ),
 }));
 
 // Mock Image component
@@ -109,6 +115,12 @@ describe('HeroSection', () => {
         render(<HeroSection />);
         const searchInput = screen.getByPlaceholderText('搜索你想要的资产...');
         expect(searchInput).toBeInTheDocument();
+    });
+
+    it('AI 入口卡是能走到发布助手的链接，不是没有去处的装饰', () => {
+        render(<HeroSection />);
+        const entry = screen.getByRole('link', { name: /AI 工程化/ });
+        expect(entry).toHaveAttribute('href', '/publish');
     });
 
     it('renders search button', () => {

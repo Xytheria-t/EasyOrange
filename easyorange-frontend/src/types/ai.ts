@@ -62,9 +62,20 @@ export interface AgentStep {
     observation?: string;
 }
 
+/**
+ * 工具循环结局（与后端 ToolLoopOutcomeView 对齐：outcome 事件载荷）。
+ * `outcome` 是后端固化的标签（finished / step_limit / budget / decision_failed），
+ * 与降级率指标的 tag 同一个来源——界面标注和监控看的是同一件事。
+ */
+export interface AgentLoopOutcome {
+    outcome: string;
+    rounds: number;
+}
+
 /** SSE 流式事件（与后端 SseEmitter 事件名对齐） */
 export type ChatStreamEvent =
     | { type: 'step'; data: AgentStep }
+    | { type: 'outcome'; data: AgentLoopOutcome }
     | { type: 'token'; data: string }
     | { type: 'sources'; data: ChatSource[] }
     | { type: 'done'; data: string }

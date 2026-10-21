@@ -184,7 +184,7 @@ public class ChatAppService {
     }
 
     /**
-     * 流式回答（SSE）：step → token 逐段回调，错误统一走 {@link ChatStreamHandler#onError}。语义缓存与非流式同一模式：
+     * 流式回答（SSE）：step → outcome → token 逐段回调，错误统一走 {@link ChatStreamHandler#onError}。语义缓存与非流式同一模式：
      * 命中按固定块回放 token 并重放 sources 事件（不进循环、无 step 事件），也不碰会话记忆与会话锁 —— 没有需要串行化
      * 的共享状态。
      * <p>

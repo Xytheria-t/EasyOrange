@@ -22,7 +22,7 @@ const AI_TIMEOUT = 90000;
 
 export const aiApi = {
     /**
-     * 流式上架识别 — 事件只有 step / done / error（发布产出是结构化表单不是散文，后端无 token / sources）。
+     * 流式上架识别 — 事件只有 step / outcome / done / error（发布产出是结构化表单不是散文，后端无 token / sources）。
      * done 的 data 是 AutoListingResult 的序列化 JSON 文本，调用方自行 JSON.parse。
      */
     autoListingStream(imageUrls: string[], onEvent: (event: ChatStreamEvent) => void, signal?: AbortSignal) {

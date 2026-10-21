@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Image } from '@/components/ui/Image';
 
@@ -327,7 +327,8 @@ export default function HeroSection() {
                     </div>
 
                     <div className="hero-ai-entry animate-slide-up delay-3">
-                        <Button variant="outline" className="ai-entry-btn">
+                        {/* 入口是导航不是动作：用 Link 拿到键盘可达与「新标签打开」，点击语义与站内其它入口一致 */}
+                        <Link to="/publish" className="ai-entry-btn">
                             <div className="ai-entry-icon">
                                 <svg
                                     viewBox="0 0 24 24"
@@ -348,7 +349,7 @@ export default function HeroSection() {
                                 <div className="ai-indicator-dot" />
                                 <div className="ai-indicator-shimmer" />
                             </div>
-                        </Button>
+                        </Link>
                     </div>
 
                     <div className="hero-stats animate-slide-up delay-4">

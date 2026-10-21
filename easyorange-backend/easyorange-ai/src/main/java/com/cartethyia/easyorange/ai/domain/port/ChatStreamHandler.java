@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.ai.domain.port;
 import com.cartethyia.easyorange.ai.domain.exception.ChatStreamAbortedException;
 import com.cartethyia.easyorange.ai.domain.model.ChatSource;
 import com.cartethyia.easyorange.ai.domain.model.ToolCallStepView;
+import com.cartethyia.easyorange.ai.domain.model.ToolLoopOutcomeView;
 import java.util.List;
 
 /**
@@ -16,6 +17,14 @@ public interface ChatStreamHandler {
 
     /** 工具调用循环的每一步（决策理由 + 观察摘要），生成开始前推送，前端步骤可视化。 */
     void onStep(ToolCallStepView step);
+
+    /**
+     * 工具调用循环的结局（正常收敛或三条降级之一），生成开始前推送一次。
+     * <p>
+     * 与降级率指标同源——都从 {@code ToolLoopKernel.Result} 读，不各自判定：界面说收敛、指标说降级这种
+     * 对不上，会先骗过读它的人。降级收口仍产出一份正常回答，界面上这是唯一能看出「它是降级产物」的地方。
+     */
+    void onLoopOutcome(ToolLoopOutcomeView outcome);
 
     void onToken(String token);
 
