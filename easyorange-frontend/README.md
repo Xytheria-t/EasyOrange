@@ -24,7 +24,7 @@ TypeScript（`strict` 全开）· React · React Router · Vite · Tailwind CSS 
 
 ## 页面路由
 
-只列 AI 叙事面与共用壳；纯业务 CRUD 面已裁撤给后端 REST + Swagger 承载（2026-10）。
+C 端只列 AI 叙事面与共用壳（通知中心 / 独立搜索页 / 我的发布 / 编辑商品等纯业务面 2026-10 已裁）；管理端列全部页面——2026-10-21 加回业务管理面（数据总览 / 商品审核 / 用户管理 / 订单管理），后端 REST 端点始终由 Swagger 承载。
 
 | 页面 | 路由 | 说明 | 需登录 |
 |------|------|------|--------|
@@ -37,7 +37,9 @@ TypeScript（`strict` 全开）· React · React Router · Vite · Tailwind CSS 
 | 订单 | `/orders` · `/orders/:id` | 订单列表 / 详情（支付动作在列表 / 详情内触发，无独立收银台页） | 是 |
 | 个人中心 | `/profile` | 资料与密码 | 是 |
 | 登录 / 找回密码 | `/login` · `/forgot-password` | 登录 + 注册 Tab 切换（无独立注册页） | 否 |
-| 管理端 | `/admin`（= 检索质量回看）· `/admin/knowledge` · `/admin/retrieval-quality` | AI 运维两面 | 是（ADMIN） |
+| 管理端 · 总览 | `/admin` · `/admin/overview` | 一屏看全用户 / 商品 / 订单 / 营收四个口径 + 分布与走势（手写 SVG 折线，不引图表库） | 是（ADMIN） |
+| 管理端 · 业务 | `/admin/products` · `/admin/users` · `/admin/orders` | 商品审核（批量审核 + 审核日志）· 用户管理（封禁 / 解锁 / 强制下线 / 改角色）· 订单干预（取消 / 强制完成 / 退款） | 是（ADMIN） |
+| 管理端 · AI 运维 | `/admin/knowledge` · `/admin/retrieval-quality` | RAG 文档摄入管线 + 检索质量回看（ADR-0012 兑现位） | 是（ADMIN） |
 
 > 管理端路由必须在 `MinimalLayout` **外部**独立渲染（否则 C 端 Header 会出现在管理页）。
 > `/playground` 需登录：AI 对话依赖登录身份（长期偏好加载、`remember_preference` 落库），且后端 `/api/ai/**` 本身要求 JWT。

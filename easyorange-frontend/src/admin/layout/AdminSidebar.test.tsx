@@ -36,15 +36,21 @@ describe('AdminSidebar', () => {
         expect(screen.getByText('AI 运维')).toBeInTheDocument();
     });
 
-    it('renders the two AI-ops nav items only', () => {
+    it('renders the overview and business nav items', () => {
         render(<AdminSidebar />);
+        expect(screen.getByText('数据总览')).toBeInTheDocument();
         expect(screen.getByText('知识库管理')).toBeInTheDocument();
         expect(screen.getByText('检索质量回看')).toBeInTheDocument();
-        // 业务 CRUD 导航已裁（走后端 REST），不应再出现
-        expect(screen.queryByText('用户管理')).not.toBeInTheDocument();
-        expect(screen.queryByText('商品审核')).not.toBeInTheDocument();
-        expect(screen.queryByText('订单管理')).not.toBeInTheDocument();
-        expect(screen.queryByText('数据统计')).not.toBeInTheDocument();
+        expect(screen.getByText('用户管理')).toBeInTheDocument();
+        expect(screen.getByText('商品审核')).toBeInTheDocument();
+        expect(screen.getByText('订单管理')).toBeInTheDocument();
+    });
+
+    it('marks only 数据总览 as active on /admin', () => {
+        render(<AdminSidebar />);
+        // /admin 是所有管理端路由的前缀，首页项走 exact，否则每一页都亮着
+        expect(screen.getByText('数据总览').closest('a')).toHaveClass('active');
+        expect(screen.getByText('商品审核').closest('a')).not.toHaveClass('active');
     });
 
     it('renders back to main site link', () => {

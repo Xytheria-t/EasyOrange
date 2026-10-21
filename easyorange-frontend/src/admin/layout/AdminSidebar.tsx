@@ -1,9 +1,42 @@
+import { ClipboardCheck, LayoutDashboard, ReceiptText, Users } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAdminStore } from '../store';
 
-// 管理端前端只挂 AI 运维两个面（知识库 + 检索质量回看），业务 CRUD 走后端 REST
+// 管理端前端：概览 + 业务管理（审核 / 用户 / 订单）+ AI 运维（知识库 / 检索质量）
 const navItems = [
+    {
+        section: '概览',
+        items: [
+            {
+                path: '/admin',
+                label: '数据总览',
+                // 首页路径是所有管理端路由的前缀，前缀匹配会让它在每一页都亮着
+                exact: true,
+                icon: <LayoutDashboard size={17} aria-hidden="true" />,
+            },
+        ],
+    },
+    {
+        section: '业务管理',
+        items: [
+            {
+                path: '/admin/products',
+                label: '商品审核',
+                icon: <ClipboardCheck size={17} aria-hidden="true" />,
+            },
+            {
+                path: '/admin/users',
+                label: '用户管理',
+                icon: <Users size={17} aria-hidden="true" />,
+            },
+            {
+                path: '/admin/orders',
+                label: '订单管理',
+                icon: <ReceiptText size={17} aria-hidden="true" />,
+            },
+        ],
+    },
     {
         section: 'AI 运维',
         items: [
@@ -75,7 +108,10 @@ export function AdminSidebar({ onNavigate, className = '' }: AdminSidebarProps =
     const { sidebarCollapsed } = useAdminStore();
     const location = useLocation();
 
-    const isActive = (path: string) => location.pathname.startsWith(path);
+    // 首页（/admin）是所有管理端路由的前缀，前缀匹配会让它在每一页都亮着，
+    // 这类项走 exact：只有路径完全相等才算选中
+    const isActive = (path: string, exact = false) =>
+        exact ? location.pathname === path : location.pathname.startsWith(path);
 
     // 抽屉内始终展开，不跟随桌面端的折叠态
     const collapsed = className.includes('admin-sidebar--drawer') ? false : sidebarCollapsed;
@@ -113,7 +149,7 @@ export function AdminSidebar({ onNavigate, className = '' }: AdminSidebarProps =
                             <Link
                                 key={item.path}
                                 to={item.path}
-                                className={`nav-item ${isActive(item.path) ? 'active' : ''}`}
+                                className={`nav-item ${isActive(item.path, 'exact' in item ? item.exact : false) ? 'active' : ''}`}
                                 title={collapsed ? item.label : undefined}
                                 onClick={onNavigate}
                             >

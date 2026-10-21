@@ -2257,6 +2257,17 @@
     margin: 0 calc(var(--admin-space-4) * -1) calc(var(--admin-space-3) * -1);
 }
 
+/* ============ 迷你折线（总览走势） ============ */
+/* 手写 SVG 的那条线：preserveAspectRatio=none 让它随容器宽度拉伸，
+   vectorEffect=non-scaling-stroke 保证拉伸后线宽不被拉粗。 */
+.admin-spark {
+    display: block;
+    width: 100%;
+    height: 44px;
+    margin-top: var(--admin-space-2);
+    overflow: visible;
+}
+
 /* ============ 排名条（分类分布等「量级」编码） ============ */
 .admin-rank-list {
     display: flex;
@@ -2439,6 +2450,8 @@
     display: grid;
     gap: var(--admin-space-4);
     grid-template-columns: 1.6fr 1fr;
+    /* 两张卡内容高度差得多，网格默认拉伸会让矮的那张内部留大片空白 */
+    align-items: start;
 }
 
 @media (max-width: 1180px) {

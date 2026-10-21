@@ -1,11 +1,32 @@
 import { request } from '@/api/core/request';
 import type { PageResult, Result } from '@/types';
 import type {
+    ActivityItem,
+    AdminOrder,
+    AdminOrderDetail,
+    AdminOrderQuery,
+    AdminProduct,
+    AdminProductQuery,
+    AdminUser,
+    AdminUserQuery,
+    AuditLogResponse,
+    BatchAuditRequest,
+    BatchAuditResultResponse,
+    CategoryCreateRequest,
+    CategoryResponse,
+    CategoryUpdateRequest,
     CreateKnowledgeDocRequest,
+    DashboardStats,
     KnowledgeDoc,
+    OrderInterventionRequest,
+    OrderStatsResponse,
+    ProductAuditRequest,
     RetrievalEvalCase,
     RetrievalEvalLine,
     RetrievalEvalRun,
+    TrendItem,
+    UpdateStatusRequest,
+    UpdateUserStatusRequest,
 } from '../types/admin';
 
 const ADMIN_API_PREFIX = '/admin';
@@ -32,12 +53,176 @@ function coercePageTotal<T>(res: Result<PageResult<T>>): Result<PageResult<T>> {
     return { ...res, data: { ...res.data, total: Number(res.data.total ?? 0) } };
 }
 
-/**
- * 管理端 API —— 只覆盖 AI 运维两个面（知识库管理 + 检索质量回看）。
- * 业务 CRUD（用户 / 商品审核 / 订单 / 分类 / 仪表盘）的端点由后端 REST 承载，
- * 前端不再平行维护一层调用与 DTO（2026-10-13 裁剪，路由同 rationale 见 AdminRoutes）。
- */
 export const adminApi = {
+    async getDashboardStats() {
+        const res = await request<DashboardStats>(`${ADMIN_API_PREFIX}/dashboard/stats`);
+        return {
+            ...res,
+            data: coerceCounts(res.data, [
+                'totalUsers',
+                'todayNewUsers',
+                'totalProducts',
+                'pendingProducts',
+                'totalOrders',
+                'todayOrders',
+            ]),
+        };
+    },
+
+    async getTrend() {
+        const res = await request<TrendItem[]>(`${ADMIN_API_PREFIX}/dashboard/trend`);
+        return { ...res, data: (res.data ?? []).map(row => coerceCounts(row, ['users', 'products', 'orders'])) };
+    },
+
+    getActivity() {
+        return request<ActivityItem[]>(`${ADMIN_API_PREFIX}/dashboard/activity`);
+    },
+
+    async getUsers(params: AdminUserQuery) {
+        return coercePageTotal(
+            await request<PageResult<AdminUser>>(`${ADMIN_API_PREFIX}/users`, {
+                params: { ...params },
+            })
+        );
+    },
+
+    getUserById(id: string) {
+        return request<AdminUser>(`${ADMIN_API_PREFIX}/users/${id}`);
+    },
+
+    updateUserStatus(id: string, data: UpdateUserStatusRequest) {
+        return request<void>(`${ADMIN_API_PREFIX}/users/${id}/status`, {
+            method: 'PUT',
+            body: data,
+        });
+    },
+
+    async getProducts(params: AdminProductQuery) {
+        return coercePageTotal(
+            await request<PageResult<AdminProduct>>(`${ADMIN_API_PREFIX}/products`, {
+                params: { ...params },
+            })
+        );
+    },
+
+    getProductById(id: string) {
+        return request<AdminProduct>(`${ADMIN_API_PREFIX}/products/${id}`);
+    },
+
+    updateProductStatus(id: string, data: UpdateStatusRequest) {
+        return request<void>(`${ADMIN_API_PREFIX}/products/${id}/status`, {
+            method: 'PUT',
+            body: data,
+        });
+    },
+
+    auditProduct(id: string, data: ProductAuditRequest) {
+        return request<void>(`${ADMIN_API_PREFIX}/products/${id}/audit`, {
+            method: 'PUT',
+            body: data,
+        });
+    },
+
+    batchAuditProducts(data: BatchAuditRequest) {
+        // 后端是 @PostMapping：写成 PUT 会 405，且返回体是逐条结果而非 void
+        return request<BatchAuditResultResponse>(`${ADMIN_API_PREFIX}/products/batch-audit`, {
+            method: 'POST',
+            body: data,
+        });
+    },
+
+    getAuditLogs(id: string) {
+        return request<AuditLogResponse[]>(`${ADMIN_API_PREFIX}/products/${id}/audit-logs`);
+    },
+
+    async getOrders(params: AdminOrderQuery) {
+        return coercePageTotal(
+            await request<PageResult<AdminOrder>>(`${ADMIN_API_PREFIX}/orders`, {
+                params: { ...params },
+            })
+        );
+    },
+
+    getOrderById(id: string) {
+        return request<AdminOrderDetail>(`${ADMIN_API_PREFIX}/orders/${id}`);
+    },
+
+    async getOrderStats() {
+        const res = await request<OrderStatsResponse>(`${ADMIN_API_PREFIX}/orders/stats`);
+        return {
+            ...res,
+            data: coerceCounts(res.data, [
+                'totalOrders',
+                'todayOrders',
+                'pendingPayment',
+                'toShip',
+                'toReceive',
+                'completed',
+                'cancelled',
+                'refunded',
+            ]),
+        };
+    },
+
+    cancelOrder(id: string, data: OrderInterventionRequest) {
+        return request<void>(`${ADMIN_API_PREFIX}/orders/${id}/cancel`, {
+            method: 'PUT',
+            body: data,
+        });
+    },
+
+    forceCompleteOrder(id: string, data: OrderInterventionRequest) {
+        return request<void>(`${ADMIN_API_PREFIX}/orders/${id}/force-complete`, {
+            method: 'PUT',
+            body: data,
+        });
+    },
+
+    refundOrder(id: string, data: OrderInterventionRequest) {
+        return request<void>(`${ADMIN_API_PREFIX}/orders/${id}/refund`, {
+            method: 'PUT',
+            body: data,
+        });
+    },
+
+    async getCategories() {
+        // productCount 是 Long，不收敛会让统计页的占比算成字符串拼接
+        const res = await request<CategoryResponse[]>(`${ADMIN_API_PREFIX}/categories`);
+        return { ...res, data: (res.data ?? []).map(row => coerceCounts(row, ['productCount'])) };
+    },
+
+    /** 树与列表同一个 DTO，只有 children 不同 */
+    getCategoryTree() {
+        return request<CategoryResponse[]>(`${ADMIN_API_PREFIX}/categories/tree`);
+    },
+
+    createCategory(data: CategoryCreateRequest) {
+        return request<number>(`${ADMIN_API_PREFIX}/categories`, {
+            method: 'POST',
+            body: data,
+        });
+    },
+
+    updateCategory(id: string, data: CategoryUpdateRequest) {
+        return request<void>(`${ADMIN_API_PREFIX}/categories/${id}`, {
+            method: 'PUT',
+            body: data,
+        });
+    },
+
+    updateCategoryStatus(id: string, status: number) {
+        return request<void>(`${ADMIN_API_PREFIX}/categories/${id}/status`, {
+            method: 'PUT',
+            params: { status },
+        });
+    },
+
+    deleteCategory(id: string) {
+        return request<void>(`${ADMIN_API_PREFIX}/categories/${id}`, {
+            method: 'DELETE',
+        });
+    },
+
     async getKnowledgeDocs(pageNum = 1, pageSize = 10) {
         return coercePageTotal(
             await request<PageResult<KnowledgeDoc>>(`${ADMIN_API_PREFIX}/knowledge`, {
