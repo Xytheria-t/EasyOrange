@@ -189,7 +189,7 @@ export default function KnowledgePage() {
                     }
                 }}
             >
-                <DialogContent className="max-w-lg">
+                <DialogContent className="max-w-lg admin-dialog">
                     <DialogHeader>
                         <DialogTitle>新增知识库文档</DialogTitle>
                         <DialogDescription>保存后系统自动分块、向量化并写入 ES 索引</DialogDescription>

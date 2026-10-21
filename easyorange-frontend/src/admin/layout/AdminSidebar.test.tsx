@@ -17,6 +17,11 @@ vi.mock('../store', () => ({
     useAdminStore: () => mockAdminStore(),
 }));
 
+// 侧边栏读待审核数（与总览页共用同一查询键），这里只关心渲染行为
+vi.mock('../hooks', () => ({
+    useDashboardStats: () => ({ data: { pendingProducts: 3 } }),
+}));
+
 describe('AdminSidebar', () => {
     beforeEach(() => {
         vi.clearAllMocks();
@@ -56,6 +61,12 @@ describe('AdminSidebar', () => {
     it('renders back to main site link', () => {
         render(<AdminSidebar />);
         expect(screen.getByText('返回主站')).toBeInTheDocument();
+    });
+
+    it('在商品审核项上标出待审核数量', () => {
+        render(<AdminSidebar />);
+        const badge = screen.getByText('3');
+        expect(badge.closest('a')).toHaveTextContent('商品审核');
     });
 
     it('marks 检索质量回看 as active when on /admin/retrieval-quality', () => {

@@ -4,6 +4,8 @@ interface SparklineProps {
     color: string;
     /** 无障碍名：折线本身没有文字，屏幕阅读器读这个 */
     label: string;
+    /** 线下方垫一层淡色填充：只有一条线时它读着像随手画的笔画，垫一层才像一张图 */
+    fill?: boolean;
 }
 
 const VIEW_W = 100;
@@ -15,7 +17,7 @@ const VIEW_H = 32;
  * 统计页的走势只有「一条线 + 几个点」，recharts 这类库为此要打进几十 KB；
  * 管理端样式令牌里已有分面小图的类（.admin-sm-*），这里补的是那条线本身。
  */
-export function Sparkline({ values, color, label }: SparklineProps) {
+export function Sparkline({ values, color, label, fill = false }: SparklineProps) {
     // 少于两个点画不出线（分母为 0），返回空
     if (values.length < 2) {
         return null;
@@ -41,6 +43,7 @@ export function Sparkline({ values, color, label }: SparklineProps) {
             role="img"
             aria-label={label}
         >
+            {fill ? <polygon points={`0,${VIEW_H} ${points} ${VIEW_W},${VIEW_H}`} fill={color} opacity={0.08} /> : null}
             <polyline
                 points={points}
                 fill="none"

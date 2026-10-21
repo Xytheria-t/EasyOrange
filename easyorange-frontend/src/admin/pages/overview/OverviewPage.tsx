@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { Package, RefreshCw, ShoppingCart, TrendingUp, UserPlus, Users, Wallet } from 'lucide-react';
+import { Package, RefreshCw, ShoppingCart, TrendingUp, UserPlus } from 'lucide-react';
 import type { CSSProperties, ReactNode } from 'react';
 import { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
@@ -137,40 +137,32 @@ export default function OverviewPage() {
         label: string;
         value: ReactNode;
         foot: ReactNode;
-        accent: string;
-        icon: ReactNode;
+        lead?: boolean;
         spark?: { values: number[]; color: string };
     }[] = [
+        {
+            label: '累计营收',
+            value: formatMoney(stats?.totalRevenue ?? orderStats?.totalRevenue),
+            foot: orderStats ? `今日 ${formatMoney(orderStats.todayRevenue)}` : '已支付订单合计',
+            lead: true,
+        },
         {
             label: '总用户数',
             value: formatCount(stats?.totalUsers),
             foot: stats ? `今日新增 ${formatCount(stats.todayNewUsers)} 人` : '累计注册',
-            accent: 'var(--admin-chart-1)',
-            icon: <Users size={16} aria-hidden="true" />,
             spark: { values: series.users, color: 'var(--admin-chart-1)' },
         },
         {
             label: '总商品数',
             value: formatCount(stats?.totalProducts),
             foot: stats ? `待审核 ${formatCount(stats.pendingProducts)} 件` : '累计在架',
-            accent: 'var(--admin-chart-3)',
-            icon: <Package size={16} aria-hidden="true" />,
             spark: { values: series.products, color: 'var(--admin-chart-3)' },
         },
         {
             label: '总订单数',
             value: formatCount(stats?.totalOrders),
             foot: stats ? `今日 ${formatCount(stats.todayOrders)} 笔` : '累计成交',
-            accent: 'var(--admin-chart-5)',
-            icon: <ShoppingCart size={16} aria-hidden="true" />,
             spark: { values: series.orders, color: 'var(--admin-chart-5)' },
-        },
-        {
-            label: '累计营收',
-            value: formatMoney(stats?.totalRevenue ?? orderStats?.totalRevenue),
-            foot: orderStats ? `今日 ${formatMoney(orderStats.todayRevenue)}` : '已支付订单合计',
-            accent: 'var(--admin-chart-2)',
-            icon: <Wallet size={16} aria-hidden="true" />,
         },
     ];
 
@@ -205,26 +197,23 @@ export default function OverviewPage() {
                     <PanelState kind="loading" />
                 </AdminCard>
             ) : (
-                <div className="admin-kpi-grid">
+                <div className="admin-kpi-band">
                     {kpis.map(kpi => (
-                        <div
-                            key={kpi.label}
-                            className="admin-card admin-kpi"
-                            style={{ '--kpi-accent': kpi.accent } as CSSProperties}
-                        >
-                            <div className="admin-kpi-head">
-                                <span className="admin-kpi-label">{kpi.label}</span>
-                                <span className="admin-kpi-icon">{kpi.icon}</span>
-                            </div>
-                            <div className="admin-kpi-value">{kpi.value}</div>
-                            <div className="admin-kpi-foot">
+                        <div key={kpi.label} className={`admin-kpi-cell${kpi.lead ? ' admin-kpi-cell--lead' : ''}`}>
+                            <span className="admin-kpi-label">{kpi.label}</span>
+                            <span className={`admin-kpi-figure${kpi.lead ? ' admin-kpi-figure--lead' : ''}`}>
+                                {kpi.value}
+                            </span>
+                            <span className="admin-kpi-foot">
                                 <span>{kpi.foot}</span>
-                            </div>
+                            </span>
+                            {kpi.lead ? <p className="admin-kpi-caption">口径：已支付订单金额合计</p> : null}
                             {kpi.spark ? (
                                 <Sparkline
                                     values={kpi.spark.values}
                                     color={kpi.spark.color}
                                     label={`${kpi.label}近 ${kpi.spark.values.length} 月走势`}
+                                    fill
                                 />
                             ) : null}
                         </div>
@@ -232,145 +221,154 @@ export default function OverviewPage() {
                 </div>
             )}
 
+            {/* 双栏杂志式：左栏是随时间变化的（走势 + 动态），右栏是分布（分类 + 订单状态）。
+                两栏各自堆叠卡片，末位卡片撑满余高——两栏高度自动配平，
+                不会再出现「一列高、一列空」的洞。 */}
             <div className="admin-split">
-                <AdminCard>
-                    <AdminCardHead title="订单状态分布" note="按订单当前状态计数，一张订单只落一格" />
-                    {!orderStats ? (
-                        <PanelState kind="loading" />
-                    ) : (
-                        <div className="admin-metric-strip">
-                            {ORDER_STATUS_METRICS.map(metric => (
-                                <div key={metric.key} className="admin-metric">
-                                    <span className="admin-metric-label">
-                                        <span
-                                            className="admin-status-dot"
-                                            style={{ background: metric.color }}
-                                            aria-hidden="true"
-                                        />
-                                        {metric.label}
-                                    </span>
-                                    <span className="admin-metric-value">{formatCount(orderStats[metric.key])}</span>
-                                </div>
-                            ))}
-                            <div className="admin-metric">
-                                <span className="admin-metric-label">累计营收</span>
-                                <span className="admin-metric-value">{formatMoney(orderStats.totalRevenue)}</span>
-                            </div>
-                            <div className="admin-metric">
-                                <span className="admin-metric-label">今日营收</span>
-                                <span className="admin-metric-value">{formatMoney(orderStats.todayRevenue)}</span>
-                            </div>
-                        </div>
-                    )}
-                </AdminCard>
-
-                <AdminCard>
-                    <AdminCardHead title="商品分类分布" note="一级分类口径，子分类已归并" />
-                    {distribution.rows.length === 0 ? (
-                        <PanelState kind="empty" />
-                    ) : (
-                        <>
-                            <div className="admin-rank-list">
-                                {distribution.rows.map((row, idx) => (
-                                    <div key={row.key} className="admin-rank-row">
-                                        <span className="admin-rank-index">{idx + 1}</span>
-                                        <span className="admin-rank-name">{row.name}</span>
-                                        <span className="admin-rank-count">
-                                            {row.count} 件 · {row.pct.toFixed(1)}%
-                                        </span>
-                                        <span className="admin-rank-track">
-                                            <span
-                                                className="admin-rank-fill"
-                                                style={
-                                                    {
-                                                        width: `${(row.ratio * 100).toFixed(1)}%`,
-                                                        '--rank-color': row.color,
-                                                    } as CSSProperties
-                                                }
+                <div className="admin-col">
+                    <AdminCard>
+                        <AdminCardHead
+                            title="新增走势"
+                            note="三条序列各用各的纵轴：量级差一个数量级时叠在一张图上小的会被压平"
+                        />
+                        {!trend || trend.length === 0 ? (
+                            <PanelState kind="empty" />
+                        ) : (
+                            <div className="admin-small-multiples">
+                                {TREND_SERIES.map(s => {
+                                    const values = series[s.key];
+                                    const latest = values[values.length - 1] ?? 0;
+                                    const delta = trendDelta(values);
+                                    return (
+                                        <div
+                                            key={s.key}
+                                            className="admin-sm-row"
+                                            style={{ '--sm-color': s.color } as CSSProperties}
+                                        >
+                                            <div className="admin-sm-head">
+                                                <span className="admin-sm-label">
+                                                    <span className="admin-sm-dot" aria-hidden="true" />
+                                                    {s.label}新增
+                                                </span>
+                                                <span className="admin-sm-latest">
+                                                    {formatCount(latest)}
+                                                    {delta ? (
+                                                        <span
+                                                            className={`admin-sm-delta admin-sm-delta--${delta.kind}`}
+                                                        >
+                                                            {delta.text}
+                                                        </span>
+                                                    ) : null}
+                                                </span>
+                                            </div>
+                                            <Sparkline
+                                                values={values}
+                                                color={s.color}
+                                                label={`${s.label}新增走势`}
+                                                fill
                                             />
+                                        </div>
+                                    );
+                                })}
+                                {/* 折线本身没有刻度，横轴口径得写出来：每月一个点，首月到末月 */}
+                                <p className="admin-muted admin-axis-note">
+                                    横轴：{trend[0]?.month} → {trend[trend.length - 1]?.month}，每月一个点（近{' '}
+                                    {trend.length} 月新增）
+                                </p>
+                            </div>
+                        )}
+                    </AdminCard>
+
+                    <AdminCard grow>
+                        <AdminCardHead title="最近动态" note="用户 / 商品 / 订单侧的近期动作" />
+                        {!activity || activity.length === 0 ? (
+                            <PanelState kind="empty" />
+                        ) : (
+                            <div className="admin-feed">
+                                {activity.map((item: ActivityItem) => {
+                                    const Icon = ACTIVITY_ICONS[item.type] ?? TrendingUp;
+                                    return (
+                                        <div key={`${item.time}-${item.type}-${item.text}`} className="admin-feed-item">
+                                            <span
+                                                className="admin-feed-icon"
+                                                style={{ '--feed-color': ACTIVITY_COLORS[item.type] } as CSSProperties}
+                                                aria-hidden="true"
+                                            >
+                                                <Icon size={15} />
+                                            </span>
+                                            <span className="admin-feed-text">{item.text}</span>
+                                            <span className="admin-feed-time">{formatRelativeTime(item.time)}</span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </AdminCard>
+                </div>
+
+                <div className="admin-col">
+                    <AdminCard>
+                        <AdminCardHead title="商品分类分布" note="一级分类口径，子分类已归并" />
+                        {distribution.rows.length === 0 ? (
+                            <PanelState kind="empty" />
+                        ) : (
+                            <>
+                                <div className="admin-rank-list">
+                                    {distribution.rows.map((row, idx) => (
+                                        <div key={row.key} className="admin-rank-row">
+                                            <span className="admin-rank-index">{idx + 1}</span>
+                                            <span className="admin-rank-name">{row.name}</span>
+                                            <span className="admin-rank-count">
+                                                {row.count} 件 · {row.pct.toFixed(1)}%
+                                            </span>
+                                            <span className="admin-rank-track">
+                                                <span
+                                                    className="admin-rank-fill"
+                                                    style={
+                                                        {
+                                                            width: `${(row.ratio * 100).toFixed(1)}%`,
+                                                            '--rank-color': row.color,
+                                                        } as CSSProperties
+                                                    }
+                                                />
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                                <p className="admin-rank-total admin-muted">
+                                    共 {distribution.categoryCount} 个一级分类 · {formatCount(distribution.total)}{' '}
+                                    件在架
+                                </p>
+                            </>
+                        )}
+                    </AdminCard>
+
+                    <AdminCard grow>
+                        <AdminCardHead title="订单状态分布" note="按订单当前状态计数，一张订单只落一格" />
+                        {!orderStats ? (
+                            <PanelState kind="loading" />
+                        ) : (
+                            <div className="admin-metric-strip admin-metric-strip--fill">
+                                {ORDER_STATUS_METRICS.map(metric => (
+                                    <div key={metric.key} className="admin-metric">
+                                        <span className="admin-metric-label">
+                                            <span
+                                                className="admin-status-dot"
+                                                style={{ background: metric.color }}
+                                                aria-hidden="true"
+                                            />
+                                            {metric.label}
+                                        </span>
+                                        <span className="admin-metric-value">
+                                            {formatCount(orderStats[metric.key])}
                                         </span>
                                     </div>
                                 ))}
                             </div>
-                            <p className="admin-rank-total admin-muted">
-                                共 {distribution.categoryCount} 个一级分类 · {formatCount(distribution.total)} 件在架
-                            </p>
-                        </>
-                    )}
-                </AdminCard>
+                        )}
+                    </AdminCard>
+                </div>
             </div>
-
-            <AdminCard>
-                <AdminCardHead
-                    title="新增走势"
-                    note="三条序列各用各的纵轴：量级差一个数量级时叠在一张图上小的会被压平"
-                />
-                {!trend || trend.length === 0 ? (
-                    <PanelState kind="empty" />
-                ) : (
-                    <div className="admin-small-multiples">
-                        {TREND_SERIES.map(s => {
-                            const values = series[s.key];
-                            const latest = values[values.length - 1] ?? 0;
-                            const delta = trendDelta(values);
-                            return (
-                                <div
-                                    key={s.key}
-                                    className="admin-sm-row"
-                                    style={{ '--sm-color': s.color } as CSSProperties}
-                                >
-                                    <div className="admin-sm-head">
-                                        <span className="admin-sm-label">
-                                            <span className="admin-sm-dot" aria-hidden="true" />
-                                            {s.label}新增
-                                        </span>
-                                        <span className="admin-sm-latest">
-                                            {formatCount(latest)}
-                                            {delta ? (
-                                                <span className={`admin-sm-delta admin-sm-delta--${delta.kind}`}>
-                                                    {delta.text}
-                                                </span>
-                                            ) : null}
-                                        </span>
-                                    </div>
-                                    <Sparkline values={values} color={s.color} label={`${s.label}新增走势`} />
-                                </div>
-                            );
-                        })}
-                        {/* 折线本身没有刻度，横轴口径得写出来：每月一个点，首月到末月 */}
-                        <p className="admin-muted">
-                            横轴：{trend[0]?.month} → {trend[trend.length - 1]?.month}，每月一个点（近 {trend.length}{' '}
-                            月新增）
-                        </p>
-                    </div>
-                )}
-            </AdminCard>
-
-            <AdminCard>
-                <AdminCardHead title="最近动态" note="用户 / 商品 / 订单侧的近期动作" />
-                {!activity || activity.length === 0 ? (
-                    <PanelState kind="empty" />
-                ) : (
-                    <div className="admin-feed">
-                        {activity.map((item: ActivityItem) => {
-                            const Icon = ACTIVITY_ICONS[item.type] ?? TrendingUp;
-                            return (
-                                <div key={`${item.time}-${item.type}-${item.text}`} className="admin-feed-item">
-                                    <span
-                                        className="admin-feed-icon"
-                                        style={{ '--feed-color': ACTIVITY_COLORS[item.type] } as CSSProperties}
-                                        aria-hidden="true"
-                                    >
-                                        <Icon size={15} />
-                                    </span>
-                                    <span className="admin-feed-text">{item.text}</span>
-                                    <span className="admin-feed-time">{formatRelativeTime(item.time)}</span>
-                                </div>
-                            );
-                        })}
-                    </div>
-                )}
-            </AdminCard>
         </AdminPage>
     );
 }

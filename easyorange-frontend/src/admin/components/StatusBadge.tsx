@@ -56,29 +56,29 @@ type StatusVariant = 'success' | 'warning' | 'error' | 'info' | 'default';
 
 const variantConfig: Record<StatusVariant, { bg: string; color: string; dot: string }> = {
     success: {
-        bg: 'var(--status-success-bg)',
-        color: 'var(--status-success)',
-        dot: 'var(--status-success-dot)',
+        bg: 'var(--admin-status-success-bg)',
+        color: 'var(--admin-status-success)',
+        dot: 'var(--admin-status-success-dot)',
     },
     warning: {
-        bg: 'var(--status-warning-bg)',
-        color: 'var(--status-warning)',
-        dot: 'var(--status-warning-dot)',
+        bg: 'var(--admin-status-warning-bg)',
+        color: 'var(--admin-status-warning)',
+        dot: 'var(--admin-status-warning-dot)',
     },
     error: {
-        bg: 'var(--status-error-bg)',
-        color: 'var(--status-error)',
-        dot: 'var(--status-error-dot)',
+        bg: 'var(--admin-status-error-bg)',
+        color: 'var(--admin-status-error)',
+        dot: 'var(--admin-status-error-dot)',
     },
     info: {
-        bg: 'var(--status-info-bg)',
-        color: 'var(--status-info)',
-        dot: 'var(--status-info-dot)',
+        bg: 'var(--admin-status-info-bg)',
+        color: 'var(--admin-status-info)',
+        dot: 'var(--admin-status-info-dot)',
     },
     default: {
-        bg: 'var(--status-default-bg)',
-        color: 'var(--status-default)',
-        dot: 'var(--status-default-dot)',
+        bg: 'var(--admin-status-default-bg)',
+        color: 'var(--admin-status-default)',
+        dot: 'var(--admin-status-default-dot)',
     },
 };
 
@@ -131,10 +131,12 @@ export function statusFilterOptions(type: StatusBadgeProps['type'], allLabel = '
  * code 与后端 `UserType` 一致：00 超级管理员 / 01 普通用户 / 02 管理员。
  * 此前这里写的是「01 学生 / 02 教师」，与后端毫无关系，筛选下拉选出来的条件永远命不中数据。
  */
+/* 用户类型不是状态，是身份：普通用户占绝大多数，用弱化灰即可；
+   管理员与超管是要被一眼看见的那少数几个，才给品牌色。 */
 const USER_TYPES: Record<string, { label: string; color: string }> = {
     '00': { label: '超级管理员', color: 'var(--admin-accent-deep)' },
-    '01': { label: '普通用户', color: 'var(--status-info)' },
-    '02': { label: '管理员', color: 'var(--plum-600)' },
+    '01': { label: '普通用户', color: 'var(--admin-muted)' },
+    '02': { label: '管理员', color: 'var(--admin-ink)' },
 };
 
 /** 取用户类型标签。desc 缺失时按 code 兜底，未知 code 原样回显而不是编一个类型。 */

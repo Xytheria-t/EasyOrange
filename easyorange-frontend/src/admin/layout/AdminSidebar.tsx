@@ -1,6 +1,7 @@
 import { ClipboardCheck, LayoutDashboard, ReceiptText, Users } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useDashboardStats } from '../hooks';
 import { useAdminStore } from '../store';
 
 // 管理端前端：概览 + 业务管理（审核 / 用户 / 订单）+ AI 运维（知识库 / 检索质量）
@@ -108,6 +109,11 @@ export function AdminSidebar({ onNavigate, className = '' }: AdminSidebarProps =
     const { sidebarCollapsed } = useAdminStore();
     const location = useLocation();
 
+    // 待审核商品数直接标在导航项上：运营一进来就知道有多少件等着自己处理，
+    // 不用先点进审核页才看到数字。与总览页共用同一个查询键，不会多打一次接口。
+    const { data: dashboardStats } = useDashboardStats();
+    const pendingReview = Number(dashboardStats?.pendingProducts ?? 0);
+
     // 首页（/admin）是所有管理端路由的前缀，前缀匹配会让它在每一页都亮着，
     // 这类项走 exact：只有路径完全相等才算选中
     const isActive = (path: string, exact = false) =>
@@ -155,6 +161,9 @@ export function AdminSidebar({ onNavigate, className = '' }: AdminSidebarProps =
                             >
                                 <span className="nav-item-icon">{item.icon}</span>
                                 <span className="nav-item-text">{item.label}</span>
+                                {item.path === '/admin/products' && pendingReview > 0 ? (
+                                    <span className="nav-item-count">{pendingReview}</span>
+                                ) : null}
                             </Link>
                         ))}
                     </div>

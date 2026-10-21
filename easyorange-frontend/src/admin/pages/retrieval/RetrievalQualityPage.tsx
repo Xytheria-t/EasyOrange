@@ -37,7 +37,7 @@ export default function RetrievalQualityPage() {
     return (
         <AdminPage>
             <AdminPageHeader
-                icon={<BarChart3 className="admin-header-icon" aria-hidden="true" />}
+                icon={<BarChart3 aria-hidden="true" />}
                 title="检索质量回看"
                 description="按评测批次回看 hit@5 / MRR 趋势，并下钻到用例级明细 —— 调分块、topK、RRF 的 k 之后拿历史批次对比，而不是靠手感"
                 actions={

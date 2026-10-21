@@ -42,16 +42,22 @@ export function AdminSelect({
                     aria-describedby={ariaDescribedBy}
                     aria-invalid={ariaInvalid}
                     className={cn(
-                        'h-9 w-full rounded-xl border-border bg-background px-3 text-sm font-medium text-foreground',
+                        'h-9 w-full rounded-lg border-border bg-background px-3 text-sm font-medium text-foreground',
                         'hover:border-primary-400 focus:ring-primary-400/20 focus:border-primary-400',
                         !selectedLabel && 'text-muted-foreground'
                     )}
                 >
                     <span className="truncate">{selectedLabel || placeholder}</span>
                 </SelectTrigger>
-                <SelectContent className="rounded-2xl">
+                {/* 下拉是 Portal 内容，挂在 body 上，够不到 .admin-root 的令牌重映射，
+                    只能自带管理端的类 */}
+                <SelectContent className="admin-select-content">
                     {options.map(opt => (
-                        <SelectItem key={opt.value} value={String(opt.value)} className="rounded-xl text-sm">
+                        <SelectItem
+                            key={opt.value}
+                            value={String(opt.value)}
+                            className="admin-select-item rounded-lg text-sm"
+                        >
                             {opt.label}
                         </SelectItem>
                     ))}

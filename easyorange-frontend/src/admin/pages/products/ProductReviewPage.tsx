@@ -270,7 +270,7 @@ export default function ProductReviewPage() {
                     }
                 }}
             >
-                <DialogContent className="max-w-md">
+                <DialogContent className="max-w-md admin-dialog">
                     <DialogHeader>
                         <DialogTitle>批量驳回 {selectedIds.size} 件商品</DialogTitle>
                         <DialogDescription>驳回原因会写入审核日志，卖家在商品详情里能看到</DialogDescription>

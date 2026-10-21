@@ -10,15 +10,23 @@
 
 ## 管理端渲染（`src/admin/`）
 
-- **弹窗 / 抽屉 / 确认框必须走 Radix 的 `Dialog` / `Sheet`**（内部已 `Portal` 到 `document.body`）：`.admin-sidebar` / `.admin-header` 的 `backdrop-filter: blur()` 会创建新包含块，手搓的 `position: fixed` 定位基准会错乱
+- **弹窗 / 抽屉 / 确认框必须走 Radix 的 `Dialog` / `Sheet`**（内部已 `Portal` 到 `document.body`）。**Portal 内容不在 `.admin-root` 里**，够不到那里重映射的 Tailwind 令牌（`--color-*`）与 `var(--admin-*)`——所以浮层必须自带 `.admin-*` 类（`admin-modal-panel` / `admin-drawer-panel` / `admin-dialog` / `admin-select-content`），别指望继承
 - **Portal 容器必须处理溢出**：`maxHeight: 'calc(100vh - 2rem)'` + `display: flex; flexDirection: column; overflow: hidden`，内容区 `flex: 1; overflowY: auto; minHeight: 0`
+- **Portal 内容的 z-index 必须高于管理端顶栏（90）与侧边栏（100）**：`Sheet` 已提到 `z-[1100]`（与 `Dialog` 对齐）。曾因 `z-50` 被顶栏压住，商品审核抽屉的标题栏整条被切在顶栏下面
 - **`AdminTable` 的 render 签名是 `(value, record)`**——第一个参数是单元格值，第二个才是整行。只写 `(record) => ...` 会拿到 `undefined`
-- **所有 `<select>` 必须用 `AdminSelect` 组件**（Portal 渲染面板，解决 fixed 定位失效）；`handleClickOutside` 必须**同时排除触发按钮 ref 和列表 `listRef`**，否则点选项会立即关闭
+- **所有 `<select>` 必须用 `AdminSelect` 组件**（内部是 Radix Select，面板走 Portal；自带 `.admin-select-content` 类，面板配色不跟全局走）
 - **视觉取值只有一个来源：`styles/admin.css`**。tsx / ts 里禁裸 `#hex`、裸 `rgb()/rgba()`、Tailwind 任意色值（`text-[#6E6862]`）；要令牌用 `var(--admin-*)` 或 Tailwind 变量简写 `text-(--admin-muted)`。`.githooks/check-admin-style-drift.py` 会在 pre-commit 拦（也会查未定义的 `--admin-*` 令牌，那类 bug 静默失效不报错）
 - **`style={{}}` 只留给按数据算出来的值**（头像渐变、状态点颜色、计算位置）；静态视觉与断点都上提成 `.admin-*` 类——内联样式写不了媒体查询，断点留在 tsx 里等于没有响应式
 - **内容页布局走 `<AdminPage>` 三层结构**（根 / 背景层 / 内容层，背景层 `position: absolute` **禁 fixed**），不要在页面里重写这三层。**例外是「整屏独占页」**——`ForbiddenPage` 这类没有页头、要撑满视口居中、氛围层用色的页面（`admin-forbidden-*` 是另一套样式，不是 `admin-page-*` 的复制），套内容壳会改变观感；这类页面自带三层是允许的，但样式仍须走 `admin.css` 令牌
 - **状态标签只认 `StatusBadge` 的配置出口**：`statusVisual(type, status)` 取配色、`statusFilterOptions(type)` 派生筛选选项；页面不要再抄一份状态→标签映射
 - **`admin/*` 路由必须在 `MinimalLayout` 外部独立渲染**，否则 C 端 Header 会出现在管理页
+
+### 管理端视觉口径（「纸面台账」，2026-10-21 重构）
+
+- **层级靠明度 + 发丝线，不靠阴影也不靠毛玻璃**：工作台页不装 `backdrop-filter`（模糊层压在长列表上，文字与分隔都读不清），页面层只有冷灰纸面 / 白面板两级，发丝线是分区的主要手段
+- **单强调色纪律**：品牌橙只出现在**选中态 / 主操作按钮 / 待处理状态 / 品牌标识**四处。价格、用户类型这类「每行都有」的字段一律墨色——一屏十行十个橙块，橙色一多就不再是信号
+- **三层字体各管一件事**：标题与主数字走衬线（`--admin-font-title` / `--admin-font-display`），正文与表格走无衬线，编号 / 单号 / 时间走等宽（`--admin-font-mono`）。中文衬线只压标题，不进表格
+- **状态色取管理端自有令牌**（`--admin-status-*`，浅底深字 + 亮色圆点），不要直接用全局 `--status-*`（那是浅底版，套到管理端会串色）
 
 ## 状态（Zustand）
 

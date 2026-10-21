@@ -61,11 +61,13 @@ export function AdminSearchInput({
             {submitOnEnterOnly || !onSubmit ? null : (
                 <Button
                     type="button"
+                    variant="outline"
+                    size="sm"
                     onClick={() => onSubmit()}
                     disabled={loading}
                     isLoading={loading}
                     loadingText="搜索中"
-                    className="self-end"
+                    className="self-end h-9 px-4"
                 >
                     搜索
                 </Button>
