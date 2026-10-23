@@ -36,19 +36,19 @@ public class ToolCallDecider {
     private final ObjectMapper objectMapper;
 
     /**
-     * 编排内核的决策入口 — 输出 {@link ToolLoopCall} 视图。路由角色恒为 {@code decision}（决策是纯路由任务，
+     * 编排内核的决策入口 — 输出 {@link ToolCallStep} 视图。路由角色恒为 {@code decision}（决策是纯路由任务，
      * chat 与 listing 两条链路共用快模型），故写死；记账 {@code scope} 与入参摘要 {@code toolInputOf} 随链路注入
      * ——模型选型两条链路相同、记账不同，一个写死一个传参不是疏漏。一轮可带回多个调用并全部返回——模型的并行
      * 发起（规则 + 找货同问最常见）在这里省掉一整轮往返。
      */
-    public List<ToolLoopCall> decide(
+    public List<ToolCallStep> decide(
             @Nullable String sessionId,
             List<Message> messages,
             List<ToolCallback> callbacks,
             ModelCallScope scope,
             Function<ToolCallDecision, String> toolInputOf) {
         return decideWithRetry(sessionId, messages, callbacks, scope).stream()
-                .map(decision -> new ToolLoopCall(
+                .map(decision -> new ToolCallStep(
                         decision.tool(),
                         decision.parsedArguments().thought(),
                         toolInputOf.apply(decision),

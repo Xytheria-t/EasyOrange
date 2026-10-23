@@ -28,7 +28,7 @@ class ToolCallDeciderTest {
         return new ToolCallDecider(modelCaller, new ObjectMapper());
     }
 
-    private List<ToolLoopCall> loopCalls(ModelCaller modelCaller) {
+    private List<ToolCallStep> loopCalls(ModelCaller modelCaller) {
         return decider(modelCaller)
                 .decide(
                         "sess-1",
@@ -46,7 +46,7 @@ class ToolCallDeciderTest {
                 .thenThrow(new RuntimeException("connection reset"))
                 .thenReturn(List.of(toolCall("{\"thought\":\"查规则\",\"query\":\"退款\"}")));
 
-        List<ToolLoopCall> calls = loopCalls(modelCaller);
+        List<ToolCallStep> calls = loopCalls(modelCaller);
 
         assertThat(calls).hasSize(1);
         assertThat(calls.get(0).rawArguments()).contains("退款");
@@ -61,7 +61,7 @@ class ToolCallDeciderTest {
                 .thenThrow(new RuntimeException("timeout"))
                 .thenThrow(new RuntimeException("timeout"));
 
-        List<ToolLoopCall> calls = loopCalls(modelCaller);
+        List<ToolCallStep> calls = loopCalls(modelCaller);
 
         assertThat(calls).isEmpty();
         verify(modelCaller, times(2)).callWithTools(any(), any(), anyList(), anyList());
@@ -73,7 +73,7 @@ class ToolCallDeciderTest {
         ModelCaller modelCaller = mock(ModelCaller.class);
         when(modelCaller.callWithTools(any(), any(), anyList(), anyList())).thenReturn(List.of());
 
-        List<ToolLoopCall> calls = loopCalls(modelCaller);
+        List<ToolCallStep> calls = loopCalls(modelCaller);
 
         assertThat(calls).isEmpty();
         verify(modelCaller, times(1)).callWithTools(any(), any(), anyList(), anyList());

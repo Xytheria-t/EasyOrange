@@ -34,7 +34,7 @@ public final class ToolLoopTranscript {
     }
 
     /** 回填一轮的全部调用与观察 —— 两侧同序且逐条对应，缺一条对应关系就是协议不合法。 */
-    public void appendRound(List<ToolLoopCall> calls, List<String> observations) {
+    public void appendRound(List<ToolCallStep> calls, List<String> observations) {
         if (calls.size() != observations.size()) {
             throw new IllegalArgumentException("tool call 与观察数量不一致，无法按协议回填");
         }

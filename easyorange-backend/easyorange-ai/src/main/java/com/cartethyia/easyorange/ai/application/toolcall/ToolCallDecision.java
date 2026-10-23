@@ -5,7 +5,7 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 
 /**
  * 一次工具调用决策 — 解析视图（{@link ToolCallArguments}）+ 原生 tool call 的工具名与 arguments 原始串；
- * 产出方与消费方（链路的入参摘要抽取）共用，故为公开 record；交内核前收敛成窄视图 {@link ToolLoopCall}。
+ * 产出方与消费方（链路的入参摘要抽取）共用，故为公开 record；交内核前收敛成窄视图 {@link ToolCallStep}。
  * <p>
  * 两个串在构造期归一化成非空：{@code ToolCall} 是裸 record，访问器在类型系统里非空却不校验 null，供应商回
  * {@code {"name": null}} 时 Jackson 照样绑进来；收敛成空串而非把 {@code @Nullable} 往下传，下游的 switch

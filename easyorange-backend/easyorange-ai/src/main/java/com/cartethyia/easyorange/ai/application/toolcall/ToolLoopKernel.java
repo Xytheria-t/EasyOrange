@@ -101,7 +101,7 @@ public class ToolLoopKernel {
                         rounds);
                 return new Result(ToolLoopOutcome.BUDGET, rounds, List.copyOf(toolPath));
             }
-            List<ToolLoopCall> calls =
+            List<ToolCallStep> calls =
                     spec.roundDecider().decide(spec.sessionId(), transcript.messages(), spec.toolCallbacks());
             if (calls.isEmpty()) {
                 spec.decisionFailedFallback().run();
@@ -132,12 +132,12 @@ public class ToolLoopKernel {
             String traceId,
             ToolDispatcher dispatcher,
             ToolLoopTranscript transcript,
-            List<ToolLoopCall> calls,
+            List<ToolCallStep> calls,
             int firstStepIndex) {
         // finish 先摘出去：执行体里就没有「跳过它」的分支，回填的 tool_calls 与观察天然等长；多个 finish 取最后一个
-        ToolLoopCall finish = null;
-        var executableCalls = new ArrayList<ToolLoopCall>(calls.size());
-        for (ToolLoopCall call : calls) {
+        ToolCallStep finish = null;
+        var executableCalls = new ArrayList<ToolCallStep>(calls.size());
+        for (ToolCallStep call : calls) {
             if (FINISH_TOOL.equals(call.tool())) {
                 finish = call;
             } else {
@@ -148,7 +148,7 @@ public class ToolLoopKernel {
         var toolPath = new ArrayList<String>(executableCalls.size() + 1);
         var observations = new ArrayList<String>(executableCalls.size());
         int stepIndex = firstStepIndex;
-        for (ToolLoopCall call : executableCalls) {
+        for (ToolCallStep call : executableCalls) {
             DispatchResult result = executeOneTool(spec, traceId, stepIndex++, dispatcher, call);
             toolPath.add(call.tool());
             observations.add(result.observation());
@@ -164,7 +164,7 @@ public class ToolLoopKernel {
 
     /** 执行单个工具：计时、记工具指标、落一步 trace 与 SSE。 */
     private DispatchResult executeOneTool(
-            Spec spec, String traceId, int stepIndex, ToolDispatcher dispatcher, ToolLoopCall call) {
+            Spec spec, String traceId, int stepIndex, ToolDispatcher dispatcher, ToolCallStep call) {
         long start = System.nanoTime();
         DispatchResult result = dispatcher.dispatch(call);
         long latencyMs = (System.nanoTime() - start) / 1_000_000;
@@ -176,7 +176,7 @@ public class ToolLoopKernel {
     /** 落一步工具步 trace 并推 SSE step 事件 —— 前端步骤可视化与「工具步数 / 步级延迟 p95」口径的唯一来源；
      * 端口实现内部兜底、不打挂主链路。 */
     private void recordToolStep(
-            Spec spec, String traceId, int stepIndex, ToolLoopCall call, DispatchResult result, long latencyMs) {
+            Spec spec, String traceId, int stepIndex, ToolCallStep call, DispatchResult result, long latencyMs) {
         tracePort.record(new ToolCallStepTrace(
                 traceId,
                 spec.sessionId(),
@@ -193,7 +193,7 @@ public class ToolLoopKernel {
     }
 
     /** 落一步 finish trace —— 收敛轮没有执行体，入参与观察为空、延迟记 0、视为成功。 */
-    private void recordFinishStep(Spec spec, String traceId, int stepIndex, ToolLoopCall finish) {
+    private void recordFinishStep(Spec spec, String traceId, int stepIndex, ToolCallStep finish) {
         tracePort.record(new ToolCallStepTrace(
                 traceId,
                 spec.sessionId(),
@@ -210,7 +210,7 @@ public class ToolLoopKernel {
     }
 
     /** 推一条 SSE step 事件；非流式路径 streamHandler 为 null，直接跳过。 */
-    private void emitStep(Spec spec, int stepIndex, ToolLoopCall call, @Nullable String observation) {
+    private void emitStep(Spec spec, int stepIndex, ToolCallStep call, @Nullable String observation) {
         ChatStreamHandler streamHandler = spec.streamHandler();
         if (streamHandler != null) {
             streamHandler.onStep(new ToolCallStepView(stepIndex, call.tool(), call.thought(), observation));
@@ -247,7 +247,7 @@ public class ToolLoopKernel {
         }
 
         /** 未知工具与执行异常（参数不合 schema / 工具内部故障）都收敛成失败观察：模型据此重试或收敛，不把整轮对话打死。 */
-        DispatchResult dispatch(ToolLoopCall call) {
+        DispatchResult dispatch(ToolCallStep call) {
             ToolCallback callback = toolsByName.get(call.tool());
             if (callback == null) {
                 return new DispatchResult(false, "未知工具 %s，请改用 %s".formatted(call.tool(), availableToolNames));
