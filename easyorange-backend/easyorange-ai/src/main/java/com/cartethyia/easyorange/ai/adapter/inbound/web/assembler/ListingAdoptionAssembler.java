@@ -18,8 +18,8 @@ public final class ListingAdoptionAssembler {
                 report.fields().stream()
                         .map(f -> new ListingAdoptionVO.FieldAdoptionVO(f.field(), f.adopted(), f.adoptionRate()))
                         .toList(),
-                report.within10Percent(),
-                report.beyond30Percent(),
+                report.within10PercentCount(),
+                report.beyond30PercentCount(),
                 report.avgPriceDeviationPercent());
     }
 }

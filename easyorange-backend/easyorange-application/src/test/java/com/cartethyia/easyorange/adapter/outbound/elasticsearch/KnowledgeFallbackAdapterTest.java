@@ -5,7 +5,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeChunkHit;
-import com.cartethyia.easyorange.ai.domain.model.KnowledgeDocEntity;
+import com.cartethyia.easyorange.ai.domain.model.KnowledgeDoc;
 import com.cartethyia.easyorange.ai.domain.port.KnowledgeIndexPort;
 import com.cartethyia.easyorange.ai.domain.port.KnowledgeRepository;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -39,7 +39,7 @@ class KnowledgeFallbackAdapterTest {
     @DisplayName("检索降级 -> 按标题/正文 LIKE 返回整篇文档为单块")
     void searchFallsBackToLike() {
         when(repository.searchByContent("退款", 5))
-                .thenReturn(List.of(new KnowledgeDocEntity(
+                .thenReturn(List.of(new KnowledgeDoc(
                         "kb-0002",
                         "退款规则",
                         "7 天无理由退货…",

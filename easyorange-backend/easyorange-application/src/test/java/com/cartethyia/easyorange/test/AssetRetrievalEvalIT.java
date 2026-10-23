@@ -26,7 +26,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 
 /**
- * asset 找货链路检索评测 + 三腿消融（kNN-only / BM25-only / RRF 融合）——AssetSourcing 此前零检索质量评测，
+ * asset 找货链路检索评测 + 三腿消融（kNN-only / BM25-only / RRF 融合）——AssetRetrieval 此前零检索质量评测，
  * 工程指标「混合检索价值证据待补口径」就地销账，eo_retrieval_metric 的 asset- 前缀用例即 ADR-0012 回看数据源。
  * 零真实 key：语料直写 ES products 索引，nameEmbedding 按主题人工构造 one-hot（1024 维与 mapping 锁死一致），
  * gold 与查询共用同主题向量 → kNN 召回确定性可预测；共享 dev 索引以 MARKER 隔离，finally 按 ID 清理。

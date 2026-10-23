@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.ai.application.listing;
 
-import com.cartethyia.easyorange.ai.application.retrieval.AssetSourcingAppService;
+import com.cartethyia.easyorange.ai.application.retrieval.AssetRetrievalAppService;
 import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalAppService;
 import com.cartethyia.easyorange.ai.domain.port.CategoryCatalogPort;
 import lombok.AccessLevel;
@@ -18,10 +18,10 @@ import org.springframework.stereotype.Component;
 public class ListingToolsFactory {
 
     private final KnowledgeRetrievalAppService retrievalService;
-    private final AssetSourcingAppService assetSourcingService;
+    private final AssetRetrievalAppService assetRetrievalService;
     private final CategoryCatalogPort categoryCatalogPort;
 
     ListingTools create() {
-        return new ListingTools(retrievalService, assetSourcingService, categoryCatalogPort);
+        return new ListingTools(retrievalService, assetRetrievalService, categoryCatalogPort);
     }
 }

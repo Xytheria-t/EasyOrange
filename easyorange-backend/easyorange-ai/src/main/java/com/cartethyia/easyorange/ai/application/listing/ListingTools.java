@@ -1,8 +1,8 @@
 package com.cartethyia.easyorange.ai.application.listing;
 
-import com.cartethyia.easyorange.ai.application.retrieval.AssetSourcingAppService;
+import com.cartethyia.easyorange.ai.application.retrieval.AssetRetrievalAppService;
 import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalAppService;
-import com.cartethyia.easyorange.ai.application.support.RetrievalObservations;
+import com.cartethyia.easyorange.ai.application.support.RetrievalToolOutputs;
 import com.cartethyia.easyorange.ai.domain.model.AssetHit;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeHit;
 import com.cartethyia.easyorange.ai.domain.port.CategoryCatalogPort;
@@ -43,7 +43,7 @@ public class ListingTools {
             TOOL_KNOWLEDGE_SEARCH, TOOL_PRODUCT_SEARCH, TOOL_MARKET_PRICE_STATS, TOOL_LIST_CATEGORIES, TOOL_FINISH);
 
     private final KnowledgeRetrievalAppService retrievalService;
-    private final AssetSourcingAppService assetSourcingService;
+    private final AssetRetrievalAppService assetRetrievalService;
     private final CategoryCatalogPort categoryCatalogPort;
 
     /** 各轮召回物累加器 — 实例独占；读取走只读快照方法，不交出可变引用。 */
@@ -62,12 +62,12 @@ public class ListingTools {
     @Tool(
             name = TOOL_KNOWLEDGE_SEARCH,
             description = "检索平台规则知识库（禁售品类 / 发布限制 / 交易规则）；上架前判断「能不能卖、有什么限制」必须先查这里",
-            resultConverter = RetrievalObservations.ObservationTextConverter.class)
+            resultConverter = RetrievalToolOutputs.ObservationTextConverter.class)
     public String searchKnowledge(
             @ToolParam(description = "本步理由，不超过 20 字的中文概括") String thought,
             @ToolParam(description = "检索关键词，3-10 字（品类 + 禁售 / 限制）") String query) {
-        List<KnowledgeHit> found = retrievalService.search(query, RetrievalObservations.TOP_K);
-        var turn = RetrievalObservations.knowledgeTurn(knowledgeHits, found);
+        List<KnowledgeHit> found = retrievalService.search(query, RetrievalToolOutputs.TOP_K);
+        var turn = RetrievalToolOutputs.knowledgeTurn(knowledgeHits, found);
         knowledgeHits.addAll(turn.fresh());
         return turn.observation();
     }
@@ -75,12 +75,12 @@ public class ListingTools {
     @Tool(
             name = TOOL_PRODUCT_SEARCH,
             description = "按品类 / 品名召回在售资产，作为定价的同类参照",
-            resultConverter = RetrievalObservations.ObservationTextConverter.class)
+            resultConverter = RetrievalToolOutputs.ObservationTextConverter.class)
     public String searchProducts(
             @ToolParam(description = "本步理由，不超过 20 字的中文概括") String thought,
             @ToolParam(description = "检索关键词，3-10 字，保留品类与型号") String query) {
-        List<AssetHit> found = assetSourcingService.search(query, RetrievalObservations.TOP_K);
-        var turn = RetrievalObservations.assetTurn(assetHits, found);
+        List<AssetHit> found = assetRetrievalService.search(query, RetrievalToolOutputs.TOP_K);
+        var turn = RetrievalToolOutputs.assetTurn(assetHits, found);
         assetHits.addAll(turn.fresh());
         return turn.observation();
     }
@@ -91,16 +91,16 @@ public class ListingTools {
             name = TOOL_MARKET_PRICE_STATS,
             description = "对已召回的在售资产算行情（在售件数 / 均价 / 价格区间），作为建议售价的依据。"
                     + "必须在 product_search 之后的轮次调用（同一轮里它会排在 product_search 前面而统计到空集）",
-            resultConverter = RetrievalObservations.ObservationTextConverter.class)
+            resultConverter = RetrievalToolOutputs.ObservationTextConverter.class)
     public String summarizeMarketPrice(@ToolParam(description = "本步理由，不超过 20 字的中文概括") String thought) {
-        return RetrievalObservations.priceStatsObservation(assetHits);
+        return RetrievalToolOutputs.priceStatsObservation(assetHits);
     }
 
     /** 取平台可用分类清单原样回给模型；平台没配分类时给空集提示。 */
     @Tool(
             name = TOOL_LIST_CATEGORIES,
             description = "取平台可用分类清单；产出上架信息时 categoryName 必须原样取自这份清单",
-            resultConverter = RetrievalObservations.ObservationTextConverter.class)
+            resultConverter = RetrievalToolOutputs.ObservationTextConverter.class)
     public String listCategories(@ToolParam(description = "本步理由，不超过 20 字的中文概括") String thought) {
         List<String> categories = categoryCatalogPort.listAvailableCategoryNames();
         if (categories.isEmpty()) {

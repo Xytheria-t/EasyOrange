@@ -1,9 +1,9 @@
 package com.cartethyia.easyorange.ai.application.chat;
 
-import com.cartethyia.easyorange.ai.application.retrieval.AssetSourcingAppService;
+import com.cartethyia.easyorange.ai.application.retrieval.AssetRetrievalAppService;
 import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalAppService;
-import com.cartethyia.easyorange.ai.application.support.FailureReason;
-import com.cartethyia.easyorange.ai.application.support.RetrievalObservations;
+import com.cartethyia.easyorange.ai.application.support.FailureText;
+import com.cartethyia.easyorange.ai.application.support.RetrievalToolOutputs;
 import com.cartethyia.easyorange.ai.domain.model.AssetComparison;
 import com.cartethyia.easyorange.ai.domain.model.AssetDetail;
 import com.cartethyia.easyorange.ai.domain.model.AssetHit;
@@ -81,7 +81,7 @@ public class ChatTools {
 
     // ── 召回物累加器：单次循环的可变状态 ──
 
-    /** 三类检索工具的产物各一（知识 / 找货 / 详情）—— 只追加、跨步判重（检索判据在 {@link RetrievalObservations}，
+    /** 三类检索工具的产物各一（知识 / 找货 / 详情）—— 只追加、跨步判重（检索判据在 {@link RetrievalToolOutputs}，
      * 详情在 {@link #recordDetail}）；出循环经 {@code ChatToolLoop.Result} 定稿，供生成装配与溯源，读取只经
      * 下方快照方法，可变引用不出实例。 */
     private final List<KnowledgeHit> knowledgeHits = new ArrayList<>();
@@ -93,7 +93,7 @@ public class ChatTools {
     // ── 协作方与归属用户 ──
 
     private final KnowledgeRetrievalAppService retrievalService;
-    private final AssetSourcingAppService assetSourcingService;
+    private final AssetRetrievalAppService assetRetrievalService;
     private final AssetDetailPort assetDetailPort;
     private final UserPreferenceRepository preferenceRepository;
     /** 偏好归属用户；机器主体（评估跑批）为 null（长期记忆不落库）。 */
@@ -120,26 +120,26 @@ public class ChatTools {
     @Tool(
             name = TOOL_KNOWLEDGE_SEARCH,
             description = "检索平台规则知识库（交易流程 / 退款 / 运费 / 禁售品类）",
-            resultConverter = RetrievalObservations.ObservationTextConverter.class)
+            resultConverter = RetrievalToolOutputs.ObservationTextConverter.class)
     public String searchKnowledge(
             @ToolParam(description = "本步理由，不超过 20 字的中文概括") String thought,
             @ToolParam(description = "改写后的检索关键词，3-10 字") String query) {
-        List<KnowledgeHit> found = retrievalService.search(query, RetrievalObservations.TOP_K);
-        var turn = RetrievalObservations.knowledgeTurn(knowledgeHits, found);
+        List<KnowledgeHit> found = retrievalService.search(query, RetrievalToolOutputs.TOP_K);
+        var turn = RetrievalToolOutputs.knowledgeTurn(knowledgeHits, found);
         knowledgeHits.addAll(turn.fresh());
         return turn.observation();
     }
 
-    /** 找在售资产，命中追加进资产累加器；观察文本由 {@link RetrievalObservations} 生成（含「本轮无新增」判据）。 */
+    /** 找在售资产，命中追加进资产累加器；观察文本由 {@link RetrievalToolOutputs} 生成（含「本轮无新增」判据）。 */
     @Tool(
             name = TOOL_PRODUCT_SEARCH,
             description = "检索在售资产（找货 / 比价）",
-            resultConverter = RetrievalObservations.ObservationTextConverter.class)
+            resultConverter = RetrievalToolOutputs.ObservationTextConverter.class)
     public String searchProducts(
             @ToolParam(description = "本步理由，不超过 20 字的中文概括") String thought,
             @ToolParam(description = "改写后的找货关键词，3-10 字，保留品类与硬约束（预算 / 成色）") String query) {
-        List<AssetHit> found = assetSourcingService.search(query, RetrievalObservations.TOP_K);
-        var turn = RetrievalObservations.assetTurn(assetHits, found);
+        List<AssetHit> found = assetRetrievalService.search(query, RetrievalToolOutputs.TOP_K);
+        var turn = RetrievalToolOutputs.assetTurn(assetHits, found);
         assetHits.addAll(turn.fresh());
         return turn.observation();
     }
@@ -148,7 +148,7 @@ public class ChatTools {
     @Tool(
             name = TOOL_PRODUCT_DETAIL,
             description = "查看某件在售资产的详情（描述 / 成色 / 位置 / 卖家）",
-            resultConverter = RetrievalObservations.ObservationTextConverter.class)
+            resultConverter = RetrievalToolOutputs.ObservationTextConverter.class)
     public String fetchProductDetail(
             @ToolParam(description = "本步理由，不超过 20 字的中文概括") String thought,
             @ToolParam(description = "资产 ID，必须取自此前 product_search 观察中方括号里的资产 ID") String productId) {
@@ -172,16 +172,16 @@ public class ChatTools {
             name = TOOL_MARKET_PRICE_STATS,
             description = "对已召回的资产算行情（在售件数 / 均价 / 价格区间），用于判断某件值不值得买；零模型计算。"
                     + "必须在 product_search 之后的轮次调用（同一轮里它会排在 product_search 前面而统计到空集）",
-            resultConverter = RetrievalObservations.ObservationTextConverter.class)
+            resultConverter = RetrievalToolOutputs.ObservationTextConverter.class)
     public String summarizeMarketPrice(@ToolParam(description = "本步理由，不超过 20 字的中文概括") String thought) {
-        return RetrievalObservations.priceStatsObservation(assetHits);
+        return RetrievalToolOutputs.priceStatsObservation(assetHits);
     }
 
     /** 逐维比对 2-4 件候选：一次批量取详情，查不到的 ID 在观察里点出而不算失败，超 4 件截断。 */
     @Tool(
             name = TOOL_COMPARE_ASSETS,
             description = "对 2-4 件候选做逐维确定性比对（价格 / 成色 / 地区 / 在售状态），一次替代多次 product_detail",
-            resultConverter = RetrievalObservations.ObservationTextConverter.class)
+            resultConverter = RetrievalToolOutputs.ObservationTextConverter.class)
     public String compareAssets(
             @ToolParam(description = "本步理由，不超过 20 字的中文概括") String thought,
             @ToolParam(description = "要对比的资产 ID 列表，2-4 个，必须取自此前 product_search 观察中方括号里的资产 ID")
@@ -228,7 +228,7 @@ public class ChatTools {
     @Tool(
             name = TOOL_REMEMBER_PREFERENCE,
             description = "记录用户的长期偏好（成色 / 价格区间 / 风格 / 地区），跨会话生效；对话中出现明确偏好时调用一次即可，同一偏好不要重复记录",
-            resultConverter = RetrievalObservations.ObservationTextConverter.class)
+            resultConverter = RetrievalToolOutputs.ObservationTextConverter.class)
     public String rememberPreference(
             @ToolParam(description = "本步理由，不超过 20 字的中文概括") String thought,
             @ToolParam(description = "偏好类别，只允许 condition（成色）/ price_range（价格区间）/ style（风格）/ location（地区）")
@@ -254,7 +254,7 @@ public class ChatTools {
             preferenceRepository.record(userId, key, value);
         } catch (Exception e) {
             // DB 故障是真实故障（区别于「查无此资产」那类有效结果），按抛异常 = 该步失败上报
-            throw new IllegalStateException("偏好记录失败: " + FailureReason.of(e), e);
+            throw new IllegalStateException("偏好记录失败: " + FailureText.of(e), e);
         }
         return "已记录偏好：%s = %s".formatted(key, value);
     }
@@ -272,8 +272,8 @@ public class ChatTools {
 
     /** 决策失败降级的补检索 — 判重口径与 {@link #searchKnowledge} 一致，降级路径不会把 Result 撑出重复来源。 */
     void searchKnowledgeForFallback(String question) {
-        List<KnowledgeHit> found = retrievalService.search(question, RetrievalObservations.TOP_K);
-        knowledgeHits.addAll(RetrievalObservations.freshKnowledge(knowledgeHits, found));
+        List<KnowledgeHit> found = retrievalService.search(question, RetrievalToolOutputs.TOP_K);
+        knowledgeHits.addAll(RetrievalToolOutputs.freshKnowledge(knowledgeHits, found));
     }
 
     private Optional<AssetDetail> findDetail(String productId) {
@@ -289,7 +289,7 @@ public class ChatTools {
         try {
             return query.get();
         } catch (Exception e) {
-            throw new IllegalStateException("资产详情查询失败: " + FailureReason.of(e), e);
+            throw new IllegalStateException("资产详情查询失败: " + FailureText.of(e), e);
         }
     }
 

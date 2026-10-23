@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.ai.adapter.inbound.web.assembler;
 
 import com.cartethyia.easyorange.ai.adapter.inbound.web.dto.response.KnowledgeDocVO;
-import com.cartethyia.easyorange.ai.domain.model.KnowledgeDocEntity;
+import com.cartethyia.easyorange.ai.domain.model.KnowledgeDoc;
 import com.cartethyia.easyorange.common.result.PageResult;
 
 /**
@@ -11,7 +11,7 @@ public final class KnowledgeDocAssembler {
 
     private KnowledgeDocAssembler() {}
 
-    public static KnowledgeDocVO toVO(KnowledgeDocEntity entity) {
+    public static KnowledgeDocVO toVO(KnowledgeDoc entity) {
         return new KnowledgeDocVO(
                 entity.id(),
                 entity.title(),
@@ -21,7 +21,7 @@ public final class KnowledgeDocAssembler {
                 entity.createTime());
     }
 
-    public static PageResult<KnowledgeDocVO> toVOPage(PageResult<KnowledgeDocEntity> page) {
+    public static PageResult<KnowledgeDocVO> toVOPage(PageResult<KnowledgeDoc> page) {
         return new PageResult<>(
                 page.records().stream().map(KnowledgeDocAssembler::toVO).toList(),
                 page.total(),

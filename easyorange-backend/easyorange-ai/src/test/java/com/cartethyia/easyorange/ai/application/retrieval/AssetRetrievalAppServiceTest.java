@@ -27,8 +27,8 @@ import org.springframework.beans.factory.ObjectProvider;
  * MCP 侧 {@code searchStrict} 故障上抛 —— 工具 description 承诺空结果 = 无匹配，伪装成空会让外部模型
  * 误判没货而换词重试。向量化失败两侧同语义：退化 BM25 单路，部分降级 ≠ 不可用。
  */
-@DisplayName("AssetSourcingAppService -> 降级语义分层测试")
-class AssetSourcingAppServiceTest {
+@DisplayName("AssetRetrievalAppService -> 降级语义分层测试")
+class AssetRetrievalAppServiceTest {
 
     private static final String QUERY = "5000 以内的笔记本";
     private static final AssetHit HIT =
@@ -38,7 +38,7 @@ class AssetSourcingAppServiceTest {
     private ObjectProvider<AssetRetrievalPort> retrievalPortProvider;
     private AssetRetrievalPort port;
     private ModelCaller modelCaller;
-    private AssetSourcingAppService service;
+    private AssetRetrievalAppService service;
 
     @BeforeEach
     @SuppressWarnings("unchecked")
@@ -47,7 +47,7 @@ class AssetSourcingAppServiceTest {
         retrievalPortProvider = mock(ObjectProvider.class);
         port = mock(AssetRetrievalPort.class);
         modelCaller = mock(ModelCaller.class);
-        service = new AssetSourcingAppService(embeddingModel, retrievalPortProvider, modelCaller);
+        service = new AssetRetrievalAppService(embeddingModel, retrievalPortProvider, modelCaller);
     }
 
     @Test

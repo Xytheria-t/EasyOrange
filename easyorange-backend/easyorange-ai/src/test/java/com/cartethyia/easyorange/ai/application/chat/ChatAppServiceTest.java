@@ -183,7 +183,7 @@ class ChatAppServiceTest {
     @Test
     @DisplayName("找货类问题 -> 循环产出资产命中 -> 引用来源为资产，资产块进 prompt")
     @SuppressWarnings("unchecked")
-    void answer_withAssetSourcing() {
+    void answer_withAssetRetrieval() {
         when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
         when(semanticCache.lookUp(any(), any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
         when(toolCallLoop.run(any()))

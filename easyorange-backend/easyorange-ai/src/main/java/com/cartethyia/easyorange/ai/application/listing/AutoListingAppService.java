@@ -66,8 +66,8 @@ public class AutoListingAppService {
 
     /** 非流式入口（无步骤事件）。 */
     @TokenBudget(scenario = "auto_listing", maxTokensPerCall = 3000, dailyTokenLimit = 500_000)
-    public AutoListingResult analyzeImages(List<String> imageUrls) {
-        return analyzeImages(imageUrls, null, null);
+    public AutoListingResult generateListing(List<String> imageUrls) {
+        return generateListing(imageUrls, null, null);
     }
 
     /**
@@ -76,7 +76,7 @@ public class AutoListingAppService {
      * 会话锁与半截回答落盘，发布链路没有需要转发的事件。
      */
     @TokenBudget(scenario = "auto_listing", maxTokensPerCall = 3000, dailyTokenLimit = 500_000)
-    public AutoListingResult analyzeImages(
+    public AutoListingResult generateListing(
             List<String> imageUrls, @Nullable String attributedUserId, @Nullable ChatStreamHandler handler) {
         // 模板缺失是部署期配置错误，require 在最前：静默报「AI 暂时不可用」会藏起「prompt 没打进包」
         String cluePrompt = promptRegistry.require(CLUE_PROMPT);

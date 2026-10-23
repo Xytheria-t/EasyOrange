@@ -19,7 +19,7 @@ import org.springframework.stereotype.Service;
  * 重排是对稠密路同一向量的单调变换（等于没排），还会丢掉 BM25 的排序信号，不做。
  * <p>
  * 索引不可用（ES 关闭）时降级 MySQL 标题/正文 LIKE：只保证可用，不保证召回质量。查询向量化失败同样不
- * 放弃检索：空向量直接传端口只跑 BM25 一路，与 {@link AssetSourcingAppService} 同口径 —— 两条链路都只
+ * 放弃检索：空向量直接传端口只跑 BM25 一路，与 {@link AssetRetrievalAppService} 同口径 —— 两条链路都只
  * 服务对话主链路，少一路召回好过整条规则问答空掉。
  */
 @Slf4j

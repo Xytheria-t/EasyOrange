@@ -7,16 +7,16 @@ import java.util.List;
  * （语料与 topK 同量级时 hit@5 恒为 100%）、Judge 均分有自评偏差，只有「AI 建议了什么 vs 资产方
  * 最后填了什么」是人工用脚投票投出来的真实反馈；按字段看才定位得到该改哪里。
  *
- * @param within10Percent 建议价偏离 ≤10% 的条数（「参考了建议但自己微调」）
- * @param beyond30Percent 建议价偏离 >30% 的条数（「基本否掉了建议」，最该看的失败面）
+ * @param within10PercentCount 建议价偏离 ≤10% 的条数（「参考了建议但自己微调」）
+ * @param beyond30PercentCount 建议价偏离 >30% 的条数（「基本否掉了建议」，最该看的失败面）
  */
 public record ListingAdoptionReport(
         long samples,
         long fullyAdopted,
         double fullAdoptionRate,
         List<FieldAdoption> fields,
-        long within10Percent,
-        long beyond30Percent,
+        long within10PercentCount,
+        long beyond30PercentCount,
         double avgPriceDeviationPercent) {
 
     /** 单字段采纳情况（adopted / samples，samples 为 0 时记 0）。 */

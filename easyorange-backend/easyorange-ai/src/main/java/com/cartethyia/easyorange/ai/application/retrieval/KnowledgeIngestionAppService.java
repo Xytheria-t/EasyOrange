@@ -4,7 +4,7 @@ import com.cartethyia.easyorange.ai.application.support.ModelCaller;
 import com.cartethyia.easyorange.ai.domain.enums.KnowledgeDocStatus;
 import com.cartethyia.easyorange.ai.domain.enums.ModelCallScope;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeChunk;
-import com.cartethyia.easyorange.ai.domain.model.KnowledgeDocEntity;
+import com.cartethyia.easyorange.ai.domain.model.KnowledgeDoc;
 import com.cartethyia.easyorange.ai.domain.port.KnowledgeIndexPort;
 import com.cartethyia.easyorange.ai.domain.port.KnowledgeRepository;
 import com.cartethyia.easyorange.common.result.PageResult;
@@ -41,15 +41,15 @@ public class KnowledgeIngestionAppService {
 
     /** 落库 → 建索引，返回文档 ID。 */
     public String ingest(String title, String content, String source) {
-        String id = repository.save(
-                new KnowledgeDocEntity(null, title, content, source, KnowledgeDocStatus.PENDING, 0, null));
+        String id =
+                repository.save(new KnowledgeDoc(null, title, content, source, KnowledgeDocStatus.PENDING, 0, null));
         indexChunks(id, title, content);
         return id;
     }
 
     /** 重摄入已存在文档（启动补索引用），文档 ID 保持稳定（金标准集引用同一批 ID）；FAILED 一并重试 ——
      * 它是「ES 可用但 embed / 写失败」的产物，与 PENDING（当时索引不可用）同属未完成态。 */
-    public void reindexPending(String id) {
+    public void reindexIfIncomplete(String id) {
         var doc = repository.findById(id).orElse(null);
         if (doc == null || (doc.status() != KnowledgeDocStatus.PENDING && doc.status() != KnowledgeDocStatus.FAILED)) {
             return;
@@ -67,7 +67,7 @@ public class KnowledgeIngestionAppService {
                 if (doc.status() != KnowledgeDocStatus.PENDING && doc.status() != KnowledgeDocStatus.FAILED) {
                     continue;
                 }
-                reindexPending(doc.id());
+                reindexIfIncomplete(doc.id());
                 total++;
             }
             if (docs.current() >= docs.pages() || docs.records().isEmpty()) {
@@ -124,7 +124,7 @@ public class KnowledgeIngestionAppService {
 
     /** 文档列表（管理端）：分页读仓储，不经检索链路 —— 看的是「库里有什么」，不是「搜得到什么」。 */
     @Transactional(readOnly = true)
-    public PageResult<KnowledgeDocEntity> pageDocs(int pageNum, int pageSize) {
+    public PageResult<KnowledgeDoc> pageDocs(int pageNum, int pageSize) {
         return repository.page(pageNum, pageSize);
     }
 

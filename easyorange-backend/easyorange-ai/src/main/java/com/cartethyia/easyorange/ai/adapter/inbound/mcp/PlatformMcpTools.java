@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.ai.adapter.inbound.mcp;
 
-import com.cartethyia.easyorange.ai.application.retrieval.AssetSourcingAppService;
+import com.cartethyia.easyorange.ai.application.retrieval.AssetRetrievalAppService;
 import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalAppService;
 import com.cartethyia.easyorange.ai.domain.model.AssetHit;
 import com.cartethyia.easyorange.ai.domain.model.CategorySummary;
@@ -56,7 +56,7 @@ public class PlatformMcpTools {
         }
     }
 
-    private final AssetSourcingAppService assetSourcingService;
+    private final AssetRetrievalAppService assetRetrievalService;
     private final AssetDetailPort assetDetailPort;
     private final KnowledgeRetrievalAppService knowledgeRetrievalService;
     private final CategoryTreePort categoryListPort;
@@ -64,12 +64,12 @@ public class PlatformMcpTools {
     private final Map<McpToolTag, Counter> callCounters;
 
     public PlatformMcpTools(
-            AssetSourcingAppService assetSourcingService,
+            AssetRetrievalAppService assetRetrievalService,
             AssetDetailPort assetDetailPort,
             KnowledgeRetrievalAppService knowledgeRetrievalService,
             CategoryTreePort categoryListPort,
             MeterRegistry meterRegistry) {
-        this.assetSourcingService = assetSourcingService;
+        this.assetRetrievalService = assetRetrievalService;
         this.assetDetailPort = assetDetailPort;
         this.knowledgeRetrievalService = knowledgeRetrievalService;
         this.categoryListPort = categoryListPort;
@@ -87,21 +87,21 @@ public class PlatformMcpTools {
             @McpToolParam(description = "检索关键词，支持中文自然语言") String query,
             @McpToolParam(description = "返回数量上限，默认 5，最大 20", required = false) @Nullable Integer topK) {
         recordCall(McpToolTag.SEARCH_PRODUCTS);
-        return assetSourcingService.searchStrict(query, clampTopK(topK, MAX_PRODUCT_TOP_K));
+        return assetRetrievalService.searchStrict(query, clampTopK(topK, MAX_PRODUCT_TOP_K));
     }
 
     @McpTool(
             name = TOOL_GET_PRODUCT_DETAIL,
             description = "按资产 ID 查询在售资产详情（描述、成色、所在地、卖家、在售状态）。" + "found=false 表示资产不存在或已下架。")
-    public ProductDetailResult getProductDetail(@McpToolParam(description = "资产 ID（36 位 UUID）") String productId) {
+    public AssetDetailResult getProductDetail(@McpToolParam(description = "资产 ID（36 位 UUID）") String productId) {
         recordCall(McpToolTag.GET_PRODUCT_DETAIL);
         if (productId == null || productId.isBlank()) {
-            return new ProductDetailResult(false, null);
+            return new AssetDetailResult(false, null);
         }
         return assetDetailPort
                 .findDetail(productId.trim())
-                .map(detail -> new ProductDetailResult(true, detail))
-                .orElseGet(() -> new ProductDetailResult(false, null));
+                .map(detail -> new AssetDetailResult(true, detail))
+                .orElseGet(() -> new AssetDetailResult(false, null));
     }
 
     @McpTool(

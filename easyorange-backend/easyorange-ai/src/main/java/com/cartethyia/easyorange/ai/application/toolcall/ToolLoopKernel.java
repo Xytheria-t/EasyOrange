@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.ai.application.toolcall;
 
-import com.cartethyia.easyorange.ai.application.support.FailureReason;
+import com.cartethyia.easyorange.ai.application.support.FailureText;
 import com.cartethyia.easyorange.ai.domain.model.ToolCallStepTrace;
 import com.cartethyia.easyorange.ai.domain.model.ToolCallStepView;
 import com.cartethyia.easyorange.ai.domain.model.ToolLoopOutcomeView;
@@ -256,7 +256,7 @@ public class ToolLoopKernel {
                 return new DispatchResult(true, callback.call(step.rawArguments()));
             } catch (Exception e) {
                 // MethodToolCallback 把「参数转换失败」与「方法体异常」统一包成 ToolExecutionException
-                String reason = FailureReason.of(e.getCause() != null ? e.getCause() : e);
+                String reason = FailureText.of(e.getCause() != null ? e.getCause() : e);
                 log.warn(
                         "action=tool_call_failed, tool={}, input={}, reason={}", step.tool(), step.toolInput(), reason);
                 return new DispatchResult(false, reason);

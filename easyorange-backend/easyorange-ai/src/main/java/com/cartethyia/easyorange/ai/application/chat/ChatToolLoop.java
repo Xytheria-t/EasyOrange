@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.ai.application.chat;
 
-import com.cartethyia.easyorange.ai.application.support.FailureReason;
+import com.cartethyia.easyorange.ai.application.support.FailureText;
 import com.cartethyia.easyorange.ai.application.support.UntrustedText;
 import com.cartethyia.easyorange.ai.application.toolcall.ParsedToolCall;
 import com.cartethyia.easyorange.ai.application.toolcall.RoundDecider;
@@ -226,7 +226,7 @@ public class ChatToolLoop {
             log.warn(
                     "action=tool_call_fallback_search_failed, sessionId={}, reason={}",
                     input.sessionId(),
-                    FailureReason.of(e));
+                    FailureText.of(e));
         }
     }
 }

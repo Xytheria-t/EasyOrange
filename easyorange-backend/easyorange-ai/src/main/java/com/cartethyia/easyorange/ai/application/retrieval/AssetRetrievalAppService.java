@@ -14,7 +14,7 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 
 /**
- * 资产召回 — 对话式找货的检索侧：向量化 → kNN + BM25 两路独立召回 → RRF 融合；与
+ * 资产检索 — 对话式找货的检索侧：向量化 → kNN + BM25 两路独立召回 → RRF 融合；与
  * {@code KnowledgeRetrievalAppService} 同形态、不同语料（规则文档换成在售资产）。
  * <p>
  * <b>降级语义按调用方分层</b>：对话侧 {@link #search} 吞异常返空（少一次推荐好过整轮对话降级；抛出去后供应商
@@ -24,7 +24,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class AssetSourcingAppService {
+public class AssetRetrievalAppService {
 
     private final EmbeddingModel embeddingModel;
     private final ObjectProvider<AssetRetrievalPort> retrievalPort;

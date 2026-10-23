@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.ai.application.chat;
 
-import com.cartethyia.easyorange.ai.application.retrieval.AssetSourcingAppService;
+import com.cartethyia.easyorange.ai.application.retrieval.AssetRetrievalAppService;
 import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalAppService;
 import com.cartethyia.easyorange.ai.domain.port.AssetDetailPort;
 import com.cartethyia.easyorange.ai.domain.port.UserPreferenceRepository;
@@ -21,12 +21,12 @@ import org.springframework.stereotype.Component;
 public class ChatToolsFactory {
 
     private final KnowledgeRetrievalAppService retrievalService;
-    private final AssetSourcingAppService assetSourcingService;
+    private final AssetRetrievalAppService assetRetrievalService;
     private final AssetDetailPort assetDetailPort;
     private final UserPreferenceRepository preferenceRepository;
 
     ChatTools create(@Nullable String attributedUserId) {
         return new ChatTools(
-                retrievalService, assetSourcingService, assetDetailPort, preferenceRepository, attributedUserId);
+                retrievalService, assetRetrievalService, assetDetailPort, preferenceRepository, attributedUserId);
     }
 }

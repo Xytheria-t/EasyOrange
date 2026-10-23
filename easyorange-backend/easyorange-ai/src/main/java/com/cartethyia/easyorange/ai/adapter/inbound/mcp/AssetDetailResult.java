@@ -9,4 +9,4 @@ import com.cartethyia.easyorange.ai.domain.model.AssetDetail;
  * @param found  是否存在且在售
  * @param detail 资产详情，found=false 时为 null
  */
-public record ProductDetailResult(boolean found, AssetDetail detail) {}
+public record AssetDetailResult(boolean found, AssetDetail detail) {}

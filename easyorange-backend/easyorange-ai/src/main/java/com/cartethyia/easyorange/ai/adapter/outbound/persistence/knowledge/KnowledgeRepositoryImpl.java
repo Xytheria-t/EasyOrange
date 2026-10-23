@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.ai.adapter.outbound.persistence.knowledge;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cartethyia.easyorange.ai.domain.enums.KnowledgeDocStatus;
-import com.cartethyia.easyorange.ai.domain.model.KnowledgeDocEntity;
+import com.cartethyia.easyorange.ai.domain.model.KnowledgeDoc;
 import com.cartethyia.easyorange.ai.domain.port.KnowledgeRepository;
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.common.repository.BaseRepository;
@@ -31,7 +31,7 @@ public class KnowledgeRepositoryImpl extends BaseRepository<KnowledgeDocMapper, 
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public String save(KnowledgeDocEntity doc) {
+    public String save(KnowledgeDoc doc) {
         var entity = new KnowledgeDocDO();
         entity.setId(doc.id() != null ? doc.id() : idGenerator.generateId());
         entity.setTitle(doc.title());
@@ -55,13 +55,13 @@ public class KnowledgeRepositoryImpl extends BaseRepository<KnowledgeDocMapper, 
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<KnowledgeDocEntity> findById(String id) {
+    public Optional<KnowledgeDoc> findById(String id) {
         return findBy(KnowledgeDocDO::getId, id).map(KnowledgeRepositoryImpl::toEntity);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public PageResult<KnowledgeDocEntity> page(int pageNum, int pageSize) {
+    public PageResult<KnowledgeDoc> page(int pageNum, int pageSize) {
         var result = lambdaQuery().orderByDesc(KnowledgeDocDO::getCreateTime).page(new Page<>(pageNum, pageSize));
         return PageResult.of(
                 result.getRecords().stream()
@@ -80,7 +80,7 @@ public class KnowledgeRepositoryImpl extends BaseRepository<KnowledgeDocMapper, 
 
     @Override
     @Transactional(readOnly = true)
-    public List<KnowledgeDocEntity> searchByContent(String keyword, int limit) {
+    public List<KnowledgeDoc> searchByContent(String keyword, int limit) {
         return lambdaQuery()
                 .like(KnowledgeDocDO::getTitle, keyword)
                 .or()
@@ -92,8 +92,8 @@ public class KnowledgeRepositoryImpl extends BaseRepository<KnowledgeDocMapper, 
                 .toList();
     }
 
-    private static KnowledgeDocEntity toEntity(KnowledgeDocDO doc) {
-        return new KnowledgeDocEntity(
+    private static KnowledgeDoc toEntity(KnowledgeDocDO doc) {
+        return new KnowledgeDoc(
                 doc.getId(),
                 doc.getTitle(),
                 doc.getContent(),

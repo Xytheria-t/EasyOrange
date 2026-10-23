@@ -8,7 +8,7 @@ import com.cartethyia.easyorange.ai.application.dto.ChatRequest;
 import com.cartethyia.easyorange.ai.application.listing.AutoListingAppService;
 import com.cartethyia.easyorange.ai.application.listing.ListingLoopResult;
 import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalAppService;
-import com.cartethyia.easyorange.ai.application.support.RetrievalObservations;
+import com.cartethyia.easyorange.ai.application.support.RetrievalToolOutputs;
 import com.cartethyia.easyorange.ai.application.toolcall.ToolLoopOutcome;
 import com.cartethyia.easyorange.ai.domain.model.ArmComparisonReport;
 import com.cartethyia.easyorange.ai.domain.model.GenerationReport;
@@ -174,7 +174,7 @@ public class GoldenSetEvaluator {
         double mrrSum = 0;
         for (var c : cases) {
             // topK 取生产检索同一常量：hit@5 的 5 就是产品召回窗口，评估不另立一套
-            List<KnowledgeHit> results = retrievalService.search(c.question(), RetrievalObservations.TOP_K);
+            List<KnowledgeHit> results = retrievalService.search(c.question(), RetrievalToolOutputs.TOP_K);
             List<String> hitIds = results.stream().map(KnowledgeHit::docId).toList();
             double rr = computeReciprocalRank(c.goldDocIds(), hitIds);
             if (rr > 0) {

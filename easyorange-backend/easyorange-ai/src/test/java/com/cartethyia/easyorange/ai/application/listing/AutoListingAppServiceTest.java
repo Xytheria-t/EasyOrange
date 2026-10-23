@@ -11,7 +11,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.cartethyia.easyorange.ai.application.dto.AutoListingResult;
-import com.cartethyia.easyorange.ai.application.retrieval.AssetSourcingAppService;
+import com.cartethyia.easyorange.ai.application.retrieval.AssetRetrievalAppService;
 import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalAppService;
 import com.cartethyia.easyorange.ai.application.support.ModelRouter;
 import com.cartethyia.easyorange.ai.application.support.TokenBudgetGuard;
@@ -114,7 +114,7 @@ class AutoListingAppServiceTest {
                 new ToolLoopKernel(mock(ToolCallStepTracePort.class), stubIdGenerator()),
                 new ListingToolsFactory(
                         mock(KnowledgeRetrievalAppService.class),
-                        mock(AssetSourcingAppService.class),
+                        mock(AssetRetrievalAppService.class),
                         categoryCatalogPort),
                 new ToolCallDecider(TestModelCaller.create(modelRouter), new ObjectMapper()),
                 new TokenBudgetGuard(mock(TokenBudgetStorePort.class), PropertyBindings.bind(AiProperties.class)),
@@ -127,7 +127,7 @@ class AutoListingAppServiceTest {
     @DisplayName("兜底常量 == @TokenBudget(scenario=auto_listing) 注解默认值（改一边必须改另一边）")
     void fallbackConstantsMatchAnnotationContract() throws NoSuchMethodException {
         TokenBudget limits = AutoListingAppService.class
-                .getDeclaredMethod("analyzeImages", List.class, String.class, ChatStreamHandler.class)
+                .getDeclaredMethod("generateListing", List.class, String.class, ChatStreamHandler.class)
                 .getAnnotation(TokenBudget.class);
 
         assertThat(limits).isNotNull();
@@ -162,7 +162,7 @@ class AutoListingAppServiceTest {
     }
 
     @Nested
-    @DisplayName("analyzeImages 全链路")
+    @DisplayName("generateListing 全链路")
     class FullFlowTests {
 
         @Test
@@ -172,7 +172,7 @@ class AutoListingAppServiceTest {
             stubDecisions("finish:{\"thought\":\"信息已足够\"}");
             var steps = new RecordingHandler();
 
-            AutoListingResult result = service.analyzeImages(List.of("http://example.com/a.jpg"), "user-1", steps);
+            AutoListingResult result = service.generateListing(List.of("http://example.com/a.jpg"), "user-1", steps);
 
             assertThat(result.title()).isEqualTo("索尼 A7M3 微单");
             assertThat(result.price()).isEqualByComparingTo(new BigDecimal("8500"));
@@ -186,7 +186,7 @@ class AutoListingAppServiceTest {
         void clueFailure_failsFast() {
             enqueueVision("not json");
 
-            assertThatThrownBy(() -> service.analyzeImages(List.of("http://example.com/a.jpg")))
+            assertThatThrownBy(() -> service.generateListing(List.of("http://example.com/a.jpg")))
                     .isInstanceOf(BusinessException.class)
                     .extracting(e -> ((BusinessException) e).getCode())
                     .isEqualTo("B8002");
@@ -198,7 +198,7 @@ class AutoListingAppServiceTest {
         void imageLoadFailure_failsFast() {
             when(visionImageLoader.toDataUrls(any())).thenThrow(new IllegalStateException("图片下载失败: HTTP 404"));
 
-            assertThatThrownBy(() -> service.analyzeImages(List.of("http://example.com/gone.jpg")))
+            assertThatThrownBy(() -> service.generateListing(List.of("http://example.com/gone.jpg")))
                     .isInstanceOf(BusinessException.class)
                     .extracting(e -> ((BusinessException) e).getCode())
                     .isEqualTo("B8002");
@@ -210,7 +210,7 @@ class AutoListingAppServiceTest {
             enqueueVision(CLUE_JSON, "");
             stubDecisions("finish:{\"thought\":\"直接收敛\"}");
 
-            assertThatThrownBy(() -> service.analyzeImages(List.of("http://example.com/a.jpg")))
+            assertThatThrownBy(() -> service.generateListing(List.of("http://example.com/a.jpg")))
                     .isInstanceOf(BusinessException.class)
                     .extracting(e -> ((BusinessException) e).getCode())
                     .isEqualTo("B8002");
@@ -222,7 +222,7 @@ class AutoListingAppServiceTest {
             enqueueVision(CLUE_JSON, VALID_LISTING_JSON);
             decisionResponses.add(textResponse("我觉得不用查"));
 
-            AutoListingResult result = service.analyzeImages(List.of("http://example.com/a.jpg"));
+            AutoListingResult result = service.generateListing(List.of("http://example.com/a.jpg"));
 
             // 降级链路照常产出表单：行情缺失由生成器按 prompt 约束置 price = null，这里验证链路不死
             assertThat(result.title()).isEqualTo("索尼 A7M3 微单");
@@ -235,7 +235,7 @@ class AutoListingAppServiceTest {
             enqueueVision(CLUE_JSON);
             service = newService(TestPromptRegistry.empty());
 
-            assertThatThrownBy(() -> service.analyzeImages(List.of("http://example.com/a.jpg")))
+            assertThatThrownBy(() -> service.generateListing(List.of("http://example.com/a.jpg")))
                     .isInstanceOf(IllegalStateException.class);
             verify(visionChatModel, never()).call(any(Prompt.class));
         }

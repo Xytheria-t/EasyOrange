@@ -7,7 +7,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.cartethyia.easyorange.ai.application.chat.ChatTools;
-import com.cartethyia.easyorange.ai.application.retrieval.AssetSourcingAppService;
+import com.cartethyia.easyorange.ai.application.retrieval.AssetRetrievalAppService;
 import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalAppService;
 import com.cartethyia.easyorange.ai.domain.model.AssetHit;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeHit;
@@ -19,7 +19,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * 发布链路工具面测试 — 检索观察 / 冗余收敛复用买家侧同一份机制（{@code RetrievalObservations}），这里验
+ * 发布链路工具面测试 — 检索观察 / 冗余收敛复用买家侧同一份机制（{@code RetrievalToolOutputs}），这里验
  * listing 侧接线与工具名契约：四个共享工具名须与 ChatTools 逐字相等，漂移会让 golden-set 的 expected_tools
  * 与前端 STEP_LABELS 失锚。
  */
@@ -27,14 +27,14 @@ import org.junit.jupiter.api.Test;
 class ListingToolsTest {
 
     private final KnowledgeRetrievalAppService retrievalService = mock(KnowledgeRetrievalAppService.class);
-    private final AssetSourcingAppService assetSourcingService = mock(AssetSourcingAppService.class);
+    private final AssetRetrievalAppService assetRetrievalService = mock(AssetRetrievalAppService.class);
     private final CategoryCatalogPort categoryCatalogPort = mock(CategoryCatalogPort.class);
 
     private ListingTools tools;
 
     @BeforeEach
     void setUp() {
-        tools = new ListingTools(retrievalService, assetSourcingService, categoryCatalogPort);
+        tools = new ListingTools(retrievalService, assetRetrievalService, categoryCatalogPort);
     }
 
     @Test
@@ -75,7 +75,7 @@ class ListingToolsTest {
     @DisplayName("product_search 召回带价格观察，重复召回不重复计入累加器")
     void productSearch_accumulatesWithDedup() {
         AssetHit hit = new AssetHit("p-1", "索尼 A7M3", BigDecimal.valueOf(8000), "相机", "九五新", 0.9);
-        when(assetSourcingService.search(anyString(), anyInt())).thenReturn(List.of(hit));
+        when(assetRetrievalService.search(anyString(), anyInt())).thenReturn(List.of(hit));
 
         assertThat(tools.searchProducts("召回同类", "索尼 A7M3")).contains("召回 1 件").contains("¥8000");
         // 同一件再召回：观察收敛成「无新增」（与买家侧同一判据），累加器不重复计入
@@ -88,7 +88,7 @@ class ListingToolsTest {
     void marketPriceStats_requiresRecallFirst() {
         assertThat(tools.summarizeMarketPrice("看行情")).contains("暂无可统计的在售资产");
 
-        when(assetSourcingService.search(anyString(), anyInt()))
+        when(assetRetrievalService.search(anyString(), anyInt()))
                 .thenReturn(List.of(
                         new AssetHit("p-1", "索尼 A7M3", BigDecimal.valueOf(8000), "相机", "九五新", 0.9),
                         new AssetHit("p-2", "索尼 A7M3 套机", BigDecimal.valueOf(9000), "相机", "九五新", 0.8)));

@@ -5,7 +5,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import com.cartethyia.easyorange.ai.application.retrieval.AssetSourcingAppService;
+import com.cartethyia.easyorange.ai.application.retrieval.AssetRetrievalAppService;
 import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalAppService;
 import com.cartethyia.easyorange.ai.domain.model.AssetDetail;
 import com.cartethyia.easyorange.ai.domain.model.AssetHit;
@@ -28,7 +28,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class PlatformMcpToolsTest {
 
     @Mock
-    private AssetSourcingAppService assetSourcingService;
+    private AssetRetrievalAppService assetRetrievalService;
 
     @Mock
     private AssetDetailPort assetDetailPort;
@@ -43,31 +43,31 @@ class PlatformMcpToolsTest {
 
     private PlatformMcpTools tools() {
         return new PlatformMcpTools(
-                assetSourcingService, assetDetailPort, knowledgeRetrievalService, categoryListPort, registry);
+                assetRetrievalService, assetDetailPort, knowledgeRetrievalService, categoryListPort, registry);
     }
 
     @Test
     @DisplayName("search_products：topK 缺省 5、钳制到 [1, 20]，走 strict 路径（故障上抛不伪装成空结果）")
     void searchProducts_clampsTopK() {
         var tools = tools();
-        when(assetSourcingService.searchStrict("显卡", 5)).thenReturn(List.of(hit("p1")));
-        when(assetSourcingService.searchStrict("显卡", 20)).thenReturn(List.of());
-        when(assetSourcingService.searchStrict("显卡", 1)).thenReturn(List.of());
+        when(assetRetrievalService.searchStrict("显卡", 5)).thenReturn(List.of(hit("p1")));
+        when(assetRetrievalService.searchStrict("显卡", 20)).thenReturn(List.of());
+        when(assetRetrievalService.searchStrict("显卡", 1)).thenReturn(List.of());
 
         assertThat(tools.searchProducts("显卡", null)).hasSize(1);
         assertThat(tools.searchProducts("显卡", 99)).isEmpty();
         assertThat(tools.searchProducts("显卡", 0)).isEmpty();
 
-        verify(assetSourcingService).searchStrict("显卡", 5);
-        verify(assetSourcingService).searchStrict("显卡", 20);
-        verify(assetSourcingService).searchStrict("显卡", 1);
+        verify(assetRetrievalService).searchStrict("显卡", 5);
+        verify(assetRetrievalService).searchStrict("显卡", 20);
+        verify(assetRetrievalService).searchStrict("显卡", 1);
     }
 
     @Test
     @DisplayName("search_products：检索故障上抛（MCP 协议转错误结果，client 能区分没货与服务故障）")
     void searchProducts_strictFailurePropagates() {
         var tools = tools();
-        when(assetSourcingService.searchStrict("显卡", 5)).thenThrow(new IllegalStateException("ES 不可用"));
+        when(assetRetrievalService.searchStrict("显卡", 5)).thenThrow(new IllegalStateException("ES 不可用"));
 
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> tools.searchProducts("显卡", null))
                 .isInstanceOf(IllegalStateException.class)
@@ -97,7 +97,7 @@ class PlatformMcpToolsTest {
         assertThat(tools.getProductDetail(null).found()).isFalse();
         assertThat(tools.getProductDetail("  ").found()).isFalse();
 
-        verifyNoInteractions(assetSourcingService, knowledgeRetrievalService, categoryListPort);
+        verifyNoInteractions(assetRetrievalService, knowledgeRetrievalService, categoryListPort);
     }
 
     @Test
@@ -130,7 +130,7 @@ class PlatformMcpToolsTest {
     @DisplayName("每次调用计 easyorange.mcp.tool{name} 指标")
     void recordsToolCallMetrics() {
         var tools = tools();
-        when(assetSourcingService.searchStrict("显卡", 5)).thenReturn(List.of(hit("p1")));
+        when(assetRetrievalService.searchStrict("显卡", 5)).thenReturn(List.of(hit("p1")));
         tools.searchProducts("显卡", null);
         tools.listCategories(null);
 

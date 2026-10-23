@@ -11,7 +11,7 @@ import static org.mockito.Mockito.when;
 
 import com.cartethyia.easyorange.ai.domain.enums.KnowledgeDocStatus;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeChunk;
-import com.cartethyia.easyorange.ai.domain.model.KnowledgeDocEntity;
+import com.cartethyia.easyorange.ai.domain.model.KnowledgeDoc;
 import com.cartethyia.easyorange.ai.domain.port.KnowledgeIndexPort;
 import com.cartethyia.easyorange.ai.domain.port.KnowledgeRepository;
 import com.cartethyia.easyorange.ai.testsupport.TestModelCaller;
@@ -179,14 +179,14 @@ class KnowledgeIngestionAppServiceTest {
 
     @Test
     @DisplayName("补索引：未完成态重做、INDEXED 跳过，保持原 ID")
-    void reindexPending_keepsId() {
+    void reindexIfIncomplete_keepsId() {
         setUpIngestion();
         when(repository.findById("doc-1"))
-                .thenReturn(Optional.of(
-                        new KnowledgeDocEntity("doc-1", "标题", "内容", "来源", KnowledgeDocStatus.PENDING, 0, null)));
+                .thenReturn(
+                        Optional.of(new KnowledgeDoc("doc-1", "标题", "内容", "来源", KnowledgeDocStatus.PENDING, 0, null)));
         when(repository.findById("doc-2"))
                 .thenReturn(Optional.of(
-                        new KnowledgeDocEntity("doc-2", "标题2", "内容2", "来源", KnowledgeDocStatus.INDEXED, 1, null)));
+                        new KnowledgeDoc("doc-2", "标题2", "内容2", "来源", KnowledgeDocStatus.INDEXED, 1, null)));
         when(indexPortProvider.getIfAvailable()).thenReturn(indexPort);
         when(indexPort.isAvailable()).thenReturn(true);
         when(embeddingModelProvider.getIfAvailable()).thenReturn(embeddingModel);
@@ -194,8 +194,8 @@ class KnowledgeIngestionAppServiceTest {
                 .thenAnswer(
                         inv -> embeddingResponse(new float[] {1f, 0f, 0f}, ((List<String>) inv.getArgument(0)).size()));
 
-        ingestionService.reindexPending("doc-1");
-        ingestionService.reindexPending("doc-2");
+        ingestionService.reindexIfIncomplete("doc-1");
+        ingestionService.reindexIfIncomplete("doc-2");
 
         ArgumentCaptor<List<KnowledgeChunk>> captor = ArgumentCaptor.forClass(List.class);
         verify(indexPort).ingestChunks(captor.capture());
@@ -205,11 +205,11 @@ class KnowledgeIngestionAppServiceTest {
 
     @Test
     @DisplayName("补索引：FAILED 文档一并重试（embed/写失败的未完成态，与 PENDING 同口径）")
-    void reindexPending_retriesFailedDocs() {
+    void reindexIfIncomplete_retriesFailedDocs() {
         setUpIngestion();
         when(repository.findById("doc-1"))
-                .thenReturn(Optional.of(
-                        new KnowledgeDocEntity("doc-1", "标题", "内容", "来源", KnowledgeDocStatus.FAILED, 1, null)));
+                .thenReturn(
+                        Optional.of(new KnowledgeDoc("doc-1", "标题", "内容", "来源", KnowledgeDocStatus.FAILED, 1, null)));
         when(indexPortProvider.getIfAvailable()).thenReturn(indexPort);
         when(indexPort.isAvailable()).thenReturn(true);
         when(embeddingModelProvider.getIfAvailable()).thenReturn(embeddingModel);
@@ -217,7 +217,7 @@ class KnowledgeIngestionAppServiceTest {
                 .thenAnswer(
                         inv -> embeddingResponse(new float[] {1f, 0f, 0f}, ((List<String>) inv.getArgument(0)).size()));
 
-        ingestionService.reindexPending("doc-1");
+        ingestionService.reindexIfIncomplete("doc-1");
 
         verify(repository).updateStatus("doc-1", KnowledgeDocStatus.INDEXED, 1);
     }
@@ -228,7 +228,7 @@ class KnowledgeIngestionAppServiceTest {
         setUpIngestion();
         when(repository.page(1, 50))
                 .thenReturn(new PageResult<>(
-                        List.of(new KnowledgeDocEntity("doc-1", "标题", "内容", "来源", KnowledgeDocStatus.INDEXED, 1, null)),
+                        List.of(new KnowledgeDoc("doc-1", "标题", "内容", "来源", KnowledgeDocStatus.INDEXED, 1, null)),
                         1,
                         1,
                         1,

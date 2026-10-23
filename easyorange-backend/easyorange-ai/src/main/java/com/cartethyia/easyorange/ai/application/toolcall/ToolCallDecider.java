@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.ai.application.toolcall;
 
-import com.cartethyia.easyorange.ai.application.support.FailureReason;
+import com.cartethyia.easyorange.ai.application.support.FailureText;
 import com.cartethyia.easyorange.ai.application.support.ModelCaller;
 import com.cartethyia.easyorange.ai.application.support.ModelRouter;
 import com.cartethyia.easyorange.ai.domain.enums.ModelCallScope;
@@ -62,7 +62,7 @@ public class ToolCallDecider {
         try {
             return requestCalls(sessionId, messages, callbacks, scope);
         } catch (Exception first) {
-            log.warn("action=tool_call_decision_retry, sessionId={}, reason={}", sessionId, FailureReason.of(first));
+            log.warn("action=tool_call_decision_retry, sessionId={}, reason={}", sessionId, FailureText.of(first));
         }
         try {
             return requestCalls(sessionId, messages, callbacks, scope);
@@ -70,7 +70,7 @@ public class ToolCallDecider {
             log.warn(
                     "action=tool_call_decision_failed, fallback=single_step, sessionId={}, reason={}",
                     sessionId,
-                    FailureReason.of(second));
+                    FailureText.of(second));
             return List.of();
         }
     }

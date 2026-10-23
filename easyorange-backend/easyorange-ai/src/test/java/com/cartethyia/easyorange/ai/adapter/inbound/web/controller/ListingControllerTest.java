@@ -67,7 +67,7 @@ class ListingControllerTest {
         @DisplayName("图片分析 — 返回 AutoListingResult，登录身份随调用归属 trace")
         void autoListing_success() {
             var expected = new AutoListingResult("在管 iPhone 14", "99新", new BigDecimal("4500"), "手机数码", "2", "广州");
-            when(autoListingService.analyzeImages(anyList(), eq("user-1"), isNull()))
+            when(autoListingService.generateListing(anyList(), eq("user-1"), isNull()))
                     .thenReturn(expected);
 
             var imageUrls = List.of("https://example.com/img1.jpg", "https://example.com/img2.jpg");
@@ -76,13 +76,13 @@ class ListingControllerTest {
             assertThat(result.isSuccess()).isTrue();
             assertThat(result.data()).isEqualTo(expected);
             assertThat(result.data().title()).isEqualTo("在管 iPhone 14");
-            verify(autoListingService).analyzeImages(imageUrls, "user-1", null);
+            verify(autoListingService).generateListing(imageUrls, "user-1", null);
         }
 
         @Test
         @DisplayName("识别失败 — 业务异常向上抛，由全局异常处理转成 B8002（而不是 200 + null）")
         void autoListing_serviceThrows() {
-            when(autoListingService.analyzeImages(anyList(), any(), isNull()))
+            when(autoListingService.generateListing(anyList(), any(), isNull()))
                     .thenThrow(BusinessException.of(AiResultCode.AI_UNAVAILABLE));
 
             assertThatThrownBy(() -> controller.autoListing(List.of("https://example.com/img.jpg")))
@@ -100,7 +100,7 @@ class ListingControllerTest {
         @DisplayName("流式识别 — 登录身份带进流式线程，service 收到非空步骤 handler")
         void stream_passesHandlerAndIdentity() {
             var expected = new AutoListingResult("在管 iPhone 14", "99新", new BigDecimal("4500"), "手机数码", "2", "广州");
-            when(autoListingService.analyzeImages(anyList(), eq("user-1"), any(ChatStreamHandler.class)))
+            when(autoListingService.generateListing(anyList(), eq("user-1"), any(ChatStreamHandler.class)))
                     .thenReturn(expected);
 
             SseEmitter emitter = controller.stream(List.of("https://example.com/img.jpg"));
@@ -108,13 +108,13 @@ class ListingControllerTest {
             assertThat(emitter).isNotNull();
             // 无容器 SseEmitter 上发 done / error 会静默收尾（IllegalStateException 被适配层吞掉），
             // 这里只验证身份与 handler 传递；事件协议由 SSE 适配层测试覆盖
-            verify(autoListingService).analyzeImages(anyList(), eq("user-1"), any(ChatStreamHandler.class));
+            verify(autoListingService).generateListing(anyList(), eq("user-1"), any(ChatStreamHandler.class));
         }
 
         @Test
         @DisplayName("业务异常（预算尽 / 识别失败）— 不向上抛，转 error 事件静默完成流")
         void stream_businessExceptionConvertsToErrorEvent() {
-            when(autoListingService.analyzeImages(anyList(), eq("user-1"), any(ChatStreamHandler.class)))
+            when(autoListingService.generateListing(anyList(), eq("user-1"), any(ChatStreamHandler.class)))
                     .thenThrow(BusinessException.of(AiResultCode.TOKEN_BUDGET_EXCEEDED));
 
             SseEmitter emitter = controller.stream(List.of("https://example.com/img.jpg"));

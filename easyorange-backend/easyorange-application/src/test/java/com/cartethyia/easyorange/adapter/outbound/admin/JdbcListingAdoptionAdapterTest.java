@@ -39,8 +39,8 @@ class JdbcListingAdoptionAdapterTest {
         assertThat(report.samples()).isEqualTo(10);
         assertThat(report.fullyAdopted()).isEqualTo(2);
         assertThat(report.fullAdoptionRate()).isEqualTo(0.2);
-        assertThat(report.within10Percent()).isEqualTo(8);
-        assertThat(report.beyond30Percent()).isEqualTo(1);
+        assertThat(report.within10PercentCount()).isEqualTo(8);
+        assertThat(report.beyond30PercentCount()).isEqualTo(1);
         assertThat(report.avgPriceDeviationPercent()).isEqualTo(12.5);
 
         assertThat(report.fields())

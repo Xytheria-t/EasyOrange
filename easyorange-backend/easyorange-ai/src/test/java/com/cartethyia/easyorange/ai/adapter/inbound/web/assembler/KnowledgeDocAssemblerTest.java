@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.ai.adapter.inbound.web.assembler;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.cartethyia.easyorange.ai.domain.enums.KnowledgeDocStatus;
-import com.cartethyia.easyorange.ai.domain.model.KnowledgeDocEntity;
+import com.cartethyia.easyorange.ai.domain.model.KnowledgeDoc;
 import com.cartethyia.easyorange.common.result.PageResult;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -16,7 +16,7 @@ class KnowledgeDocAssemblerTest {
     @Test
     @DisplayName("实体 → VO：剔除正文大字段，保留列表所需字段")
     void toVO_dropsContent() {
-        var entity = new KnowledgeDocEntity(
+        var entity = new KnowledgeDoc(
                 "id-1", "上架规则", "长正文……", "运营", KnowledgeDocStatus.INDEXED, 3, LocalDateTime.of(2026, 8, 14, 10, 0));
 
         var vo = KnowledgeDocAssembler.toVO(entity);
@@ -32,8 +32,7 @@ class KnowledgeDocAssemblerTest {
     @Test
     @DisplayName("分页整体映射：records 转换、分页元信息原样透传")
     void toVOPage_mapsRecordsAndKeepsPagination() {
-        var entity =
-                new KnowledgeDocEntity("id-1", "上架规则", "正文", "运营", KnowledgeDocStatus.PENDING, 0, LocalDateTime.now());
+        var entity = new KnowledgeDoc("id-1", "上架规则", "正文", "运营", KnowledgeDocStatus.PENDING, 0, LocalDateTime.now());
         var page = new PageResult<>(List.of(entity), 1L, 2, 10, 1);
 
         var voPage = KnowledgeDocAssembler.toVOPage(page);

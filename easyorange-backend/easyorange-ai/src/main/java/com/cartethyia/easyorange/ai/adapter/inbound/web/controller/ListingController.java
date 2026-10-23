@@ -66,7 +66,7 @@ public class ListingController {
             @RequestBody @NotEmpty(message = "请至少上传一张图片") @Size(max = 9, message = "图片数量不能超过 9 张")
                     List<@NotBlank(message = "图片地址不能为空") String> imageUrls) {
         String userId = SecurityContextUtil.getUserContextOrThrow().userId();
-        return Result.success(autoListingService.analyzeImages(imageUrls, userId, null));
+        return Result.success(autoListingService.generateListing(imageUrls, userId, null));
     }
 
     /** 流式识别 — 事件协议 step / outcome / done / error；身份在 servlet 线程解析后显式带进流式线程（与对话流式同型）。 */
@@ -96,7 +96,7 @@ public class ListingController {
     /** 预算异常在切面（代理边界）抛出，进不了方法体，由这里转 error 事件而不是 500。 */
     private void runStream(SseEmitter emitter, List<String> imageUrls, String userId) {
         try {
-            AutoListingResult result = autoListingService.analyzeImages(imageUrls, userId, listingHandler(emitter));
+            AutoListingResult result = autoListingService.generateListing(imageUrls, userId, listingHandler(emitter));
             ChatController.send(emitter, SseEmitter.event().name("done").data(result));
             ChatController.completeQuietly(emitter);
         } catch (ChatStreamAbortedException e) {
