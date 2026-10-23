@@ -36,36 +36,36 @@ public class ToolCallDecider {
     private final ObjectMapper objectMapper;
 
     /**
-     * 编排内核的决策入口 — 输出 {@link ToolCallStep} 视图。路由角色恒为 {@code decision}（决策是纯路由任务，
+     * 编排内核的决策入口 — 产出本轮要执行的 {@link ToolCallStep}。路由角色恒为 {@code decision}（决策是纯路由任务，
      * chat 与 listing 两条链路共用快模型），故写死；记账 {@code scope} 与入参摘要 {@code toolInputOf} 随链路注入
      * ——模型选型两条链路相同、记账不同，一个写死一个传参不是疏漏。一轮可带回多个调用并全部返回——模型的并行
      * 发起（规则 + 找货同问最常见）在这里省掉一整轮往返。
      */
-    public List<ToolCallStep> decide(
+    public List<ToolCallStep> nextSteps(
             @Nullable String sessionId,
             List<Message> messages,
             List<ToolCallback> callbacks,
             ModelCallScope scope,
-            Function<ToolCallDecision, String> toolInputOf) {
-        return decideWithRetry(sessionId, messages, callbacks, scope).stream()
-                .map(decision -> new ToolCallStep(
-                        decision.tool(),
-                        decision.parsedArguments().thought(),
-                        toolInputOf.apply(decision),
-                        decision.rawArguments(),
-                        decision.rawToolCall()))
+            Function<ParsedToolCall, String> toolInputOf) {
+        return requestCallsWithRetry(sessionId, messages, callbacks, scope).stream()
+                .map(parsed -> new ToolCallStep(
+                        parsed.tool(),
+                        parsed.parsedArguments().thought(),
+                        toolInputOf.apply(parsed),
+                        parsed.rawArguments(),
+                        parsed.rawToolCall()))
                 .toList();
     }
 
-    private List<ToolCallDecision> decideWithRetry(
+    private List<ParsedToolCall> requestCallsWithRetry(
             @Nullable String sessionId, List<Message> messages, List<ToolCallback> callbacks, ModelCallScope scope) {
         try {
-            return decideOnce(sessionId, messages, callbacks, scope);
+            return requestCalls(sessionId, messages, callbacks, scope);
         } catch (Exception first) {
             log.warn("action=tool_call_decision_retry, sessionId={}, reason={}", sessionId, FailureReason.of(first));
         }
         try {
-            return decideOnce(sessionId, messages, callbacks, scope);
+            return requestCalls(sessionId, messages, callbacks, scope);
         } catch (Exception second) {
             log.warn(
                     "action=tool_call_decision_failed, fallback=single_step, sessionId={}, reason={}",
@@ -75,23 +75,23 @@ public class ToolCallDecider {
         }
     }
 
-    private List<ToolCallDecision> decideOnce(
+    private List<ParsedToolCall> requestCalls(
             @Nullable String sessionId, List<Message> messages, List<ToolCallback> callbacks, ModelCallScope scope) {
         List<AssistantMessage.ToolCall> toolCalls =
-                modelCaller.callWithTools(ModelRouter.SCENARIO_DECISION, scope, messages, callbacks);
+                modelCaller.requestToolCalls(ModelRouter.SCENARIO_DECISION, scope, messages, callbacks);
         if (toolCalls.isEmpty()) {
             log.warn(
                     "action=tool_call_decision_failed, fallback=single_step, sessionId={}, reason=模型未返回工具调用",
                     sessionId);
             return List.of();
         }
-        List<ToolCallDecision> decisions = toolCalls.stream()
-                .map(toolCall -> ToolCallDecision.of(
+        List<ParsedToolCall> parsedCalls = toolCalls.stream()
+                .map(toolCall -> ParsedToolCall.of(
                         objectMapper.readValue(toolCall.arguments(), ToolCallArguments.class), toolCall))
                 .toList();
-        if (decisions.size() > 1) {
-            log.info("action=tool_call_parallel, sessionId={}, count={}", sessionId, decisions.size());
+        if (parsedCalls.size() > 1) {
+            log.info("action=tool_call_parallel, sessionId={}, count={}", sessionId, parsedCalls.size());
         }
-        return decisions;
+        return parsedCalls;
     }
 }

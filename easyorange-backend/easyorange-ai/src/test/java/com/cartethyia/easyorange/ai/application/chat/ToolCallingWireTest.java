@@ -31,7 +31,7 @@ import org.springframework.ai.support.ToolCallbacks;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * 原生 tool calling 的 wire 契约测试 — JDK 自带 {@link HttpServer} 当供应商桩，校验经 {@link ModelCaller#callWithTools}
+ * 原生 tool calling 的 wire 契约测试 — JDK 自带 {@link HttpServer} 当供应商桩，校验经 {@link ModelCaller#requestToolCalls}
  * 发出的真实请求体与回来的 tool call 解析。覆盖四件会「静默失效」的事（都不是单元测试能看出来的）：工具定义确实进
  * {@code tools}（丢了 = 模型永不调工具，整条对话降级成单步检索）；per-request options 继承模型名（缺 {@code model} 时
  * openai-java 回退 SDK 默认名，对非 OpenAI 供应商直接 404）；工具轮不带 {@code response_format}（与 tools 同发在部分供应商
@@ -114,13 +114,13 @@ class ToolCallingWireTest {
 
     @Test
     @DisplayName("请求体带 7 个工具的 schema 与模型名、不带 response_format；响应的 tool call 可解析")
-    void callWithTools_wireContract() throws Exception {
+    void requestToolCalls_wireContract() throws Exception {
         String baseUrl = "http://localhost:" + server.getAddress().getPort();
         ChatModel chatModel = stubChatModel(baseUrl);
         var modelCaller = modelCaller(chatModel);
         var tools = new ChatTools(null, null, null, null, null);
 
-        List<AssistantMessage.ToolCall> calls = modelCaller.callWithTools(
+        List<AssistantMessage.ToolCall> calls = modelCaller.requestToolCalls(
                 ModelRouter.SCENARIO_DECISION,
                 ModelCallScope.CHAT,
                 List.of(new SystemMessage("你是多步工具决策器"), new UserMessage("<user_question>\n怎么退款？\n</user_question>")),
@@ -151,7 +151,7 @@ class ToolCallingWireTest {
 
     @Test
     @DisplayName("历史轮按协议回填：assistant tool_calls 与 role=tool 观察进请求体（循环轮间的 wire 形态）")
-    void callWithTools_toolHistoryWireContract() throws Exception {
+    void requestToolCalls_toolHistoryWireContract() throws Exception {
         String baseUrl = "http://localhost:" + server.getAddress().getPort();
         ChatModel chatModel = stubChatModel(baseUrl);
         var modelCaller = modelCaller(chatModel);
@@ -159,7 +159,7 @@ class ToolCallingWireTest {
         var historyCall = new AssistantMessage.ToolCall(
                 "call-9", "function", ChatTools.TOOL_KNOWLEDGE_SEARCH, "{\"thought\":\"查退款规则\",\"query\":\"退款\"}");
 
-        List<AssistantMessage.ToolCall> calls = modelCaller.callWithTools(
+        List<AssistantMessage.ToolCall> calls = modelCaller.requestToolCalls(
                 ModelRouter.SCENARIO_DECISION,
                 ModelCallScope.CHAT,
                 List.of(
@@ -185,7 +185,7 @@ class ToolCallingWireTest {
 
     @Test
     @DisplayName("一轮并行发起两个工具 -> 两个 call 都被解析；回填时一条 assistant 带两个 tool_calls + 两条 role=tool")
-    void callWithTools_parallelWireContract() throws Exception {
+    void requestToolCalls_parallelWireContract() throws Exception {
         stubResponse.set(PARALLEL_TOOL_CALL_RESPONSE);
         String baseUrl = "http://localhost:" + server.getAddress().getPort();
         ChatModel chatModel = stubChatModel(baseUrl);
@@ -196,7 +196,7 @@ class ToolCallingWireTest {
         var productCall = new AssistantMessage.ToolCall(
                 "call-2", "function", ChatTools.TOOL_PRODUCT_SEARCH, "{\"thought\":\"找笔记本\",\"query\":\"笔记本\"}");
 
-        List<AssistantMessage.ToolCall> calls = modelCaller.callWithTools(
+        List<AssistantMessage.ToolCall> calls = modelCaller.requestToolCalls(
                 ModelRouter.SCENARIO_DECISION,
                 ModelCallScope.CHAT,
                 List.of(

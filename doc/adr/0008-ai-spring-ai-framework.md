@@ -53,7 +53,7 @@ EasyOrange 的 AI 能力自 2025-11 起基于自研基础设施构建，到 2026
 
 ### 2. 调用去重（[ModelCaller.java](../../easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/application/support/ModelCaller.java)）
 
-`ModelCaller`（`@Component` 实例 bean，非静态工具类）收敛重复调用模式，**不是**端口/适配器抽象，只是代码去重——当前方法面：`callText`（文本 / 多消息两个重载）/ `callJson`（`response_format=json_object`）/ `callJsonWithImages`（多图 Media + `UserMessage.builder`）/ `callWithTools` / `callTextStream`（两个重载）/ `embed`（`float[] → List<Float>`）/ `embedBatch`。**带 `ModelCallScope` 才记账**（落 `eo_ai_call_log` + 真实 token 入预算），不带不记——`Judge` 刻意走账外防自指。
+`ModelCaller`（`@Component` 实例 bean，非静态工具类）收敛重复调用模式，**不是**端口/适配器抽象，只是代码去重——当前方法面：`callText`（文本 / 多消息两个重载）/ `callJson`（`response_format=json_object`）/ `callJsonWithImages`（多图 Media + `UserMessage.builder`）/ `requestToolCalls` / `callTextStream`（两个重载）/ `embed`（`float[] → List<Float>`）/ `embedBatch`。**带 `ModelCallScope` 才记账**（落 `eo_ai_call_log` + 真实 token 入预算），不带不记——`Judge` 刻意走账外防自指。
 
 ### 3. 删除清单
 

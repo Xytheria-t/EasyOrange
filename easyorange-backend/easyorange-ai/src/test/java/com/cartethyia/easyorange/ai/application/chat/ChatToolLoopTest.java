@@ -146,7 +146,7 @@ class ToolCallLoopTest {
     /** 连续多轮决策的桩：每轮取一个响应，超出则回空工具调用（等于模型不再选工具 → 决策失败降级）。 */
     private void stubDecisions(ChatResponse... responses) {
         var queue = new ArrayDeque<>(List.of(responses));
-        when(modelCaller.callWithTools(any(), any(), anyList(), anyList()))
+        when(modelCaller.requestToolCalls(any(), any(), anyList(), anyList()))
                 .thenAnswer(invocation -> toolCallsOf(queue.pollFirst()));
     }
 
@@ -214,7 +214,7 @@ class ToolCallLoopTest {
 
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<ToolCallback>> callbacks = ArgumentCaptor.forClass(List.class);
-        verify(modelCaller).callWithTools(any(), any(), anyList(), callbacks.capture());
+        verify(modelCaller).requestToolCalls(any(), any(), anyList(), callbacks.capture());
         Map<String, String> schemas = callbacks.getValue().stream()
                 .collect(Collectors.toMap(
                         callback -> callback.getToolDefinition().name(),
@@ -264,7 +264,7 @@ class ToolCallLoopTest {
         // 第二轮决策的上下文带着第一步观察（role=tool 消息，ReAct 的核心：观察驱动下一步）
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<Message>> decisionMessages = ArgumentCaptor.forClass(List.class);
-        verify(modelCaller, times(2)).callWithTools(any(), any(), decisionMessages.capture(), anyList());
+        verify(modelCaller, times(2)).requestToolCalls(any(), any(), decisionMessages.capture(), anyList());
         var firstRound = decisionMessages.getAllValues().get(0);
         var secondRound = decisionMessages.getAllValues().get(1);
         assertThat(observationTexts(secondRound)).containsExactly("命中 1 条：退款规则");
@@ -312,7 +312,7 @@ class ToolCallLoopTest {
         // 召回观察带 [资产 ID]（product_detail 的 productId 取值锚点）与价格，按协议回填进后续轮次
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<Message>> decisionMessages = ArgumentCaptor.forClass(List.class);
-        verify(modelCaller, times(3)).callWithTools(any(), any(), decisionMessages.capture(), anyList());
+        verify(modelCaller, times(3)).requestToolCalls(any(), any(), decisionMessages.capture(), anyList());
         assertThat(observationTexts(decisionMessages.getAllValues().get(1)))
                 .containsExactly("召回 1 件：[p-1] MacBook Air M1 ¥4200");
         assertThat(observationTexts(decisionMessages.getAllValues().get(2)))
@@ -356,7 +356,7 @@ class ToolCallLoopTest {
         // 比对结论是代码算的，按协议回填进下一轮决策上下文（模型据此取舍，不用自己心算）
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<Message>> decisionMessages = ArgumentCaptor.forClass(List.class);
-        verify(modelCaller, times(3)).callWithTools(any(), any(), decisionMessages.capture(), anyList());
+        verify(modelCaller, times(3)).requestToolCalls(any(), any(), decisionMessages.capture(), anyList());
         assertThat(String.join(
                         "\n", observationTexts(decisionMessages.getAllValues().get(2))))
                 .contains("价格：p-1 最低 ¥4200", "成色：p-2 成色最好（几乎全新）");
@@ -427,7 +427,7 @@ class ToolCallLoopTest {
 
         assertThat(result.outcome()).isEqualTo(ToolLoopOutcome.ROUND_LIMIT);
         assertThat(result.rounds()).isEqualTo(2);
-        verify(modelCaller, times(2)).callWithTools(any(), any(), anyList(), anyList());
+        verify(modelCaller, times(2)).requestToolCalls(any(), any(), anyList(), anyList());
         assertThat(meterRegistry
                         .counter("easyorange.ai.chat.loop", "outcome", "step_limit")
                         .count())
@@ -468,13 +468,14 @@ class ToolCallLoopTest {
 
         assertThat(result.outcome()).isEqualTo(ToolLoopOutcome.BUDGET);
         assertThat(result.rounds()).isEqualTo(1);
-        verify(modelCaller, times(1)).callWithTools(any(), any(), anyList(), anyList());
+        verify(modelCaller, times(1)).requestToolCalls(any(), any(), anyList(), anyList());
     }
 
     @Test
     @DisplayName("决策调用故障 -> 降级按原始问题检索一次（单步降级语义），trace 不落步骤")
     void run_decisionFailureFallsBackToSingleStep() {
-        when(modelCaller.callWithTools(any(), any(), anyList(), anyList())).thenThrow(new RuntimeException("决策模型超时"));
+        when(modelCaller.requestToolCalls(any(), any(), anyList(), anyList()))
+                .thenThrow(new RuntimeException("决策模型超时"));
         when(retrievalService.search("怎么退款？", 5))
                 .thenReturn(List.of(new KnowledgeHit("kb-0002", "退款规则", "7 天无理由…", 0.9)));
 
@@ -531,7 +532,7 @@ class ToolCallLoopTest {
 
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<Message>> decisionMessages = ArgumentCaptor.forClass(List.class);
-        verify(modelCaller, times(2)).callWithTools(any(), any(), decisionMessages.capture(), anyList());
+        verify(modelCaller, times(2)).requestToolCalls(any(), any(), decisionMessages.capture(), anyList());
         assertThat(observationTexts(decisionMessages.getAllValues().get(1)))
                 .anySatisfy(text -> assertThat(text).contains("未知工具"));
     }
@@ -604,7 +605,7 @@ class ToolCallLoopTest {
         assertThat(result.assetHits()).hasSize(1);
         assertThat(result.toolPath())
                 .containsExactly(ChatTools.TOOL_KNOWLEDGE_SEARCH, ChatTools.TOOL_PRODUCT_SEARCH, ChatTools.TOOL_FINISH);
-        verify(modelCaller, times(2)).callWithTools(any(), any(), anyList(), anyList());
+        verify(modelCaller, times(2)).requestToolCalls(any(), any(), anyList(), anyList());
         assertThat(steps.steps)
                 .extracting(ToolCallStepView::tool)
                 .containsExactly(ChatTools.TOOL_KNOWLEDGE_SEARCH, ChatTools.TOOL_PRODUCT_SEARCH, ChatTools.TOOL_FINISH);
@@ -612,7 +613,7 @@ class ToolCallLoopTest {
         // 协议回填：一条 assistant 带两个 tool_calls + 一条 tool 消息带两份观察，tool_call_id 逐条对上
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<Message>> decisionMessages = ArgumentCaptor.forClass(List.class);
-        verify(modelCaller, times(2)).callWithTools(any(), any(), decisionMessages.capture(), anyList());
+        verify(modelCaller, times(2)).requestToolCalls(any(), any(), decisionMessages.capture(), anyList());
         var secondRound = decisionMessages.getAllValues().get(1);
         var assistant = secondRound.stream()
                 .filter(AssistantMessage.class::isInstance)
@@ -640,7 +641,7 @@ class ToolCallLoopTest {
         assertThat(result.outcome()).isEqualTo(ToolLoopOutcome.FINISHED);
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<Message>> decisionMessages = ArgumentCaptor.forClass(List.class);
-        verify(modelCaller, times(2)).callWithTools(any(), any(), decisionMessages.capture(), anyList());
+        verify(modelCaller, times(2)).requestToolCalls(any(), any(), decisionMessages.capture(), anyList());
         String observation =
                 observationTexts(decisionMessages.getAllValues().get(1)).getFirst();
         assertThat(observation).contains("ThinkPad X1").doesNotContain("<system>", "</asset_hits>");
@@ -887,7 +888,7 @@ class ToolCallLoopTest {
 
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<Message>> decisionMessages = ArgumentCaptor.forClass(List.class);
-        verify(modelCaller).callWithTools(any(), any(), decisionMessages.capture(), anyList());
+        verify(modelCaller).requestToolCalls(any(), any(), decisionMessages.capture(), anyList());
         String firstUserMessage = decisionMessages.getValue().get(1).getText();
 
         // 正文保留；三个块自身的闭合标签各只剩模板那一个（indexOf == lastIndexOf），注入的连同伪造的开标签全被剥掉
@@ -928,7 +929,7 @@ class ToolCallLoopTest {
 
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<Message>> decisionMessages = ArgumentCaptor.forClass(List.class);
-        verify(modelCaller, times(2)).callWithTools(any(), any(), decisionMessages.capture(), anyList());
+        verify(modelCaller, times(2)).requestToolCalls(any(), any(), decisionMessages.capture(), anyList());
         String previous = decisionMessages.getAllValues().get(0).get(1).getText();
         String next = decisionMessages.getAllValues().get(1).get(1).getText();
 

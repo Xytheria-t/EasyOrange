@@ -4,9 +4,9 @@ import com.cartethyia.easyorange.ai.application.dto.AutoListingResult;
 import com.cartethyia.easyorange.ai.application.support.ModelCaller;
 import com.cartethyia.easyorange.ai.application.support.ModelRouter;
 import com.cartethyia.easyorange.ai.application.support.TokenBudgetGuard;
+import com.cartethyia.easyorange.ai.application.toolcall.ParsedToolCall;
 import com.cartethyia.easyorange.ai.application.toolcall.RoundDecider;
 import com.cartethyia.easyorange.ai.application.toolcall.ToolCallDecider;
-import com.cartethyia.easyorange.ai.application.toolcall.ToolCallDecision;
 import com.cartethyia.easyorange.ai.application.toolcall.ToolLoopKernel;
 import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.domain.annotation.TokenBudget;
@@ -210,12 +210,12 @@ public class AutoListingAppService {
 
     /** 决策恒用 decision 快模型（纯路由任务，与 chat 链路同款），记账进 auto_listing 预算——成本归业务链路、模型归职责。 */
     private RoundDecider roundDecider() {
-        return (sessionId, messages, callbacks) -> decider.decide(
+        return (sessionId, messages, callbacks) -> decider.nextSteps(
                 sessionId, messages, callbacks, ModelCallScope.AUTO_LISTING, AutoListingAppService::toolInputOf);
     }
 
     /** 检索类工具取关键词做入参摘要，其余工具无摘要（与买家侧同口径）。 */
-    private static String toolInputOf(ToolCallDecision decision) {
+    private static String toolInputOf(ParsedToolCall decision) {
         return ListingTools.TOOL_KNOWLEDGE_SEARCH.equals(decision.tool())
                         || ListingTools.TOOL_PRODUCT_SEARCH.equals(decision.tool())
                 ? decision.parsedArguments().query()

@@ -109,7 +109,7 @@ public class ModelCaller {
 
     /** 原生 tool calling（带记账）：空列表 = 模型没调工具，由调用方按决策失败处理；只发请求不执行工具。
      * {@code scenario} 取 {@link ModelRouter} 的角色键常量。 */
-    public List<AssistantMessage.ToolCall> callWithTools(
+    public List<AssistantMessage.ToolCall> requestToolCalls(
             String scenario, ModelCallScope scope, List<Message> messages, List<ToolCallback> toolCallbacks) {
         ChatModel chatModel = modelRouter.choose(scenario);
         return callRecorder.record(scope, chatModel, joinTexts(messages), () -> {

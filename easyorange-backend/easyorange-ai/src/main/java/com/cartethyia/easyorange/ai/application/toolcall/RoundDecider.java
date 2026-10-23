@@ -15,5 +15,5 @@ import org.springframework.ai.tool.ToolCallback;
 @FunctionalInterface
 public interface RoundDecider {
 
-    List<ToolCallStep> decide(@Nullable String sessionId, List<Message> messages, List<ToolCallback> callbacks);
+    List<ToolCallStep> nextSteps(@Nullable String sessionId, List<Message> messages, List<ToolCallback> callbacks);
 }

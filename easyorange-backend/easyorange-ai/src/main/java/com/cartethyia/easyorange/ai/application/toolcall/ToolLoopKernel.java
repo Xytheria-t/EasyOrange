@@ -101,14 +101,14 @@ public class ToolLoopKernel {
                         rounds);
                 return new Result(ToolLoopOutcome.BUDGET, rounds, List.copyOf(toolPath));
             }
-            List<ToolCallStep> calls =
-                    spec.roundDecider().decide(spec.sessionId(), transcript.messages(), spec.toolCallbacks());
-            if (calls.isEmpty()) {
+            List<ToolCallStep> steps =
+                    spec.roundDecider().nextSteps(spec.sessionId(), transcript.messages(), spec.toolCallbacks());
+            if (steps.isEmpty()) {
                 spec.decisionFailedFallback().run();
                 return new Result(ToolLoopOutcome.DECISION_FAILED, rounds, List.copyOf(toolPath));
             }
             rounds = round;
-            RoundResult roundResult = executeCalls(spec, traceId, dispatcher, transcript, calls, nextStepIndex);
+            RoundResult roundResult = executeSteps(spec, traceId, dispatcher, transcript, steps, nextStepIndex);
             nextStepIndex = roundResult.nextStepIndex();
             toolPath.addAll(roundResult.toolPath());
             if (roundResult.finished()) {
@@ -127,30 +127,30 @@ public class ToolLoopKernel {
      * 执行一轮的全部调用，落成观测副产物（trace / SSE step / 步级指标），再按对话协议回填。步序跨轮连续，
      * 否则一轮内多个工具挤进同一 stepIndex，trace 里两个动作看起来是同一步。
      */
-    private RoundResult executeCalls(
+    private RoundResult executeSteps(
             Spec spec,
             String traceId,
             ToolDispatcher dispatcher,
             ToolLoopTranscript transcript,
-            List<ToolCallStep> calls,
+            List<ToolCallStep> steps,
             int firstStepIndex) {
         // finish 先摘出去：执行体里就没有「跳过它」的分支，回填的 tool_calls 与观察天然等长；多个 finish 取最后一个
         ToolCallStep finish = null;
-        var executableCalls = new ArrayList<ToolCallStep>(calls.size());
-        for (ToolCallStep call : calls) {
-            if (FINISH_TOOL.equals(call.tool())) {
-                finish = call;
+        var executableSteps = new ArrayList<ToolCallStep>(steps.size());
+        for (ToolCallStep step : steps) {
+            if (FINISH_TOOL.equals(step.tool())) {
+                finish = step;
             } else {
-                executableCalls.add(call);
+                executableSteps.add(step);
             }
         }
 
-        var toolPath = new ArrayList<String>(executableCalls.size() + 1);
-        var observations = new ArrayList<String>(executableCalls.size());
+        var toolPath = new ArrayList<String>(executableSteps.size() + 1);
+        var observations = new ArrayList<String>(executableSteps.size());
         int stepIndex = firstStepIndex;
-        for (ToolCallStep call : executableCalls) {
-            DispatchResult result = executeOneTool(spec, traceId, stepIndex++, dispatcher, call);
-            toolPath.add(call.tool());
+        for (ToolCallStep step : executableSteps) {
+            DispatchResult result = executeOneTool(spec, traceId, stepIndex++, dispatcher, step);
+            toolPath.add(step.tool());
             observations.add(result.observation());
         }
         if (finish != null) {
@@ -158,38 +158,38 @@ public class ToolLoopKernel {
             toolPath.add(finish.tool());
             return new RoundResult(stepIndex + 1, toolPath, true);
         }
-        transcript.appendRound(executableCalls, observations);
+        transcript.appendRound(executableSteps, observations);
         return new RoundResult(stepIndex, toolPath, false);
     }
 
     /** 执行单个工具：计时、记工具指标、落一步 trace 与 SSE。 */
     private DispatchResult executeOneTool(
-            Spec spec, String traceId, int stepIndex, ToolDispatcher dispatcher, ToolCallStep call) {
+            Spec spec, String traceId, int stepIndex, ToolDispatcher dispatcher, ToolCallStep step) {
         long start = System.nanoTime();
-        DispatchResult result = dispatcher.dispatch(call);
+        DispatchResult result = dispatcher.dispatch(step);
         long latencyMs = (System.nanoTime() - start) / 1_000_000;
-        spec.listener().recordTool(call.tool(), latencyMs);
-        recordToolStep(spec, traceId, stepIndex, call, result, latencyMs);
+        spec.listener().recordTool(step.tool(), latencyMs);
+        recordToolStep(spec, traceId, stepIndex, step, result, latencyMs);
         return result;
     }
 
     /** 落一步工具步 trace 并推 SSE step 事件 —— 前端步骤可视化与「工具步数 / 步级延迟 p95」口径的唯一来源；
      * 端口实现内部兜底、不打挂主链路。 */
     private void recordToolStep(
-            Spec spec, String traceId, int stepIndex, ToolCallStep call, DispatchResult result, long latencyMs) {
+            Spec spec, String traceId, int stepIndex, ToolCallStep step, DispatchResult result, long latencyMs) {
         tracePort.record(new ToolCallStepTrace(
                 traceId,
                 spec.sessionId(),
                 spec.userId(),
                 stepIndex,
-                call.tool(),
-                call.toolInput(),
-                call.thought(),
+                step.tool(),
+                step.toolInput(),
+                step.thought(),
                 result.observation(),
                 latencyMs,
                 result.succeeded(),
                 result.errorMsg()));
-        emitStep(spec, stepIndex, call, result.observation());
+        emitStep(spec, stepIndex, step, result.observation());
     }
 
     /** 落一步 finish trace —— 收敛轮没有执行体，入参与观察为空、延迟记 0、视为成功。 */
@@ -210,10 +210,10 @@ public class ToolLoopKernel {
     }
 
     /** 推一条 SSE step 事件；非流式路径 streamHandler 为 null，直接跳过。 */
-    private void emitStep(Spec spec, int stepIndex, ToolCallStep call, @Nullable String observation) {
+    private void emitStep(Spec spec, int stepIndex, ToolCallStep step, @Nullable String observation) {
         ChatStreamHandler streamHandler = spec.streamHandler();
         if (streamHandler != null) {
-            streamHandler.onStep(new ToolCallStepView(stepIndex, call.tool(), call.thought(), observation));
+            streamHandler.onStep(new ToolCallStepView(stepIndex, step.tool(), step.thought(), observation));
         }
     }
 
@@ -247,18 +247,18 @@ public class ToolLoopKernel {
         }
 
         /** 未知工具与执行异常（参数不合 schema / 工具内部故障）都收敛成失败观察：模型据此重试或收敛，不把整轮对话打死。 */
-        DispatchResult dispatch(ToolCallStep call) {
-            ToolCallback callback = toolsByName.get(call.tool());
+        DispatchResult dispatch(ToolCallStep step) {
+            ToolCallback callback = toolsByName.get(step.tool());
             if (callback == null) {
-                return new DispatchResult(false, "未知工具 %s，请改用 %s".formatted(call.tool(), availableToolNames));
+                return new DispatchResult(false, "未知工具 %s，请改用 %s".formatted(step.tool(), availableToolNames));
             }
             try {
-                return new DispatchResult(true, callback.call(call.rawArguments()));
+                return new DispatchResult(true, callback.call(step.rawArguments()));
             } catch (Exception e) {
                 // MethodToolCallback 把「参数转换失败」与「方法体异常」统一包成 ToolExecutionException
                 String reason = FailureReason.of(e.getCause() != null ? e.getCause() : e);
                 log.warn(
-                        "action=tool_call_failed, tool={}, input={}, reason={}", call.tool(), call.toolInput(), reason);
+                        "action=tool_call_failed, tool={}, input={}, reason={}", step.tool(), step.toolInput(), reason);
                 return new DispatchResult(false, reason);
             }
         }

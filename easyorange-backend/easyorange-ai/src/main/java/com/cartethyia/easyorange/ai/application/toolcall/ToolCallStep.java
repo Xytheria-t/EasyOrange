@@ -7,7 +7,7 @@ import org.springframework.ai.chat.messages.AssistantMessage;
  * 循环里的一步（step）— 一次工具调用：模型这一轮决定「调哪个工具、传什么参数」，内核拿它分发执行，再把观察回填
  * 给模型继续下一轮。一轮可有多条（模型并行发起）；{@code finish} 也走这个形态，只是不执行、直接收敛。
  * <p>
- * 由 {@link ToolCallDecider} 从 {@link ToolCallDecision} 收敛而来：参数解析视图（{@link ToolCallArguments}）留在
+ * 由 {@link ToolCallDecider} 从 {@link ParsedToolCall} 收敛而来：参数解析视图（{@link ToolCallArguments}）留在
  * 链路侧，内核只认这五个分量 —— tool / rawArguments 用于按名分发，rawToolCall 用于协议回填（id 与观察逐条对应），
  * thought / toolInput 用于 trace 与 SSE 展示。展示字段在决策时抽一次：让内核为展示再解析一遍 arguments，等于把
  * 参数形状焊进循环，工具面加参数就得改两处。

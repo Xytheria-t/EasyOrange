@@ -34,14 +34,14 @@ public final class ToolLoopTranscript {
     }
 
     /** 回填一轮的全部调用与观察 —— 两侧同序且逐条对应，缺一条对应关系就是协议不合法。 */
-    public void appendRound(List<ToolCallStep> calls, List<String> observations) {
-        if (calls.size() != observations.size()) {
+    public void appendRound(List<ToolCallStep> steps, List<String> observations) {
+        if (steps.size() != observations.size()) {
             throw new IllegalArgumentException("tool call 与观察数量不一致，无法按协议回填");
         }
-        var responses = new ArrayList<ToolResponseMessage.ToolResponse>(calls.size());
-        var rawCalls = new ArrayList<AssistantMessage.ToolCall>(calls.size());
-        for (int i = 0; i < calls.size(); i++) {
-            AssistantMessage.ToolCall raw = calls.get(i).rawToolCall();
+        var responses = new ArrayList<ToolResponseMessage.ToolResponse>(steps.size());
+        var rawCalls = new ArrayList<AssistantMessage.ToolCall>(steps.size());
+        for (int i = 0; i < steps.size(); i++) {
+            AssistantMessage.ToolCall raw = steps.get(i).rawToolCall();
             rawCalls.add(raw);
             responses.add(new ToolResponseMessage.ToolResponse(raw.id(), raw.name(), observations.get(i)));
         }

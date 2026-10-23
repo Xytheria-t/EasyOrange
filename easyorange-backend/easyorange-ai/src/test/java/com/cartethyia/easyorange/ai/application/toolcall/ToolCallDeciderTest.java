@@ -28,9 +28,9 @@ class ToolCallDeciderTest {
         return new ToolCallDecider(modelCaller, new ObjectMapper());
     }
 
-    private List<ToolCallStep> loopCalls(ModelCaller modelCaller) {
+    private List<ToolCallStep> nextSteps(ModelCaller modelCaller) {
         return decider(modelCaller)
-                .decide(
+                .nextSteps(
                         "sess-1",
                         List.of(new UserMessage("退款规则")),
                         List.of(UNUSED_CALLBACK),
@@ -42,41 +42,41 @@ class ToolCallDeciderTest {
     @DisplayName("首次决策故障重试一次后成功 — 抖动自愈，不落入单步降级")
     void retry_recoversFromTransientFailure() {
         ModelCaller modelCaller = mock(ModelCaller.class);
-        when(modelCaller.callWithTools(any(), any(), anyList(), anyList()))
+        when(modelCaller.requestToolCalls(any(), any(), anyList(), anyList()))
                 .thenThrow(new RuntimeException("connection reset"))
                 .thenReturn(List.of(toolCall("{\"thought\":\"查规则\",\"query\":\"退款\"}")));
 
-        List<ToolCallStep> calls = loopCalls(modelCaller);
+        List<ToolCallStep> steps = nextSteps(modelCaller);
 
-        assertThat(calls).hasSize(1);
-        assertThat(calls.get(0).rawArguments()).contains("退款");
-        verify(modelCaller, times(2)).callWithTools(any(), any(), anyList(), anyList());
+        assertThat(steps).hasSize(1);
+        assertThat(steps.get(0).rawArguments()).contains("退款");
+        verify(modelCaller, times(2)).requestToolCalls(any(), any(), anyList(), anyList());
     }
 
     @Test
     @DisplayName("重试仍失败才交编排器降级 — 返回空列表且调用恰好两次")
     void retry_givesUpAfterSecondFailure() {
         ModelCaller modelCaller = mock(ModelCaller.class);
-        when(modelCaller.callWithTools(any(), any(), anyList(), anyList()))
+        when(modelCaller.requestToolCalls(any(), any(), anyList(), anyList()))
                 .thenThrow(new RuntimeException("timeout"))
                 .thenThrow(new RuntimeException("timeout"));
 
-        List<ToolCallStep> calls = loopCalls(modelCaller);
+        List<ToolCallStep> steps = nextSteps(modelCaller);
 
-        assertThat(calls).isEmpty();
-        verify(modelCaller, times(2)).callWithTools(any(), any(), anyList(), anyList());
+        assertThat(steps).isEmpty();
+        verify(modelCaller, times(2)).requestToolCalls(any(), any(), anyList(), anyList());
     }
 
     @Test
     @DisplayName("模型未返回工具调用不重试 — 协议层确定性响应，重试同一输入只会白付一次调用")
     void noRetry_whenModelReturnsNoToolCalls() {
         ModelCaller modelCaller = mock(ModelCaller.class);
-        when(modelCaller.callWithTools(any(), any(), anyList(), anyList())).thenReturn(List.of());
+        when(modelCaller.requestToolCalls(any(), any(), anyList(), anyList())).thenReturn(List.of());
 
-        List<ToolCallStep> calls = loopCalls(modelCaller);
+        List<ToolCallStep> steps = nextSteps(modelCaller);
 
-        assertThat(calls).isEmpty();
-        verify(modelCaller, times(1)).callWithTools(any(), any(), anyList(), anyList());
+        assertThat(steps).isEmpty();
+        verify(modelCaller, times(1)).requestToolCalls(any(), any(), anyList(), anyList());
     }
 
     private AssistantMessage.ToolCall toolCall(String arguments) {

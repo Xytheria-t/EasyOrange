@@ -2,10 +2,10 @@ package com.cartethyia.easyorange.ai.application.chat;
 
 import com.cartethyia.easyorange.ai.application.support.FailureReason;
 import com.cartethyia.easyorange.ai.application.support.UntrustedText;
+import com.cartethyia.easyorange.ai.application.toolcall.ParsedToolCall;
 import com.cartethyia.easyorange.ai.application.toolcall.RoundDecider;
 import com.cartethyia.easyorange.ai.application.toolcall.ToolCallArguments;
 import com.cartethyia.easyorange.ai.application.toolcall.ToolCallDecider;
-import com.cartethyia.easyorange.ai.application.toolcall.ToolCallDecision;
 import com.cartethyia.easyorange.ai.application.toolcall.ToolLoopKernel;
 import com.cartethyia.easyorange.ai.application.toolcall.ToolLoopOutcome;
 import com.cartethyia.easyorange.ai.config.AiProperties;
@@ -192,12 +192,12 @@ public class ChatToolLoop {
     /** 决策恒用快模型（路由角色 decision），记账进 chat 预算；入参摘要按本链路工具面取。 */
     private RoundDecider roundDecider() {
         return (sessionId, messages, callbacks) ->
-                decider.decide(sessionId, messages, callbacks, ModelCallScope.CHAT, ChatToolLoop::toolInputOf);
+                decider.nextSteps(sessionId, messages, callbacks, ModelCallScope.CHAT, ChatToolLoop::toolInputOf);
     }
 
-    /** 工具入参摘要（trace 落库与失败日志用）— 工具名缺失已在 {@link ToolCallDecision} 构造期收敛成空串，这里走 default，
+    /** 工具入参摘要（trace 落库与失败日志用）— 工具名缺失已在 {@link ParsedToolCall} 构造期收敛成空串，这里走 default，
      * 不再判空。 */
-    private static String toolInputOf(ToolCallDecision decision) {
+    private static String toolInputOf(ParsedToolCall decision) {
         ToolCallArguments parsed = decision.parsedArguments();
         return switch (decision.tool()) {
             case ChatTools.TOOL_PRODUCT_DETAIL -> parsed.productId();
