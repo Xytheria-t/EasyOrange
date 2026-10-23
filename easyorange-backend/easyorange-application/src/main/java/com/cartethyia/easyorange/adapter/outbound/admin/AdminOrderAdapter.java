@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.adapter.outbound.admin;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
-import com.cartethyia.easyorange.admin.domain.model.RecentActivity;
+import com.cartethyia.easyorange.admin.domain.model.RecentActivityRow;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
@@ -14,8 +14,8 @@ import com.cartethyia.easyorange.order.adapter.outbound.persistence.OrderMapper;
 import com.cartethyia.easyorange.order.application.port.query.OrderQueryRepository;
 import com.cartethyia.easyorange.order.application.query.readmodel.OrderReadModel;
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
+import com.cartethyia.easyorange.order.domain.enums.OrderPaymentStatus;
 import com.cartethyia.easyorange.order.domain.enums.OrderStatus;
-import com.cartethyia.easyorange.order.domain.enums.PaymentStatus;
 import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import com.cartethyia.easyorange.payment.adapter.outbound.persistence.PaymentDO;
@@ -57,7 +57,7 @@ public class AdminOrderAdapter implements AdminOrderPort {
     private final DomainEventPublisher domainEventPublisher;
 
     @Override
-    public OrderQueryResult queryOrders(OrderQueryCondition condition) {
+    public OrderQueryResult queryOrders(AdminOrderQuery condition) {
         var wrapper = ChainWrappers.lambdaQueryChain(orderMapper).eq(OrderDO::getDelFlag, 0);
 
         if (condition.orderNo() != null && !condition.orderNo().isEmpty()) {
@@ -73,7 +73,7 @@ public class AdminOrderAdapter implements AdminOrderPort {
             wrapper.eq(OrderDO::getStatus, parseOrderStatus(condition.status()));
         }
         if (condition.paymentStatus() != null) {
-            wrapper.eq(OrderDO::getPaymentStatus, parsePaymentStatus(condition.paymentStatus()));
+            wrapper.eq(OrderDO::getPaymentStatus, parseOrderPaymentStatus(condition.paymentStatus()));
         }
         if (condition.startTime() != null) {
             wrapper.ge(OrderDO::getCreateTime, condition.startTime());
@@ -188,7 +188,7 @@ public class AdminOrderAdapter implements AdminOrderPort {
 
     @Override
     @Transactional(readOnly = true)
-    public List<RecentActivity> findRecentCreated(int limit) {
+    public List<RecentActivityRow> findRecentCreated(int limit) {
         return ChainWrappers.lambdaQueryChain(orderMapper)
                 .select(OrderDO::getId, OrderDO::getOrderNo, OrderDO::getCreateTime)
                 .eq(OrderDO::getDelFlag, 0)
@@ -196,7 +196,7 @@ public class AdminOrderAdapter implements AdminOrderPort {
                 .last("LIMIT " + limit)
                 .list()
                 .stream()
-                .map(o -> new RecentActivity(o.getId(), o.getOrderNo(), o.getCreateTime()))
+                .map(o -> new RecentActivityRow(o.getId(), o.getOrderNo(), o.getCreateTime()))
                 .toList();
     }
 
@@ -237,9 +237,9 @@ public class AdminOrderAdapter implements AdminOrderPort {
         }
     }
 
-    private static PaymentStatus parsePaymentStatus(String code) {
+    private static OrderPaymentStatus parseOrderPaymentStatus(String code) {
         try {
-            return PaymentStatus.fromCode(code);
+            return OrderPaymentStatus.fromCode(code);
         } catch (IllegalArgumentException e) {
             throw BusinessException.of("无效的支付状态");
         }
@@ -293,7 +293,7 @@ public class AdminOrderAdapter implements AdminOrderPort {
 
     private OrderSummary toOrderSummary(OrderDO order) {
         OrderStatus status = order.getStatus();
-        PaymentStatus paymentStatus = order.getPaymentStatus();
+        OrderPaymentStatus paymentStatus = order.getPaymentStatus();
         return new OrderSummary(
                 order.getId(),
                 order.getOrderNo(),

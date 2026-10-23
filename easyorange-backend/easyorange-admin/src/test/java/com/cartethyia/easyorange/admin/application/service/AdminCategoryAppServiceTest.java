@@ -168,7 +168,7 @@ class AdminCategoryAppServiceTest {
 
             var result = categoryService.createCategory("手机", "1", null, 0);
 
-            assertThat(result.categoryId()).isEqualTo("9");
+            assertThat(result.id()).isEqualTo("9");
             assertThat(result.level()).isEqualTo(2);
         }
 

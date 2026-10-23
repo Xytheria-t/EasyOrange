@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.order.application.query;
 
+import static com.cartethyia.easyorange.order.domain.enums.OrderPaymentStatus.UNPAID;
 import static com.cartethyia.easyorange.order.domain.enums.OrderStatus.PENDING_PAYMENT;
-import static com.cartethyia.easyorange.order.domain.enums.PaymentStatus.UNPAID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -162,7 +162,7 @@ class OrderQueryHandlerTest {
             when(orderCachePort.getOrderList(any())).thenReturn(Optional.of(cached));
 
             PageResult<OrderVO> result =
-                    handler.getMyOrders(BUYER_ID, new OrderListQuery(null, null, null, null, 1, 10));
+                    handler.getMyOrders(BUYER_ID, new OrderQueryCondition(null, null, null, null, 1, 10));
 
             assertThat(result).isSameAs(cached);
             verify(orderReadRepository, never()).findPage(any());
@@ -174,7 +174,7 @@ class OrderQueryHandlerTest {
             PageResult<OrderReadModel> pageResult = PageResult.of(List.of(testOrderReadModel), 1L, 1, 10);
             when(orderReadRepository.findPage(any(OrderQueryCondition.class))).thenReturn(pageResult);
 
-            handler.getMyOrders(BUYER_ID, new OrderListQuery(null, null, null, null, 1, 10));
+            handler.getMyOrders(BUYER_ID, new OrderQueryCondition(null, null, null, null, 1, 10));
 
             verify(orderReadRepository).findPage(any(OrderQueryCondition.class));
             verify(orderCachePort).putOrderList("eo:order:list:key", PageResult.of(List.of(mockOrderVO), 1L, 1, 10));
@@ -186,7 +186,7 @@ class OrderQueryHandlerTest {
             when(orderReadRepository.findPage(any(OrderQueryCondition.class)))
                     .thenReturn(PageResult.of(List.of(testOrderReadModel), 1L, 2, 10));
 
-            handler.getMyOrders(BUYER_ID, new OrderListQuery(null, null, null, null, 2, 10));
+            handler.getMyOrders(BUYER_ID, new OrderQueryCondition(null, null, null, null, 2, 10));
 
             verify(orderCachePort).buildOrderListKey(eq(BUYER_ID), any(), eq(2), eq(10));
         }
@@ -197,7 +197,7 @@ class OrderQueryHandlerTest {
             when(orderReadRepository.findPage(any(OrderQueryCondition.class)))
                     .thenReturn(PageResult.of(List.of(testOrderReadModel), 1L, 1, 10));
 
-            handler.getSoldOrders(SELLER_ID, new OrderListQuery("ORD001", null, null, null, 1, 10));
+            handler.getSoldOrders(SELLER_ID, new OrderQueryCondition("ORD001", null, null, null, 1, 10));
 
             verify(orderCachePort, never()).getOrderList(any());
             verify(orderCachePort, never()).putOrderList(any(), any());

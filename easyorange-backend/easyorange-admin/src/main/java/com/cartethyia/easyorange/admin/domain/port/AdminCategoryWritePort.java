@@ -26,7 +26,7 @@ public interface AdminCategoryWritePort {
     /**
      * 写操作结果 — 只回传展示所需字段，不把整个分类聚合漏过模块边界。
      *
-     * @param categoryId 分类 id
+     * @param id 分类 id
      * @param name 分类名
      * @param parentId 父分类 id，一级为 null
      * @param level 层级
@@ -36,7 +36,7 @@ public interface AdminCategoryWritePort {
      * @param createTime 创建时间
      */
     record CategoryWriteResult(
-            String categoryId,
+            String id,
             String name,
             String parentId,
             Integer level,

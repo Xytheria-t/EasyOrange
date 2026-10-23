@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.admin.domain.port;
 
-import com.cartethyia.easyorange.admin.domain.model.RecentActivity;
+import com.cartethyia.easyorange.admin.domain.model.RecentActivityRow;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -58,7 +58,7 @@ public interface AdminUserPort {
     /**
      * 最近注册用户（按创建时间倒序取 limit 条）
      */
-    List<RecentActivity> findRecentRegistrations(int limit);
+    List<RecentActivityRow> findRecentRegistrations(int limit);
 
     record UserInfo(String id, String username, String nickName, String avatar, String phone) {}
 

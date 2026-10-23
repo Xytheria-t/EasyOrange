@@ -5,9 +5,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.when;
 
-import com.cartethyia.easyorange.admin.domain.model.ActivityItem;
+import com.cartethyia.easyorange.admin.domain.model.DashboardActivity;
 import com.cartethyia.easyorange.admin.domain.model.DashboardStats;
-import com.cartethyia.easyorange.admin.domain.model.RecentActivity;
+import com.cartethyia.easyorange.admin.domain.model.RecentActivityRow;
 import com.cartethyia.easyorange.admin.domain.model.TrendPoint;
 import com.cartethyia.easyorange.admin.domain.port.AdminDashboardPort;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort;
@@ -98,51 +98,51 @@ class AdminDashboardAppServiceTest {
     }
 
     @Nested
-    @DisplayName("getRecentActivity")
-    class GetRecentActivityTests {
+    @DisplayName("getActivityFeed")
+    class GetActivityFeedTests {
 
         @Test
         @DisplayName("获取最近动态（无数据时返回空列表）")
-        void getRecentActivity_noData_returnsEmptyList() {
+        void getActivityFeed_noData_returnsEmptyList() {
             when(adminUserPort.findRecentRegistrations(anyInt())).thenReturn(List.of());
             when(adminProductPort.findRecentPublished(anyInt())).thenReturn(List.of());
             when(adminOrderPort.findRecentCreated(anyInt())).thenReturn(List.of());
 
-            List<ActivityItem> activities = dashboardService.getRecentActivity();
+            List<DashboardActivity> activities = dashboardService.getActivityFeed();
 
             assertThat(activities).isEmpty();
         }
 
         @Test
         @DisplayName("三路动态合并后按时间倒序，上限 10 条")
-        void getRecentActivity_mergesAndSorts() {
+        void getActivityFeed_mergesAndSorts() {
             var now = LocalDateTime.now();
             when(adminUserPort.findRecentRegistrations(anyInt()))
-                    .thenReturn(List.of(new RecentActivity("u-1", "张三", now.minusMinutes(30))));
+                    .thenReturn(List.of(new RecentActivityRow("u-1", "张三", now.minusMinutes(30))));
             when(adminProductPort.findRecentPublished(anyInt()))
-                    .thenReturn(List.of(new RecentActivity("p-1", "高等数学教材", now.minusMinutes(1))));
+                    .thenReturn(List.of(new RecentActivityRow("p-1", "高等数学教材", now.minusMinutes(1))));
             when(adminOrderPort.findRecentCreated(anyInt()))
-                    .thenReturn(List.of(new RecentActivity("o-1", "NO20260929001", now.minusMinutes(10))));
+                    .thenReturn(List.of(new RecentActivityRow("o-1", "NO20260929001", now.minusMinutes(10))));
 
-            List<ActivityItem> activities = dashboardService.getRecentActivity();
+            List<DashboardActivity> activities = dashboardService.getActivityFeed();
 
             assertThat(activities).hasSize(3);
             // 时间倒序：商品(1 分钟前) → 订单(10 分钟前) → 用户(30 分钟前)
             assertThat(activities.get(0).text()).contains("高等数学教材");
             assertThat(activities.get(1).text()).contains("NO20260929001");
             assertThat(activities.get(2).text()).contains("张三");
-            assertThat(activities).extracting(ActivityItem::type).doesNotHaveDuplicates();
+            assertThat(activities).extracting(DashboardActivity::type).doesNotHaveDuplicates();
         }
 
         @Test
         @DisplayName("昵称为空时回落到用户 id，不出现 null 文案")
-        void getRecentActivity_blankNickname_fallsBackToId() {
+        void getActivityFeed_blankNickname_fallsBackToId() {
             when(adminUserPort.findRecentRegistrations(anyInt()))
-                    .thenReturn(List.of(new RecentActivity("u-1", null, LocalDateTime.now())));
+                    .thenReturn(List.of(new RecentActivityRow("u-1", null, LocalDateTime.now())));
             when(adminProductPort.findRecentPublished(anyInt())).thenReturn(List.of());
             when(adminOrderPort.findRecentCreated(anyInt())).thenReturn(List.of());
 
-            List<ActivityItem> activities = dashboardService.getRecentActivity();
+            List<DashboardActivity> activities = dashboardService.getActivityFeed();
 
             assertThat(activities).hasSize(1);
             assertThat(activities.get(0).text()).contains("u-1").doesNotContain("null");

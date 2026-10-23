@@ -15,10 +15,10 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.assembler.AdminOrderA
 import com.cartethyia.easyorange.admin.application.service.AdminOrderAppService;
 import com.cartethyia.easyorange.admin.domain.model.OrderDetailView;
 import com.cartethyia.easyorange.admin.domain.model.OrderListView;
+import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.AdminOrderQuery;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderDetail;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderItemDetail;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderItemInfo;
-import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderQueryCondition;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderQueryResult;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderStats;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderSummary;
@@ -76,7 +76,7 @@ class AdminOrderControllerTest {
 
     @Test
     void listOrders_shouldReturnPaginatedOrders() throws Exception {
-        when(adminOrderService.listOrders(any(OrderQueryCondition.class))).thenReturn(listView());
+        when(adminOrderService.listOrders(any(AdminOrderQuery.class))).thenReturn(listView());
 
         mockMvc.perform(get("/api/admin/orders"))
                 .andExpect(status().isOk())
@@ -91,13 +91,13 @@ class AdminOrderControllerTest {
 
     @Test
     void listOrders_shouldMapDateRangeToWholeDays() throws Exception {
-        when(adminOrderService.listOrders(any(OrderQueryCondition.class))).thenReturn(listView());
+        when(adminOrderService.listOrders(any(AdminOrderQuery.class))).thenReturn(listView());
 
         mockMvc.perform(get("/api/admin/orders?startTime=2026-05-01&endTime=2026-05-02"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("A0000"));
 
-        var captor = ArgumentCaptor.forClass(OrderQueryCondition.class);
+        var captor = ArgumentCaptor.forClass(AdminOrderQuery.class);
         verify(adminOrderService).listOrders(captor.capture());
         assertThat(captor.getValue().startTime()).isEqualTo(LocalDateTime.of(2026, 5, 1, 0, 0));
         assertThat(captor.getValue().endTime()).isEqualTo(LocalDateTime.of(2026, 5, 2, 23, 59, 59));

@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.adapter.outbound.admin;
 
-import com.cartethyia.easyorange.admin.domain.model.RecentActivity;
+import com.cartethyia.easyorange.admin.domain.model.RecentActivityRow;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserPort;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserAuth;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserDetail;
@@ -102,9 +102,9 @@ public class AdminUserAdapter implements AdminUserPort {
     }
 
     @Override
-    public List<RecentActivity> findRecentRegistrations(int limit) {
+    public List<RecentActivityRow> findRecentRegistrations(int limit) {
         return adminUserManagementPort.findRecentRegistrations(limit).stream()
-                .map(u -> new RecentActivity(u.id(), u.nickName(), u.createTime()))
+                .map(u -> new RecentActivityRow(u.id(), u.nickName(), u.createTime()))
                 .toList();
     }
 

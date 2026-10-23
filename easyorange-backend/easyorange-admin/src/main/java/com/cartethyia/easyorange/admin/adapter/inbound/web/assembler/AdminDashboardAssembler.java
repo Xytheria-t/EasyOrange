@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.admin.adapter.inbound.web.assembler;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ActivityResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.DashboardStatsResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.TrendResponse;
-import com.cartethyia.easyorange.admin.domain.model.ActivityItem;
+import com.cartethyia.easyorange.admin.domain.model.DashboardActivity;
 import com.cartethyia.easyorange.admin.domain.model.DashboardStats;
 import com.cartethyia.easyorange.admin.domain.model.TrendPoint;
 import java.time.format.DateTimeFormatter;
@@ -43,7 +43,7 @@ public class AdminDashboardAssembler {
                 .toList();
     }
 
-    public List<ActivityResponse> toActivityResponses(List<ActivityItem> items) {
+    public List<ActivityResponse> toActivityResponses(List<DashboardActivity> items) {
         return items.stream()
                 .map(i -> ActivityResponse.builder()
                         .time(i.createdAt().format(DATETIME_FORMAT))

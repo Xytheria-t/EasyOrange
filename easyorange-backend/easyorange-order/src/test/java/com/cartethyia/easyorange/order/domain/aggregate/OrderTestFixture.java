@@ -3,8 +3,8 @@ package com.cartethyia.easyorange.order.domain.aggregate;
 import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.common.domain.ProductId;
 import com.cartethyia.easyorange.common.domain.Version;
+import com.cartethyia.easyorange.order.domain.enums.OrderPaymentStatus;
 import com.cartethyia.easyorange.order.domain.enums.OrderStatus;
-import com.cartethyia.easyorange.order.domain.enums.PaymentStatus;
 import com.cartethyia.easyorange.order.domain.valueobject.Address;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderItem;
@@ -106,7 +106,7 @@ public final class OrderTestFixture {
         private List<OrderItem> items = singleItemList();
         private Money totalAmount = Money.of(AMOUNT);
         private OrderStatus status = OrderStatus.PENDING_PAYMENT;
-        private PaymentStatus paymentStatus = PaymentStatus.UNPAID;
+        private OrderPaymentStatus paymentStatus = OrderPaymentStatus.UNPAID;
         private Address address = Address.of("地址");
         private Phone phone = Phone.of("13800138000");
         private String remark = "备注";
@@ -136,7 +136,7 @@ public final class OrderTestFixture {
             return this;
         }
 
-        public OrderReconstructSpecBuilder paymentStatus(PaymentStatus paymentStatus) {
+        public OrderReconstructSpecBuilder paymentStatus(OrderPaymentStatus paymentStatus) {
             this.paymentStatus = paymentStatus;
             return this;
         }
@@ -180,42 +180,42 @@ public final class OrderTestFixture {
     public static Order paidOrder() {
         return Order.from(aReconstructSpec()
                 .status(OrderStatus.PAID)
-                .paymentStatus(PaymentStatus.PAID)
+                .paymentStatus(OrderPaymentStatus.PAID)
                 .build());
     }
 
     public static Order shippedOrder() {
         return Order.from(aReconstructSpec()
                 .status(OrderStatus.SHIPPED)
-                .paymentStatus(PaymentStatus.PAID)
+                .paymentStatus(OrderPaymentStatus.PAID)
                 .build());
     }
 
     public static Order completedOrder() {
         return Order.from(aReconstructSpec()
                 .status(OrderStatus.COMPLETED)
-                .paymentStatus(PaymentStatus.PAID)
+                .paymentStatus(OrderPaymentStatus.PAID)
                 .build());
     }
 
     public static Order cancelledOrder() {
         return Order.from(aReconstructSpec()
                 .status(OrderStatus.CANCELLED)
-                .paymentStatus(PaymentStatus.UNPAID)
+                .paymentStatus(OrderPaymentStatus.UNPAID)
                 .build());
     }
 
     public static Order refundedOrder() {
         return Order.from(aReconstructSpec()
                 .status(OrderStatus.REFUNDED)
-                .paymentStatus(PaymentStatus.REFUNDED)
+                .paymentStatus(OrderPaymentStatus.REFUNDED)
                 .build());
     }
 
     /**
      * 通过 ID 构建指定状态订单 — 用于 job/saga 测试。
      */
-    public static Order orderWithStatus(String orderId, OrderStatus status, PaymentStatus paymentStatus) {
+    public static Order orderWithStatus(String orderId, OrderStatus status, OrderPaymentStatus paymentStatus) {
         return Order.from(aReconstructSpec()
                 .id(orderId)
                 .orderNo("ORD" + orderId)

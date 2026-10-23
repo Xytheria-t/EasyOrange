@@ -10,7 +10,7 @@ import com.cartethyia.easyorange.message.domain.enums.ReadStatus;
  * <p>
  * 边界：分页兜底是领域边界的第二层防线（第一层在 {@code PageRequest} 的字段默认值/setter）：
  * 领域对象不假设调用方一定规范化过参数，null 或不合法值一律兜到默认区间，
- * 否则下游拆箱直接 NPE（约定同 {@code OrderListQuery} / {@code PaymentListQuery} /
+ * 否则下游拆箱直接 NPE（约定同 {@code OrderQueryCondition} / {@code PaymentListQuery} /
  * {@code ProductSearchCriteria}）。
  */
 public record MessageQuery(Integer pageNum, Integer pageSize, Integer type, ReadStatus isRead) {

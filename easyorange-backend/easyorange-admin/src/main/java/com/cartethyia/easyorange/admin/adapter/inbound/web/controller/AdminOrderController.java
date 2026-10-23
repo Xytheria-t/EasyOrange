@@ -8,7 +8,7 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminOrd
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.OrderStatsResponse;
 import com.cartethyia.easyorange.admin.application.service.AdminOrderAppService;
 import com.cartethyia.easyorange.admin.domain.model.DayRange;
-import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderQueryCondition;
+import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.AdminOrderQuery;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.result.Result;
 import io.swagger.v3.oas.annotations.Operation;
@@ -69,9 +69,9 @@ public class AdminOrderController {
         return Result.success();
     }
 
-    private static OrderQueryCondition toCondition(AdminOrderQueryRequest request) {
+    private static AdminOrderQuery toCondition(AdminOrderQueryRequest request) {
         DayRange range = DayRange.of(request.startTime(), request.endTime());
-        return new OrderQueryCondition(
+        return new AdminOrderQuery(
                 request.orderNo(),
                 request.buyerId(),
                 request.sellerId(),

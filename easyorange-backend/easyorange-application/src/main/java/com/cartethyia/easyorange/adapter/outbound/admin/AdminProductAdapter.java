@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.adapter.outbound.admin;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
-import com.cartethyia.easyorange.admin.domain.model.RecentActivity;
+import com.cartethyia.easyorange.admin.domain.model.RecentActivityRow;
 import com.cartethyia.easyorange.admin.domain.port.AdminProductPort;
 import com.cartethyia.easyorange.common.domain.ProductId;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
@@ -132,7 +132,7 @@ public class AdminProductAdapter implements AdminProductPort {
     }
 
     @Override
-    public Map<String, PartyProfile> getPartyProfiles(List<String> productIds) {
+    public Map<String, ProductDisplayProfile> getDisplayProfiles(List<String> productIds) {
         if (productIds == null || productIds.isEmpty()) {
             return Map.of();
         }
@@ -160,7 +160,7 @@ public class AdminProductAdapter implements AdminProductPort {
         return products.stream().collect(Collectors.toMap(ProductDO::getId, product -> {
             UserDO seller = sellers.get(product.getUserId());
             CategoryDO category = categories.get(product.getCategoryId());
-            return new PartyProfile(
+            return new ProductDisplayProfile(
                     seller != null ? seller.getNickName() : null,
                     seller != null ? seller.getAvatar() : null,
                     category != null ? category.getName() : null);
@@ -200,7 +200,7 @@ public class AdminProductAdapter implements AdminProductPort {
 
     @Override
     @Transactional(readOnly = true)
-    public List<RecentActivity> findRecentPublished(int limit) {
+    public List<RecentActivityRow> findRecentPublished(int limit) {
         return ChainWrappers.lambdaQueryChain(productMapper)
                 .select(ProductDO::getId, ProductDO::getName, ProductDO::getCreateTime)
                 .eq(ProductDO::getDelFlag, 0)
@@ -208,7 +208,7 @@ public class AdminProductAdapter implements AdminProductPort {
                 .last("LIMIT " + limit)
                 .list()
                 .stream()
-                .map(p -> new RecentActivity(p.getId(), p.getName(), p.getCreateTime()))
+                .map(p -> new RecentActivityRow(p.getId(), p.getName(), p.getCreateTime()))
                 .toList();
     }
 

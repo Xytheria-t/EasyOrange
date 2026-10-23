@@ -8,7 +8,7 @@ import lombok.Getter;
 
 /**
  * 渠道 / 资金侧支付状态机 — 保留支付中、部分退款等渠道细节。与 order 模块的
- * {@code com.cartethyia.easyorange.order.domain.enums.PaymentStatus} 是两套独立状态机：
+ * {@code com.cartethyia.easyorange.order.domain.enums.OrderPaymentStatus} 是两套独立状态机：
  * 订单侧只投影 UNPAID / PAID / REFUNDED（本枚举的 SUCCESS 在订单侧叫 PAID），不共享类型。
  */
 @Getter

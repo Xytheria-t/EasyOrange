@@ -6,8 +6,8 @@ import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.order.application.dto.OrderVO;
 import com.cartethyia.easyorange.order.application.query.readmodel.OrderItemReadModel;
 import com.cartethyia.easyorange.order.application.query.readmodel.OrderReadModel;
+import com.cartethyia.easyorange.order.domain.enums.OrderPaymentStatus;
 import com.cartethyia.easyorange.order.domain.enums.OrderStatus;
-import com.cartethyia.easyorange.order.domain.enums.PaymentStatus;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderItemSnapshot;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -30,7 +30,7 @@ class OrderReadModelAssemblerTest {
     private static final BigDecimal AMOUNT = new BigDecimal("99.99");
     private static final String STATUS = OrderStatus.PENDING_PAYMENT.getCode();
     private static final String STATUS_DESC = "待付款";
-    private static final String PAYMENT_STATUS = PaymentStatus.UNPAID.getCode();
+    private static final String PAYMENT_STATUS = OrderPaymentStatus.UNPAID.getCode();
     private static final String ADDRESS = "北京市朝阳区建国路88号";
     private static final String PHONE = "13800138000";
     private static final String REMARK = "尽快发货";
@@ -157,7 +157,7 @@ class OrderReadModelAssemblerTest {
                     AMOUNT,
                     OrderStatus.PENDING_PAYMENT.getCode(),
                     STATUS_DESC,
-                    PaymentStatus.UNPAID.getCode(),
+                    OrderPaymentStatus.UNPAID.getCode(),
                     null,
                     null,
                     null,
@@ -223,7 +223,7 @@ class OrderReadModelAssemblerTest {
                     new BigDecimal("49.99"),
                     OrderStatus.PAID.getCode(),
                     "已付款",
-                    PaymentStatus.PAID.getCode(),
+                    OrderPaymentStatus.PAID.getCode(),
                     "上海市浦东新区",
                     "13900139000",
                     "备注2",

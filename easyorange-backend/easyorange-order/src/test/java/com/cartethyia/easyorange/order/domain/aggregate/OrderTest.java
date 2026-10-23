@@ -7,8 +7,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.cartethyia.easyorange.common.domain.Version;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.order.domain.constant.OrderResultCode;
+import com.cartethyia.easyorange.order.domain.enums.OrderPaymentStatus;
 import com.cartethyia.easyorange.order.domain.enums.OrderStatus;
-import com.cartethyia.easyorange.order.domain.enums.PaymentStatus;
 import com.cartethyia.easyorange.order.domain.event.OrderItemRef;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -119,7 +119,7 @@ class OrderTest {
             var result = aggregate.pay(NOW);
 
             assertThat(result.event().orderId()).isEqualTo(aggregate.id().value());
-            assertThat(result.aggregate().paymentStatus()).isEqualTo(PaymentStatus.PAID);
+            assertThat(result.aggregate().paymentStatus()).isEqualTo(OrderPaymentStatus.PAID);
             assertThat(result.aggregate().status()).isEqualTo(OrderStatus.PAID);
         }
 
@@ -226,7 +226,7 @@ class OrderTest {
             assertThat(result.event().items()).containsExactly(new OrderItemRef(PRODUCT_ID, 1));
             assertThat(result.event().reason()).isEqualTo("商品有问题");
             assertThat(result.aggregate().status()).isEqualTo(OrderStatus.REFUNDED);
-            assertThat(result.aggregate().paymentStatus()).isEqualTo(PaymentStatus.REFUNDED);
+            assertThat(result.aggregate().paymentStatus()).isEqualTo(OrderPaymentStatus.REFUNDED);
         }
 
         @Test

@@ -12,8 +12,8 @@ import com.cartethyia.easyorange.order.application.service.OrderCacheEvictor;
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.constant.OrderConstant;
 import com.cartethyia.easyorange.order.domain.constant.OrderResultCode;
+import com.cartethyia.easyorange.order.domain.enums.OrderPaymentStatus;
 import com.cartethyia.easyorange.order.domain.enums.OrderStatus;
-import com.cartethyia.easyorange.order.domain.enums.PaymentStatus;
 import com.cartethyia.easyorange.order.domain.event.OrderCancelledEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderCompletedEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderPaidEvent;
@@ -172,7 +172,7 @@ class OrderCommandHandlerTest {
                     .id(ORDER_ID)
                     .orderNo("ORD" + ORDER_ID)
                     .status(OrderStatus.CANCELLED)
-                    .paymentStatus(PaymentStatus.UNPAID)
+                    .paymentStatus(OrderPaymentStatus.UNPAID)
                     .build());
             when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(aggregate));
 
@@ -190,7 +190,7 @@ class OrderCommandHandlerTest {
                     .id(ORDER_ID)
                     .orderNo("ORD" + ORDER_ID)
                     .status(OrderStatus.REFUNDED)
-                    .paymentStatus(PaymentStatus.REFUNDED)
+                    .paymentStatus(OrderPaymentStatus.REFUNDED)
                     .build());
             when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(aggregate));
 
@@ -325,7 +325,7 @@ class OrderCommandHandlerTest {
                 .id(ORDER_ID)
                 .orderNo("ORD" + ORDER_ID)
                 .status(OrderStatus.PENDING_PAYMENT)
-                .paymentStatus(PaymentStatus.UNPAID)
+                .paymentStatus(OrderPaymentStatus.UNPAID)
                 .build());
     }
 
@@ -334,7 +334,7 @@ class OrderCommandHandlerTest {
                 .id(ORDER_ID)
                 .orderNo("ORD" + ORDER_ID)
                 .status(OrderStatus.PAID)
-                .paymentStatus(PaymentStatus.PAID)
+                .paymentStatus(OrderPaymentStatus.PAID)
                 .build());
     }
 
@@ -343,7 +343,7 @@ class OrderCommandHandlerTest {
                 .id(ORDER_ID)
                 .orderNo("ORD" + ORDER_ID)
                 .status(OrderStatus.SHIPPED)
-                .paymentStatus(PaymentStatus.PAID)
+                .paymentStatus(OrderPaymentStatus.PAID)
                 .build());
     }
 
@@ -352,7 +352,7 @@ class OrderCommandHandlerTest {
                 .id(ORDER_ID)
                 .orderNo("ORD" + ORDER_ID)
                 .status(OrderStatus.PAID)
-                .paymentStatus(PaymentStatus.UNPAID)
+                .paymentStatus(OrderPaymentStatus.UNPAID)
                 .build());
     }
 }

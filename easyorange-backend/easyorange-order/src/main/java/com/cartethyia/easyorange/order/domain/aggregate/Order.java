@@ -7,8 +7,8 @@ import com.cartethyia.easyorange.common.idgen.UuidV7;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.order.domain.enums.ClosureKind;
 import com.cartethyia.easyorange.order.domain.enums.OrderAction;
+import com.cartethyia.easyorange.order.domain.enums.OrderPaymentStatus;
 import com.cartethyia.easyorange.order.domain.enums.OrderStatus;
-import com.cartethyia.easyorange.order.domain.enums.PaymentStatus;
 import com.cartethyia.easyorange.order.domain.event.OrderCancelledEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderCompletedEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderCreatedEvent;
@@ -60,7 +60,7 @@ public class Order {
     private final List<OrderItem> items;
     private final Money totalAmount;
     private final OrderStatus status;
-    private final PaymentStatus paymentStatus;
+    private final OrderPaymentStatus paymentStatus;
     private final Address address;
     private final Phone phone;
     private final String remark;
@@ -78,7 +78,7 @@ public class Order {
             List<OrderItem> items,
             Money totalAmount,
             OrderStatus status,
-            PaymentStatus paymentStatus,
+            OrderPaymentStatus paymentStatus,
             Address address,
             Phone phone,
             String remark,
@@ -127,7 +127,7 @@ public class Order {
                 spec.items(),
                 totalAmount,
                 OrderStatus.PENDING_PAYMENT,
-                PaymentStatus.UNPAID,
+                OrderPaymentStatus.UNPAID,
                 spec.address(),
                 spec.phone(),
                 spec.remark(),

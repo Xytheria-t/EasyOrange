@@ -9,8 +9,8 @@ import com.cartethyia.easyorange.order.application.query.readmodel.OrderItemRead
 import com.cartethyia.easyorange.order.application.query.readmodel.OrderReadModel;
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.aggregate.OrderReconstructSpec;
+import com.cartethyia.easyorange.order.domain.enums.OrderPaymentStatus;
 import com.cartethyia.easyorange.order.domain.enums.OrderStatus;
-import com.cartethyia.easyorange.order.domain.enums.PaymentStatus;
 import com.cartethyia.easyorange.order.domain.valueobject.Address;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderItem;
@@ -38,7 +38,7 @@ class OrderDataMapperTest {
     private static final String PRODUCT_ID = "200";
     private static final BigDecimal AMOUNT = new BigDecimal("99.99");
     private static final OrderStatus STATUS = OrderStatus.PENDING_PAYMENT;
-    private static final PaymentStatus PAYMENT_STATUS = PaymentStatus.UNPAID;
+    private static final OrderPaymentStatus PAYMENT_STATUS = OrderPaymentStatus.UNPAID;
     private static final String ADDRESS = "北京市朝阳区建国路88号";
     private static final String PHONE = "13800138000";
     private static final String REMARK = "尽快发货";

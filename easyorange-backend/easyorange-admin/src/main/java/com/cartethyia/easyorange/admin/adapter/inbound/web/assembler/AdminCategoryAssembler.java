@@ -36,7 +36,7 @@ public class AdminCategoryAssembler {
     /** 写侧不回传父分类名：新建/更新刚提交，为一个展示字段再查一次端口不值。 */
     public CategoryResponse toResponse(CategoryWriteResult result) {
         return new CategoryResponse(
-                result.categoryId(),
+                result.id(),
                 result.name(),
                 result.parentId(),
                 null,

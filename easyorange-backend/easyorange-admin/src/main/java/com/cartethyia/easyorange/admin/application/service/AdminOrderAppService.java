@@ -4,10 +4,10 @@ import com.cartethyia.easyorange.admin.domain.exception.AdminDomainException;
 import com.cartethyia.easyorange.admin.domain.model.OrderDetailView;
 import com.cartethyia.easyorange.admin.domain.model.OrderListView;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.AdminOrderQuery;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderDetail;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderItemDetail;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderItemInfo;
-import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderQueryCondition;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderQueryResult;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderStats;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderSummary;
@@ -43,7 +43,7 @@ public class AdminOrderAppService {
     private final AdminUserPort adminUserPort;
 
     @Transactional(readOnly = true)
-    public OrderListView listOrders(OrderQueryCondition condition) {
+    public OrderListView listOrders(AdminOrderQuery condition) {
         OrderQueryResult page = adminOrderPort.queryOrders(condition);
         Map<String, List<OrderItemInfo>> items = loadOrderItems(page.records());
         return new OrderListView(page, loadUserInfos(page.records()), items, loadProductInfos(items));

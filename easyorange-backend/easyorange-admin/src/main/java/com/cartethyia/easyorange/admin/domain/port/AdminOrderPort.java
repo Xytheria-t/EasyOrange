@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.admin.domain.port;
 
-import com.cartethyia.easyorange.admin.domain.model.RecentActivity;
+import com.cartethyia.easyorange.admin.domain.model.RecentActivityRow;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -17,7 +17,7 @@ import java.util.Map;
  */
 public interface AdminOrderPort {
 
-    OrderQueryResult queryOrders(OrderQueryCondition condition);
+    OrderQueryResult queryOrders(AdminOrderQuery condition);
 
     Map<String, List<OrderItemInfo>> getOrderItems(List<String> orderIds);
 
@@ -35,7 +35,7 @@ public interface AdminOrderPort {
     /**
      * 最近创建的订单（按创建时间倒序取 limit 条）
      */
-    List<RecentActivity> findRecentCreated(int limit);
+    List<RecentActivityRow> findRecentCreated(int limit);
 
     /**
      * 取消订单（PENDING_PAYMENT 取消 / PAID 强制取消），不合法状态抛出 BusinessException
@@ -55,7 +55,7 @@ public interface AdminOrderPort {
     /**
      * 订单查询条件 — status/paymentStatus 为 String code（与 OrderStatus/PaymentStatus code 一致）。
      */
-    record OrderQueryCondition(
+    record AdminOrderQuery(
             String orderNo,
             String buyerId,
             String sellerId,

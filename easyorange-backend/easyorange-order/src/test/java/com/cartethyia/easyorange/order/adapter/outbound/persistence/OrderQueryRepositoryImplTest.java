@@ -9,8 +9,8 @@ import com.baomidou.mybatisplus.core.MybatisMapperBuilderAssistant;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cartethyia.easyorange.order.application.query.readmodel.OrderReadModel;
+import com.cartethyia.easyorange.order.domain.enums.OrderPaymentStatus;
 import com.cartethyia.easyorange.order.domain.enums.OrderStatus;
-import com.cartethyia.easyorange.order.domain.enums.PaymentStatus;
 import com.cartethyia.easyorange.order.domain.port.OrderQueryCondition;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import java.util.List;
@@ -100,7 +100,7 @@ class OrderQueryRepositoryImplTest {
                 .sellerId("2")
                 .totalAmount(new java.math.BigDecimal("99.99"))
                 .status(OrderStatus.PENDING_PAYMENT)
-                .paymentStatus(PaymentStatus.UNPAID)
+                .paymentStatus(OrderPaymentStatus.UNPAID)
                 .address("地址")
                 .phone("13800138000")
                 .remark("备注")

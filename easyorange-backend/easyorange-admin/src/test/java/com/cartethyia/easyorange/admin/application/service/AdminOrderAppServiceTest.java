@@ -11,10 +11,10 @@ import com.cartethyia.easyorange.admin.domain.exception.AdminDomainException;
 import com.cartethyia.easyorange.admin.domain.model.OrderDetailView;
 import com.cartethyia.easyorange.admin.domain.model.OrderListView;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.AdminOrderQuery;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderDetail;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderItemDetail;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderItemInfo;
-import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderQueryCondition;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderQueryResult;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderStats;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderSummary;
@@ -55,8 +55,8 @@ class AdminOrderAppServiceTest {
     private static final String SELLER_ID = "2";
     private static final String PRODUCT_ID = "200";
 
-    private static final OrderQueryCondition CONDITION =
-            new OrderQueryCondition(null, null, null, null, null, null, null, 1, 20);
+    private static final AdminOrderQuery CONDITION =
+            new AdminOrderQuery(null, null, null, null, null, null, null, 1, 20);
 
     private OrderSummary createOrderSummary(String status) {
         return new OrderSummary(

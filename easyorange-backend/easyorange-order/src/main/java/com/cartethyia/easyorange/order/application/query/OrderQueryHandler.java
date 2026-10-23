@@ -51,7 +51,7 @@ public class OrderQueryHandler {
      * 我的订单（认领方视角） — buyerId 自动填充为当前登录用户。
      */
     @Transactional(readOnly = true)
-    public PageResult<OrderVO> getMyOrders(String userId, OrderListQuery query) {
+    public PageResult<OrderVO> getMyOrders(String userId, OrderQueryCondition query) {
         return queryOrdersWithCache(userId, null, query);
     }
 
@@ -59,7 +59,7 @@ public class OrderQueryHandler {
      * 我售出的订单（资产方视角） — sellerId 自动填充为当前登录用户。
      */
     @Transactional(readOnly = true)
-    public PageResult<OrderVO> getSoldOrders(String userId, OrderListQuery query) {
+    public PageResult<OrderVO> getSoldOrders(String userId, OrderQueryCondition query) {
         return queryOrdersWithCache(null, userId, query);
     }
 
@@ -69,7 +69,7 @@ public class OrderQueryHandler {
      * 缓存 key 由当前用户 + 状态 + 分页构成，覆盖所有影响结果集的参数；
      * orderNo 为精确过滤、无法纳入 key，直接绕过缓存避免跨查询污染。
      */
-    private PageResult<OrderVO> queryOrdersWithCache(String buyerId, String sellerId, OrderListQuery query) {
+    private PageResult<OrderVO> queryOrdersWithCache(String buyerId, String sellerId, OrderQueryCondition query) {
         String userId = buyerId != null ? buyerId : sellerId;
 
         if (query.orderNo() != null && !query.orderNo().isBlank()) {
@@ -88,10 +88,8 @@ public class OrderQueryHandler {
         return result;
     }
 
-    private PageResult<OrderVO> queryPage(String buyerId, String sellerId, OrderListQuery query) {
-        OrderQueryCondition condition = new OrderQueryCondition(
-                query.orderNo(), query.status(), buyerId, sellerId, query.pageNum(), query.pageSize());
-        PageResult<OrderReadModel> orderPage = orderReadRepository.findPage(condition);
+    private PageResult<OrderVO> queryPage(String buyerId, String sellerId, OrderQueryCondition query) {
+        PageResult<OrderReadModel> orderPage = orderReadRepository.findPage(query.withParties(buyerId, sellerId));
         List<OrderVO> voList = assembleOrderVOs(orderPage.records());
         return PageResult.of(voList, orderPage.total(), orderPage.current(), orderPage.size());
     }

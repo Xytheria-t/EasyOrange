@@ -10,8 +10,8 @@ import com.cartethyia.easyorange.framework.lock.LockAcquisitionException;
 import com.cartethyia.easyorange.order.adapter.outbound.config.OrderAutoConfirmProperties;
 import com.cartethyia.easyorange.order.application.service.OrderCacheEvictor;
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
+import com.cartethyia.easyorange.order.domain.enums.OrderPaymentStatus;
 import com.cartethyia.easyorange.order.domain.enums.OrderStatus;
-import com.cartethyia.easyorange.order.domain.enums.PaymentStatus;
 import com.cartethyia.easyorange.order.domain.event.OrderCompletedEvent;
 import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
 import java.time.LocalDateTime;
@@ -62,8 +62,8 @@ class OrderAutoConfirmTaskTest {
     void setUp() {
         migrationExecutor = new OrderStateMigrationExecutor(lockPort, transactionTemplate);
         orderAutoConfirmTask = task(true);
-        shippedOrder1 = orderWithStatus(ORDER_ID_1, OrderStatus.SHIPPED, PaymentStatus.PAID);
-        shippedOrder2 = orderWithStatus(ORDER_ID_2, OrderStatus.SHIPPED, PaymentStatus.PAID);
+        shippedOrder1 = orderWithStatus(ORDER_ID_1, OrderStatus.SHIPPED, OrderPaymentStatus.PAID);
+        shippedOrder2 = orderWithStatus(ORDER_ID_2, OrderStatus.SHIPPED, OrderPaymentStatus.PAID);
         // 事务模板直接执行回调（事务行为由真实事务路径的集成测试覆盖）
         when(transactionTemplate.execute(any(TransactionCallback.class)))
                 .thenAnswer(inv -> ((TransactionCallback<?>) inv.getArgument(0)).doInTransaction(null));

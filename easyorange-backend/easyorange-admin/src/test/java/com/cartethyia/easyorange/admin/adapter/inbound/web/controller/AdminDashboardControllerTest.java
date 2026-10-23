@@ -11,7 +11,7 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.Activity
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.DashboardStatsResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.TrendResponse;
 import com.cartethyia.easyorange.admin.application.service.AdminDashboardAppService;
-import com.cartethyia.easyorange.admin.domain.model.ActivityItem;
+import com.cartethyia.easyorange.admin.domain.model.DashboardActivity;
 import com.cartethyia.easyorange.admin.domain.model.DashboardStats;
 import com.cartethyia.easyorange.admin.domain.model.TrendPoint;
 import java.math.BigDecimal;
@@ -89,8 +89,9 @@ class AdminDashboardControllerTest {
                 .text("新用户 test 完成注册")
                 .type("user")
                 .build());
-        when(adminDashboardService.getRecentActivity())
-                .thenReturn(List.of(new ActivityItem("user", "新用户 test 完成注册", LocalDateTime.of(2026, 5, 16, 10, 0))));
+        when(adminDashboardService.getActivityFeed())
+                .thenReturn(
+                        List.of(new DashboardActivity("user", "新用户 test 完成注册", LocalDateTime.of(2026, 5, 16, 10, 0))));
         when(assembler.toActivityResponses(any())).thenReturn(activities);
 
         mockMvc.perform(get("/api/admin/dashboard/activity"))

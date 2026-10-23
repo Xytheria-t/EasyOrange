@@ -38,6 +38,6 @@ public class AdminDashboardController {
     @GetMapping("/activity")
     @Operation(summary = "注册 / 上架 / 下单动态合并倒序，每类各取 5 条、合计上限 10 条")
     public Result<List<ActivityResponse>> getActivity() {
-        return Result.success(assembler.toActivityResponses(adminDashboardService.getRecentActivity()));
+        return Result.success(assembler.toActivityResponses(adminDashboardService.getActivityFeed()));
     }
 }

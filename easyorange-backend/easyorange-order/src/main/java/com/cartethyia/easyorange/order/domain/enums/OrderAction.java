@@ -25,7 +25,7 @@ public enum OrderAction {
             "支付",
             Set.of(OrderStatus.PENDING_PAYMENT),
             OrderStatus.PAID,
-            PaymentStatus.PAID,
+            OrderPaymentStatus.PAID,
             ClosureKind.NONE,
             OrderResultCode.ORDER_STATUS_ERROR,
             null),
@@ -65,20 +65,21 @@ public enum OrderAction {
             "退款",
             Set.of(OrderStatus.PAID, OrderStatus.SHIPPED),
             OrderStatus.REFUNDED,
-            PaymentStatus.REFUNDED,
+            OrderPaymentStatus.REFUNDED,
             ClosureKind.REFUND,
             OrderResultCode.ORDER_CANNOT_REFUND,
-            payment -> payment == PaymentStatus.PAID);
+            payment -> payment == OrderPaymentStatus.PAID);
 
     private final String actionName;
     private final Set<OrderStatus> sources;
     private final OrderStatus target;
-    private final PaymentStatus targetPaymentStatus;
+    private final OrderPaymentStatus targetPaymentStatus;
     private final ClosureKind closureKind;
     private final OrderResultCode resultCode;
-    private final Predicate<PaymentStatus> paymentGuard;
+    private final Predicate<OrderPaymentStatus> paymentGuard;
 
-    public boolean canApply(OrderStatus currentStatus, PaymentStatus currentPaymentStatus) {
-        return sources.contains(currentStatus) && (paymentGuard == null || paymentGuard.test(currentPaymentStatus));
+    public boolean canApply(OrderStatus currentStatus, OrderPaymentStatus currentOrderPaymentStatus) {
+        return sources.contains(currentStatus)
+                && (paymentGuard == null || paymentGuard.test(currentOrderPaymentStatus));
     }
 }

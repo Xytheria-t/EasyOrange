@@ -2,8 +2,8 @@ package com.cartethyia.easyorange.order.domain.aggregate;
 
 import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.common.domain.Version;
+import com.cartethyia.easyorange.order.domain.enums.OrderPaymentStatus;
 import com.cartethyia.easyorange.order.domain.enums.OrderStatus;
-import com.cartethyia.easyorange.order.domain.enums.PaymentStatus;
 import com.cartethyia.easyorange.order.domain.valueobject.Address;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderItem;
@@ -17,7 +17,7 @@ import java.util.List;
  * Order 聚合根重建参数对象 — 从持久层重建场景。
  * <p>
  * 收敛 from/fromRaw 的 14 个长参数为单一 record，统一两个重建入口。
- * 状态字段使用领域枚举类型（{@link OrderStatus}/{@link PaymentStatus}），
+ * 状态字段使用领域枚举类型（{@link OrderStatus}/{@link OrderPaymentStatus}），
  * 由 {@code @EnumValue} 注解完成与 DB VARCHAR 列的互转，消除 String.valueOf/Integer.valueOf 转换代码。
  *
  * @param id             订单 ID
@@ -45,7 +45,7 @@ public record OrderReconstructSpec(
         List<OrderItem> items,
         Money totalAmount,
         OrderStatus status,
-        PaymentStatus paymentStatus,
+        OrderPaymentStatus paymentStatus,
         Address address,
         Phone phone,
         String remark,

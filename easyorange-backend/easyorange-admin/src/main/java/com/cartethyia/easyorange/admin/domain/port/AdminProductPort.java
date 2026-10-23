@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.admin.domain.port;
 
-import com.cartethyia.easyorange.admin.domain.model.RecentActivity;
+import com.cartethyia.easyorange.admin.domain.model.RecentActivityRow;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -27,13 +27,13 @@ public interface AdminProductPort {
      * 批量取卖家与分类档案 — 审核列表要显示资产方、详情要显示分类名，两者都不在商品记录里。
      * 与 {@link #getProductImages} 同一手法：按当页 id 摊成一次查询，避免逐条 N+1。
      */
-    Map<String, PartyProfile> getPartyProfiles(List<String> productIds);
+    Map<String, ProductDisplayProfile> getDisplayProfiles(List<String> productIds);
 
-    /** 卖家昵称 / 卖家头像 / 分类名；查不到的一方为 null（用户注销 / 分类被删），前端各留兜底 */
-    record PartyProfile(String sellerName, String sellerAvatar, String categoryName) {
+    /** 按 productId 取的卖家 + 分类展示档案（卖家昵称 / 头像 / 分类名）；查不到的一方为 null（用户注销 / 分类被删），前端各留兜底 */
+    record ProductDisplayProfile(String sellerName, String sellerAvatar, String categoryName) {
 
-        public static PartyProfile empty() {
-            return new PartyProfile(null, null, null);
+        public static ProductDisplayProfile empty() {
+            return new ProductDisplayProfile(null, null, null);
         }
     }
 
@@ -50,7 +50,7 @@ public interface AdminProductPort {
     /**
      * 最近发布的商品（按创建时间倒序取 limit 条）
      */
-    List<RecentActivity> findRecentPublished(int limit);
+    List<RecentActivityRow> findRecentPublished(int limit);
 
     record ProductQueryCondition(
             String keyword,

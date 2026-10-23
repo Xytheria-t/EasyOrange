@@ -10,8 +10,8 @@ import com.cartethyia.easyorange.framework.lock.LockAcquisitionException;
 import com.cartethyia.easyorange.order.adapter.outbound.config.OrderTimeoutProperties;
 import com.cartethyia.easyorange.order.application.service.OrderCacheEvictor;
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
+import com.cartethyia.easyorange.order.domain.enums.OrderPaymentStatus;
 import com.cartethyia.easyorange.order.domain.enums.OrderStatus;
-import com.cartethyia.easyorange.order.domain.enums.PaymentStatus;
 import com.cartethyia.easyorange.order.domain.event.OrderCancelledEvent;
 import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
 import java.util.List;
@@ -61,8 +61,8 @@ class OrderTimeoutTaskTest {
     void setUp() {
         migrationExecutor = new OrderStateMigrationExecutor(lockPort, transactionTemplate);
         orderTimeoutTask = task(true);
-        expiredOrder1 = orderWithStatus(ORDER_ID_1, OrderStatus.PENDING_PAYMENT, PaymentStatus.UNPAID);
-        expiredOrder2 = orderWithStatus(ORDER_ID_2, OrderStatus.PENDING_PAYMENT, PaymentStatus.UNPAID);
+        expiredOrder1 = orderWithStatus(ORDER_ID_1, OrderStatus.PENDING_PAYMENT, OrderPaymentStatus.UNPAID);
+        expiredOrder2 = orderWithStatus(ORDER_ID_2, OrderStatus.PENDING_PAYMENT, OrderPaymentStatus.UNPAID);
         // 默认锁端口正常：直接执行锁内操作（获取锁成功），返回其 boolean 结果
         when(lockPort.executeWithLocks(anyList(), anyLong(), any()))
                 .thenAnswer(inv -> ((DistributedLockPort.LockOperation<?>) inv.getArgument(2)).execute());

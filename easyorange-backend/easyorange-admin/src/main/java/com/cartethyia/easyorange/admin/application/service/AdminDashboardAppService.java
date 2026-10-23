@@ -1,8 +1,8 @@
 package com.cartethyia.easyorange.admin.application.service;
 
-import com.cartethyia.easyorange.admin.domain.model.ActivityItem;
+import com.cartethyia.easyorange.admin.domain.model.DashboardActivity;
 import com.cartethyia.easyorange.admin.domain.model.DashboardStats;
-import com.cartethyia.easyorange.admin.domain.model.RecentActivity;
+import com.cartethyia.easyorange.admin.domain.model.RecentActivityRow;
 import com.cartethyia.easyorange.admin.domain.model.TrendPoint;
 import com.cartethyia.easyorange.admin.domain.port.AdminDashboardPort;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort;
@@ -87,34 +87,34 @@ public class AdminDashboardAppService {
     }
 
     @Transactional(readOnly = true)
-    public List<ActivityItem> getRecentActivity() {
+    public List<DashboardActivity> getActivityFeed() {
         return Stream.concat(Stream.concat(userActivities(), productActivities()), orderActivities())
-                .sorted(Comparator.comparing(ActivityItem::createdAt).reversed())
+                .sorted(Comparator.comparing(DashboardActivity::createdAt).reversed())
                 .limit(RECENT_LIMIT)
                 .toList();
     }
 
-    private Stream<ActivityItem> userActivities() {
+    private Stream<DashboardActivity> userActivities() {
         return adminUserPort.findRecentRegistrations(RECENT_PER_SOURCE).stream()
                 .map(a -> activity(a, "user", "新用户 " + nicknameOf(a) + " 完成注册"));
     }
 
-    private Stream<ActivityItem> productActivities() {
+    private Stream<DashboardActivity> productActivities() {
         return adminProductPort.findRecentPublished(RECENT_PER_SOURCE).stream()
                 .map(a -> activity(a, "product", "商品「" + a.display() + "」发布上架"));
     }
 
-    private Stream<ActivityItem> orderActivities() {
+    private Stream<DashboardActivity> orderActivities() {
         return adminOrderPort.findRecentCreated(RECENT_PER_SOURCE).stream()
                 .map(a -> activity(a, "order", "订单 " + a.display() + " 创建成功"));
     }
 
-    private static ActivityItem activity(RecentActivity activity, String type, String text) {
-        return new ActivityItem(type, text, activity.createdAt());
+    private static DashboardActivity activity(RecentActivityRow activity, String type, String text) {
+        return new DashboardActivity(type, text, activity.createdAt());
     }
 
     /** 昵称可空，展示层不允许出现「null」。 */
-    private static String nicknameOf(RecentActivity activity) {
+    private static String nicknameOf(RecentActivityRow activity) {
         String display = activity.display();
         return display == null || display.isBlank() ? activity.id() : display;
     }

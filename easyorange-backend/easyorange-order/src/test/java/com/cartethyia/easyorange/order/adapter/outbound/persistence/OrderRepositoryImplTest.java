@@ -20,8 +20,8 @@ import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.cartethyia.easyorange.common.exception.ConcurrentUpdateException;
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.aggregate.OrderTestFixture;
+import com.cartethyia.easyorange.order.domain.enums.OrderPaymentStatus;
 import com.cartethyia.easyorange.order.domain.enums.OrderStatus;
-import com.cartethyia.easyorange.order.domain.enums.PaymentStatus;
 import com.cartethyia.easyorange.order.domain.event.OrderItemRef;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -131,14 +131,14 @@ class OrderRepositoryImplTest {
     }
 
     private OrderDO pendingPaymentOrderDO() {
-        return orderDO(OrderStatus.PENDING_PAYMENT, PaymentStatus.UNPAID);
+        return orderDO(OrderStatus.PENDING_PAYMENT, OrderPaymentStatus.UNPAID);
     }
 
     private OrderDO shippedOrderDO() {
-        return orderDO(OrderStatus.SHIPPED, PaymentStatus.PAID);
+        return orderDO(OrderStatus.SHIPPED, OrderPaymentStatus.PAID);
     }
 
-    private OrderDO orderDO(OrderStatus status, PaymentStatus paymentStatus) {
+    private OrderDO orderDO(OrderStatus status, OrderPaymentStatus paymentStatus) {
         return OrderDO.builder()
                 .id("1")
                 .orderNo("ORD1")

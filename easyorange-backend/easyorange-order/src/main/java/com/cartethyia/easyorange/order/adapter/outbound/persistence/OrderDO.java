@@ -3,8 +3,8 @@ package com.cartethyia.easyorange.order.adapter.outbound.persistence;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.Version;
 import com.cartethyia.easyorange.common.entity.BaseDO;
+import com.cartethyia.easyorange.order.domain.enums.OrderPaymentStatus;
 import com.cartethyia.easyorange.order.domain.enums.OrderStatus;
-import com.cartethyia.easyorange.order.domain.enums.PaymentStatus;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
@@ -27,7 +27,7 @@ public class OrderDO extends BaseDO {
     private String sellerId;
     private BigDecimal totalAmount;
     private OrderStatus status;
-    private PaymentStatus paymentStatus;
+    private OrderPaymentStatus paymentStatus;
     private String address;
     private String phone;
     private String remark;

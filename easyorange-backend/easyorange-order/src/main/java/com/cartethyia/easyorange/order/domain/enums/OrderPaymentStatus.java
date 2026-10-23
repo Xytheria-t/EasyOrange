@@ -7,14 +7,14 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
- * 订单侧支付状态枚举 — 与 payment 模块的 {@code PaymentStatus} 是两套独立状态机，
- * 不共享类型：订单只关心「能不能付 / 能不能退」，渠道侧状态细节不外泄。
+ * 订单侧支付状态枚举 — 与 payment 模块的 {@code com.cartethyia.easyorange.payment.domain.enums.PaymentStatus}
+ * 是两套独立状态机，不共享类型：订单只关心「能不能付 / 能不能退」，渠道侧状态细节不外泄。
  * <p>
  * code 为有意义字符串，DB 列 VARCHAR(20)，经 {@code @EnumValue} 持久化。
  */
 @Getter
 @AllArgsConstructor
-public enum PaymentStatus implements BaseCodeEnum {
+public enum OrderPaymentStatus implements BaseCodeEnum {
 
     /** 未支付 */
     UNPAID("UNPAID", "未支付"),
@@ -31,7 +31,7 @@ public enum PaymentStatus implements BaseCodeEnum {
 
     private final String desc;
 
-    public static PaymentStatus fromCode(String code) {
-        return BaseCodeEnum.fromCode(PaymentStatus.class, code);
+    public static OrderPaymentStatus fromCode(String code) {
+        return BaseCodeEnum.fromCode(OrderPaymentStatus.class, code);
     }
 }

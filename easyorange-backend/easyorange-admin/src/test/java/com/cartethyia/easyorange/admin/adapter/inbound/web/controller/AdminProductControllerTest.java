@@ -13,8 +13,8 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.assembler.AdminProduc
 import com.cartethyia.easyorange.admin.application.service.AdminProductAppService;
 import com.cartethyia.easyorange.admin.domain.model.ProductDetailView;
 import com.cartethyia.easyorange.admin.domain.model.ProductListView;
-import com.cartethyia.easyorange.admin.domain.port.AdminProductPort.PartyProfile;
 import com.cartethyia.easyorange.admin.domain.port.AdminProductPort.ProductDetail;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductPort.ProductDisplayProfile;
 import com.cartethyia.easyorange.admin.domain.port.AdminProductPort.ProductQueryCondition;
 import com.cartethyia.easyorange.admin.domain.port.AdminProductPort.ProductQueryResult;
 import com.cartethyia.easyorange.admin.domain.port.AdminProductPort.ProductSummary;
@@ -132,7 +132,7 @@ class AdminProductControllerTest {
                                 null,
                                 null),
                         List.of(),
-                        new PartyProfile("卖家昵称", "avatar.png", "电子数码")));
+                        new ProductDisplayProfile("卖家昵称", "avatar.png", "电子数码")));
         mockMvc.perform(get("/api/admin/products/1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("A0000"))

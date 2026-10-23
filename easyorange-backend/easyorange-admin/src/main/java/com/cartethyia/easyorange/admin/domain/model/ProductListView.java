@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.admin.domain.model;
 
-import com.cartethyia.easyorange.admin.domain.port.AdminProductPort.PartyProfile;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductPort.ProductDisplayProfile;
 import com.cartethyia.easyorange.admin.domain.port.AdminProductPort.ProductQueryResult;
 import java.util.List;
 import java.util.Map;
@@ -12,10 +12,10 @@ import java.util.Map;
  * 就得整页按 id 各批量取一次摊进结果返回，web 层不用自己收集 id，也不会退化成逐条 N+1。
  */
 public record ProductListView(
-        ProductQueryResult page, Map<String, List<String>> images, Map<String, PartyProfile> parties) {
+        ProductQueryResult page, Map<String, List<String>> images, Map<String, ProductDisplayProfile> parties) {
 
     /** 卖家或分类查不到时给空档案，前端各留兜底，不让整列消失 */
-    public PartyProfile profileOf(String productId) {
-        return parties.getOrDefault(productId, PartyProfile.empty());
+    public ProductDisplayProfile displayProfileOf(String productId) {
+        return parties.getOrDefault(productId, ProductDisplayProfile.empty());
     }
 }

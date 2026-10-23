@@ -15,8 +15,8 @@ import com.cartethyia.easyorange.order.adapter.outbound.persistence.OrderMapper;
 import com.cartethyia.easyorange.order.application.port.query.OrderQueryRepository;
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.aggregate.OrderReconstructSpec;
+import com.cartethyia.easyorange.order.domain.enums.OrderPaymentStatus;
 import com.cartethyia.easyorange.order.domain.enums.OrderStatus;
-import com.cartethyia.easyorange.order.domain.enums.PaymentStatus;
 import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
 import com.cartethyia.easyorange.order.domain.valueobject.Address;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
@@ -77,7 +77,7 @@ class AdminOrderAdapterTest {
                 domainEventPublisher);
     }
 
-    private Order order(OrderStatus status, PaymentStatus paymentStatus) {
+    private Order order(OrderStatus status, OrderPaymentStatus paymentStatus) {
         return Order.from(new OrderReconstructSpec(
                 OrderId.of(ORDER_ID),
                 OrderNo.of("ORD2026001"),
@@ -101,7 +101,7 @@ class AdminOrderAdapterTest {
     @DisplayName("取消待付款订单走 cancel")
     void cancelOrder_pendingPayment_cancels() {
         when(orderRepository.findById(OrderId.of(ORDER_ID)))
-                .thenReturn(Optional.of(order(OrderStatus.PENDING_PAYMENT, PaymentStatus.UNPAID)));
+                .thenReturn(Optional.of(order(OrderStatus.PENDING_PAYMENT, OrderPaymentStatus.UNPAID)));
 
         adapter.cancelOrder(ORDER_ID, "管理端取消");
 
@@ -112,7 +112,7 @@ class AdminOrderAdapterTest {
     @DisplayName("取消已付款订单走 forceCancel")
     void cancelOrder_paid_forceCancels() {
         when(orderRepository.findById(OrderId.of(ORDER_ID)))
-                .thenReturn(Optional.of(order(OrderStatus.PAID, PaymentStatus.PAID)));
+                .thenReturn(Optional.of(order(OrderStatus.PAID, OrderPaymentStatus.PAID)));
 
         adapter.cancelOrder(ORDER_ID, "管理端取消");
 
@@ -123,7 +123,7 @@ class AdminOrderAdapterTest {
     @DisplayName("已完成订单不允许取消")
     void cancelOrder_completed_throws() {
         when(orderRepository.findById(OrderId.of(ORDER_ID)))
-                .thenReturn(Optional.of(order(OrderStatus.COMPLETED, PaymentStatus.PAID)));
+                .thenReturn(Optional.of(order(OrderStatus.COMPLETED, OrderPaymentStatus.PAID)));
 
         assertThatThrownBy(() -> adapter.cancelOrder(ORDER_ID, "取消"))
                 .isInstanceOf(BusinessException.class)
@@ -145,7 +145,7 @@ class AdminOrderAdapterTest {
     @DisplayName("强制完成订单")
     void forceComplete_succeeds() {
         when(orderRepository.findById(OrderId.of(ORDER_ID)))
-                .thenReturn(Optional.of(order(OrderStatus.SHIPPED, PaymentStatus.PAID)));
+                .thenReturn(Optional.of(order(OrderStatus.SHIPPED, OrderPaymentStatus.PAID)));
 
         adapter.forceComplete(ORDER_ID);
 
@@ -156,7 +156,7 @@ class AdminOrderAdapterTest {
     @DisplayName("退款已付款订单")
     void refundOrder_succeeds() {
         when(orderRepository.findById(OrderId.of(ORDER_ID)))
-                .thenReturn(Optional.of(order(OrderStatus.PAID, PaymentStatus.PAID)));
+                .thenReturn(Optional.of(order(OrderStatus.PAID, OrderPaymentStatus.PAID)));
 
         adapter.refundOrder(ORDER_ID, "商品问题退款");
 
@@ -167,7 +167,7 @@ class AdminOrderAdapterTest {
     @DisplayName("已取消订单无法退款")
     void refundOrder_cancelled_throws() {
         when(orderRepository.findById(OrderId.of(ORDER_ID)))
-                .thenReturn(Optional.of(order(OrderStatus.CANCELLED, PaymentStatus.UNPAID)));
+                .thenReturn(Optional.of(order(OrderStatus.CANCELLED, OrderPaymentStatus.UNPAID)));
 
         assertThatThrownBy(() -> adapter.refundOrder(ORDER_ID, "退款"))
                 .isInstanceOf(BusinessException.class)

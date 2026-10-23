@@ -4,8 +4,8 @@ import com.cartethyia.easyorange.admin.domain.exception.AdminDomainException;
 import com.cartethyia.easyorange.admin.domain.model.ProductDetailView;
 import com.cartethyia.easyorange.admin.domain.model.ProductListView;
 import com.cartethyia.easyorange.admin.domain.port.AdminProductPort;
-import com.cartethyia.easyorange.admin.domain.port.AdminProductPort.PartyProfile;
 import com.cartethyia.easyorange.admin.domain.port.AdminProductPort.ProductDetail;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductPort.ProductDisplayProfile;
 import com.cartethyia.easyorange.admin.domain.port.AdminProductPort.ProductQueryCondition;
 import com.cartethyia.easyorange.admin.domain.port.AdminProductPort.ProductQueryResult;
 import com.cartethyia.easyorange.admin.domain.port.AdminProductPort.ProductSummary;
@@ -35,7 +35,7 @@ public class AdminProductAppService {
         List<String> productIds =
                 page.records().stream().map(ProductSummary::id).toList();
         return new ProductListView(
-                page, adminProductPort.getProductImages(productIds), adminProductPort.getPartyProfiles(productIds));
+                page, adminProductPort.getProductImages(productIds), adminProductPort.getDisplayProfiles(productIds));
     }
 
     @Transactional(readOnly = true)
@@ -47,7 +47,7 @@ public class AdminProductAppService {
         return new ProductDetailView(
                 product,
                 adminProductPort.getProductImages(List.of(id)).getOrDefault(id, List.of()),
-                adminProductPort.getPartyProfiles(List.of(id)).getOrDefault(id, PartyProfile.empty()));
+                adminProductPort.getDisplayProfiles(List.of(id)).getOrDefault(id, ProductDisplayProfile.empty()));
     }
 
     @Transactional(rollbackFor = Exception.class)

@@ -5,9 +5,9 @@ import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.common.security.AuthUser;
 import com.cartethyia.easyorange.order.adapter.inbound.web.dto.request.QueryOrderRequest;
 import com.cartethyia.easyorange.order.application.dto.OrderVO;
-import com.cartethyia.easyorange.order.application.query.OrderListQuery;
 import com.cartethyia.easyorange.order.application.query.OrderQueryHandler;
 import com.cartethyia.easyorange.order.domain.enums.OrderStatus;
+import com.cartethyia.easyorange.order.domain.port.OrderQueryCondition;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -44,9 +44,9 @@ public class OrderQueryController {
     }
 
     /** my/sold 场景：丢弃请求中的 buyerId/sellerId，用户 scope 由 application 层按当前登录人填充。 */
-    private static OrderListQuery toScopedListQuery(QueryOrderRequest request) {
+    private static OrderQueryCondition toScopedListQuery(QueryOrderRequest request) {
         OrderStatus status = resolveStatus(request.getStatus());
-        return new OrderListQuery(
+        return new OrderQueryCondition(
                 request.getOrderNo(), status, null, null, request.getPageNum(), request.getPageSize());
     }
 
