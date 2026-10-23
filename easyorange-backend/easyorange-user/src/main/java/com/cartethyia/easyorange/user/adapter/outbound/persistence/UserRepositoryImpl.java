@@ -17,12 +17,12 @@ import org.springframework.transaction.annotation.Transactional;
 @Repository
 public class UserRepositoryImpl extends BaseRepository<UserMapper, UserDO> implements UserRepository {
 
-    private final UserEntityMapper entityMapper;
+    private final UserConverter userConverter;
     private final IdGenerator idGenerator;
 
-    public UserRepositoryImpl(UserMapper userMapper, UserEntityMapper entityMapper, IdGenerator idGenerator) {
+    public UserRepositoryImpl(UserMapper userMapper, UserConverter userConverter, IdGenerator idGenerator) {
         super(userMapper);
-        this.entityMapper = entityMapper;
+        this.userConverter = userConverter;
         this.idGenerator = idGenerator;
     }
 
@@ -31,33 +31,33 @@ public class UserRepositoryImpl extends BaseRepository<UserMapper, UserDO> imple
     @Override
     @Transactional(readOnly = true)
     public Optional<User> findById(String id) {
-        return Optional.ofNullable(mapper.selectById(id)).map(entityMapper::toDomain);
+        return Optional.ofNullable(mapper.selectById(id)).map(userConverter::toDomain);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<User> findAllByIds(Collection<String> ids) {
         return findAllByIn(UserDO::getId, ids).stream()
-                .map(entityMapper::toDomain)
+                .map(userConverter::toDomain)
                 .toList();
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<User> findByEmail(String email) {
-        return findBy(UserDO::getEmail, email).map(entityMapper::toDomain);
+        return findBy(UserDO::getEmail, email).map(userConverter::toDomain);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<User> findByPhone(String phone) {
-        return findBy(UserDO::getPhone, phone).map(entityMapper::toDomain);
+        return findBy(UserDO::getPhone, phone).map(userConverter::toDomain);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<User> findByUsername(String username) {
-        return findBy(UserDO::getUsername, username).map(entityMapper::toDomain);
+        return findBy(UserDO::getUsername, username).map(userConverter::toDomain);
     }
 
     @Override
@@ -78,7 +78,7 @@ public class UserRepositoryImpl extends BaseRepository<UserMapper, UserDO> imple
     @Override
     @Transactional(rollbackFor = Exception.class)
     public User save(User user) {
-        UserDO entity = entityMapper.from(user);
+        UserDO entity = userConverter.from(user);
         // 主键为 IdType.INPUT，领域新建聚合无 ID → 由应用生成 UUID v7 后落库
         if (entity.getId() == null) {
             entity.setId(idGenerator.generateId());
@@ -90,7 +90,7 @@ public class UserRepositoryImpl extends BaseRepository<UserMapper, UserDO> imple
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void update(User user) {
-        UserDO entity = entityMapper.from(user);
+        UserDO entity = userConverter.from(user);
         if (mapper.updateById(entity) == 0) {
             throw new ConcurrentUpdateException("用户更新冲突: id=" + user.getId());
         }

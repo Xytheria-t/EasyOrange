@@ -56,8 +56,7 @@ class OrderRepositoryImplTest {
 
     @BeforeEach
     void setUp() {
-        orderRepository =
-                new OrderRepositoryImpl(orderMapper, new OrderDataMapper(new ObjectMapper()), orderItemMapper);
+        orderRepository = new OrderRepositoryImpl(orderMapper, new OrderConverter(new ObjectMapper()), orderItemMapper);
     }
 
     @Test

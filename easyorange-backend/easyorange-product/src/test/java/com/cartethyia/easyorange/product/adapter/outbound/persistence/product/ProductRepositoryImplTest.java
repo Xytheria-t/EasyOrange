@@ -43,7 +43,7 @@ class ProductRepositoryImplTest {
                 productMapper,
                 productDetailMapper,
                 productImageMapper,
-                new ProductDataMapper(new ObjectMapper()),
+                new ProductConverter(new ObjectMapper()),
                 idGenerator);
     }
 

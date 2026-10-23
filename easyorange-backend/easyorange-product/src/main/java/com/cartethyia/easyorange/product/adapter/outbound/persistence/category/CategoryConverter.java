@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @RequiredArgsConstructor
-public class CategoryDataMapper {
+public class CategoryConverter {
 
     private final IdGenerator idGenerator;
 

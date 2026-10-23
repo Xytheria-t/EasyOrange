@@ -21,14 +21,14 @@ public class ProductRepositoryImpl extends BaseRepository<ProductMapper, Product
 
     private final ProductDetailMapper productDetailMapper;
     private final ProductImageMapper productImageMapper;
-    private final ProductDataMapper dataMapper;
+    private final ProductConverter dataMapper;
     private final IdGenerator idGenerator;
 
     public ProductRepositoryImpl(
             ProductMapper productMapper,
             ProductDetailMapper productDetailMapper,
             ProductImageMapper productImageMapper,
-            ProductDataMapper dataMapper,
+            ProductConverter dataMapper,
             IdGenerator idGenerator) {
         super(productMapper);
         this.productDetailMapper = productDetailMapper;

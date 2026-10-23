@@ -14,17 +14,17 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class CategoryRepositoryImpl extends BaseRepository<CategoryMapper, CategoryDO> implements CategoryRepository {
 
-    private final CategoryDataMapper categoryDataMapper;
+    private final CategoryConverter categoryConverter;
 
-    public CategoryRepositoryImpl(CategoryMapper categoryMapper, CategoryDataMapper categoryDataMapper) {
+    public CategoryRepositoryImpl(CategoryMapper categoryMapper, CategoryConverter categoryConverter) {
         super(categoryMapper);
-        this.categoryDataMapper = categoryDataMapper;
+        this.categoryConverter = categoryConverter;
     }
 
-    /** 新增分类 — 主键由 {@code CategoryDataMapper} 分配，绝不与 save 的 upsert 语义混用。 */
+    /** 新增分类 — 主键由 {@code CategoryConverter} 分配，绝不与 save 的 upsert 语义混用。 */
     @Override
     public Category insert(Category category) {
-        CategoryDO entity = categoryDataMapper.toEntity(category);
+        CategoryDO entity = categoryConverter.toEntity(category);
         mapper.insert(entity);
         return category;
     }
@@ -68,7 +68,7 @@ public class CategoryRepositoryImpl extends BaseRepository<CategoryMapper, Categ
         if (id == null) {
             return Optional.empty();
         }
-        return Optional.ofNullable(mapper.selectById(id.value())).map(categoryDataMapper::toAggregate);
+        return Optional.ofNullable(mapper.selectById(id.value())).map(categoryConverter::toAggregate);
     }
 
     @Override
@@ -77,7 +77,7 @@ public class CategoryRepositoryImpl extends BaseRepository<CategoryMapper, Categ
             return List.of();
         }
         return mapper.selectByIds(ids.stream().map(CategoryId::value).toList()).stream()
-                .map(categoryDataMapper::toAggregate)
+                .map(categoryConverter::toAggregate)
                 .toList();
     }
 
@@ -89,7 +89,7 @@ public class CategoryRepositoryImpl extends BaseRepository<CategoryMapper, Categ
                 .orderByAsc(CategoryDO::getSortOrder)
                 .list()
                 .stream()
-                .map(categoryDataMapper::toAggregate)
+                .map(categoryConverter::toAggregate)
                 .toList();
     }
 
@@ -114,14 +114,14 @@ public class CategoryRepositoryImpl extends BaseRepository<CategoryMapper, Categ
                 .ne(excludeId != null && !excludeId.isBlank(), CategoryDO::getId, excludeId)
                 .list()
                 .stream()
-                .map(categoryDataMapper::toAggregate)
+                .map(categoryConverter::toAggregate)
                 .toList();
     }
 
     @Override
     public List<Category> findAll() {
         return lambdaQuery().orderByAsc(CategoryDO::getSortOrder).list().stream()
-                .map(categoryDataMapper::toAggregate)
+                .map(categoryConverter::toAggregate)
                 .toList();
     }
 

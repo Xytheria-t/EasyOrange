@@ -11,14 +11,14 @@ import java.util.List;
  * 领域聚合 ↔ 数据对象的手写转换（静态工具类，无 Spring Bean）。
  * <p>
  * 取舍：不用 MapStruct——这里每个方法本就是手写 default 实现，注解处理器无可生成，
- * 只会多编译出一个空的 {@code MessageDataMapperImpl} Bean 并让注入点显得有意义。
+ * 只会多编译出一个空的 {@code MessageConverterImpl} Bean 并让注入点显得有意义。
  * <p>
  * 边界：TINYINT 列（type / push_status）的 String code ↔ Integer 转换集中在这里，
  * 领域侧只见枚举；createTime / updateTime 由 MyBatis-Plus 填充，转换时按实体回读。
  */
-public final class MessageDataMapper {
+public final class MessageConverter {
 
-    private MessageDataMapper() {}
+    private MessageConverter() {}
 
     // ── Message ──
 
@@ -68,7 +68,7 @@ public final class MessageDataMapper {
         if (entities == null) {
             return List.of();
         }
-        return entities.stream().map(MessageDataMapper::toAggregate).toList();
+        return entities.stream().map(MessageConverter::toAggregate).toList();
     }
 
     // ── OfflineMessage ──
@@ -102,7 +102,7 @@ public final class MessageDataMapper {
         if (entities == null) {
             return List.of();
         }
-        return entities.stream().map(MessageDataMapper::toAggregate).toList();
+        return entities.stream().map(MessageConverter::toAggregate).toList();
     }
 
     // ── Enum ↔ TINYINT 转换（DB 列存 int，domain 用枚举） ──

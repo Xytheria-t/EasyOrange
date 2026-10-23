@@ -20,11 +20,11 @@ import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
 
 @Component
-public class OrderDataMapper {
+public class OrderConverter {
 
     private final ObjectMapper objectMapper;
 
-    public OrderDataMapper(ObjectMapper objectMapper) {
+    public OrderConverter(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
     }
 

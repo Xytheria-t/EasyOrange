@@ -38,7 +38,7 @@ class UserRepositoryImplTest {
     private UserMapper userMapper;
 
     @Mock
-    private UserEntityMapper entityMapper;
+    private UserConverter userConverter;
 
     @Mock
     private IdGenerator idGenerator;
@@ -57,7 +57,7 @@ class UserRepositoryImplTest {
 
     @BeforeEach
     void setUp() {
-        userRepository = new UserRepositoryImpl(userMapper, entityMapper, idGenerator);
+        userRepository = new UserRepositoryImpl(userMapper, userConverter, idGenerator);
     }
 
     private UserDO buildTestEntity() {
@@ -108,7 +108,7 @@ class UserRepositoryImplTest {
         void shouldReturnDomainUser() {
             UserDO entity = buildTestEntity();
             when(userMapper.selectById("1")).thenReturn(entity);
-            when(entityMapper.toDomain(entity)).thenReturn(buildTestDomainUser());
+            when(userConverter.toDomain(entity)).thenReturn(buildTestDomainUser());
 
             Optional<User> result = userRepository.findById("1");
 
@@ -143,7 +143,7 @@ class UserRepositoryImplTest {
         void shouldReturnDomainUser() {
             UserDO entity = buildTestEntity();
             when(userMapper.selectOne(any())).thenReturn(entity);
-            when(entityMapper.toDomain(any(UserDO.class))).thenReturn(buildTestDomainUser());
+            when(userConverter.toDomain(any(UserDO.class))).thenReturn(buildTestDomainUser());
 
             Optional<User> result = userRepository.findByUsername("testuser");
 
@@ -175,7 +175,7 @@ class UserRepositoryImplTest {
                     .userType(UserType.NORMAL)
                     .status(UserStatus.NORMAL)
                     .build();
-            when(entityMapper.from(domainUser))
+            when(userConverter.from(domainUser))
                     .thenReturn(UserDO.builder()
                             .username("newuser")
                             .password("$2a$10$encoded")
@@ -200,7 +200,7 @@ class UserRepositoryImplTest {
                     .userType(UserType.NORMAL)
                     .status(UserStatus.NORMAL)
                     .build();
-            when(entityMapper.from(domainUser))
+            when(userConverter.from(domainUser))
                     .thenReturn(UserDO.builder()
                             .id("existing-id")
                             .username("newuser")
@@ -228,7 +228,7 @@ class UserRepositoryImplTest {
                     .credentials(new Credentials("testuser", "password"))
                     .contactInfo(new ContactInfo("updated@example.com", null))
                     .build();
-            when(entityMapper.from(domainUser))
+            when(userConverter.from(domainUser))
                     .thenReturn(UserDO.builder()
                             .id("1")
                             .username("testuser")
@@ -249,7 +249,7 @@ class UserRepositoryImplTest {
                     .id("999")
                     .credentials(new Credentials("testuser", "password"))
                     .build();
-            when(entityMapper.from(domainUser))
+            when(userConverter.from(domainUser))
                     .thenReturn(UserDO.builder()
                             .id("999")
                             .username("testuser")
@@ -289,7 +289,7 @@ class UserRepositoryImplTest {
             UserDO entity = buildTestEntity();
             // 第一次 selectOne 为 username 探测（返回 null），第二次为 email 探测（命中）
             when(userMapper.selectOne(any())).thenReturn(null, entity);
-            when(entityMapper.toDomain(any(UserDO.class))).thenReturn(buildTestDomainUser());
+            when(userConverter.toDomain(any(UserDO.class))).thenReturn(buildTestDomainUser());
 
             Optional<User> result = userRepository.findByLoginIdentifier("test@example.com");
 
@@ -303,7 +303,7 @@ class UserRepositoryImplTest {
         void shouldFindByPhone() {
             UserDO entity = buildTestEntity();
             when(userMapper.selectOne(any())).thenReturn(null, null, entity);
-            when(entityMapper.toDomain(any(UserDO.class))).thenReturn(buildTestDomainUser());
+            when(userConverter.toDomain(any(UserDO.class))).thenReturn(buildTestDomainUser());
 
             Optional<User> result = userRepository.findByLoginIdentifier("13812345678");
 
@@ -317,7 +317,7 @@ class UserRepositoryImplTest {
         void shouldPreferUsernameMatch() {
             UserDO entity = buildTestEntity();
             when(userMapper.selectOne(any())).thenReturn(entity);
-            when(entityMapper.toDomain(any(UserDO.class))).thenReturn(buildTestDomainUser());
+            when(userConverter.toDomain(any(UserDO.class))).thenReturn(buildTestDomainUser());
 
             Optional<User> result = userRepository.findByLoginIdentifier("testuser");
 
@@ -336,7 +336,7 @@ class UserRepositoryImplTest {
         void shouldReturnDomainUser() {
             UserDO entity = buildTestEntity();
             when(userMapper.selectOne(any())).thenReturn(entity);
-            when(entityMapper.toDomain(any(UserDO.class))).thenReturn(buildTestDomainUser());
+            when(userConverter.toDomain(any(UserDO.class))).thenReturn(buildTestDomainUser());
 
             Optional<User> result = userRepository.findByPhone("13812345678");
 
@@ -354,7 +354,7 @@ class UserRepositoryImplTest {
         void shouldReturnDomainUser() {
             UserDO entity = buildTestEntity();
             when(userMapper.selectOne(any())).thenReturn(entity);
-            when(entityMapper.toDomain(any(UserDO.class))).thenReturn(buildTestDomainUser());
+            when(userConverter.toDomain(any(UserDO.class))).thenReturn(buildTestDomainUser());
 
             Optional<User> result = userRepository.findByEmail("test@example.com");
 

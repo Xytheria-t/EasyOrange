@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.payment.dto.assembler;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.cartethyia.easyorange.payment.adapter.outbound.persistence.PaymentDO;
-import com.cartethyia.easyorange.payment.adapter.outbound.persistence.converter.PaymentDataMapper;
+import com.cartethyia.easyorange.payment.adapter.outbound.persistence.converter.PaymentConverter;
 import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
 import com.cartethyia.easyorange.payment.domain.enums.PaymentMethod;
 import com.cartethyia.easyorange.payment.domain.enums.PaymentStatus;
@@ -13,8 +13,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-@DisplayName("PaymentDataMapper 测试")
-class PaymentDataMapperTest {
+@DisplayName("PaymentConverter 测试")
+class PaymentConverterTest {
 
     @Nested
     @DisplayName("toAggregate")
@@ -35,7 +35,7 @@ class PaymentDataMapperTest {
                     .version(3)
                     .build();
 
-            Payment aggregate = PaymentDataMapper.toAggregate(po);
+            Payment aggregate = PaymentConverter.toAggregate(po);
 
             assertThat(aggregate.id()).isEqualTo("1001");
             assertThat(aggregate.paymentNo()).isEqualTo("PAY123");
@@ -69,7 +69,7 @@ class PaymentDataMapperTest {
                     .version(2)
                     .build();
 
-            Payment aggregate = PaymentDataMapper.toAggregate(po);
+            Payment aggregate = PaymentConverter.toAggregate(po);
 
             assertThat(aggregate.refundedAmount()).isEqualByComparingTo("50.00");
             assertThat(aggregate.refundReason()).isEqualTo("用户退款");
@@ -82,7 +82,7 @@ class PaymentDataMapperTest {
         @Test
         @DisplayName("PO 为空返回 null")
         void toAggregate_null_returnsNull() {
-            assertThat(PaymentDataMapper.toAggregate(null)).isNull();
+            assertThat(PaymentConverter.toAggregate(null)).isNull();
         }
     }
 
@@ -111,7 +111,7 @@ class PaymentDataMapperTest {
                     4);
             Payment aggregate = Payment.from(spec);
 
-            PaymentDO po = PaymentDataMapper.toPO(aggregate);
+            PaymentDO po = PaymentConverter.toPO(aggregate);
 
             assertThat(po.getId()).isEqualTo("1001");
             assertThat(po.getPaymentNo()).isEqualTo("PAY123");
@@ -130,7 +130,7 @@ class PaymentDataMapperTest {
         @Test
         @DisplayName("聚合根为空返回 null")
         void toPO_null_returnsNull() {
-            assertThat(PaymentDataMapper.toPO(null)).isNull();
+            assertThat(PaymentConverter.toPO(null)).isNull();
         }
     }
 }

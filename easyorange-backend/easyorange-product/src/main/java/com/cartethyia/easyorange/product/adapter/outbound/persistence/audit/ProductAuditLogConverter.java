@@ -5,7 +5,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.ReportingPolicy;
 
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
-public interface ProductAuditLogDataMapper {
+public interface ProductAuditLogConverter {
 
     ProductAuditLogDO toDataObject(ProductAuditLog auditLog);
 

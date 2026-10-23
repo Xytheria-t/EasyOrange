@@ -22,11 +22,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Repository
 public class OrderQueryRepositoryImpl extends BaseRepository<OrderMapper, OrderDO> implements OrderQueryRepository {
 
-    private final OrderDataMapper dataMapper;
+    private final OrderConverter dataMapper;
     private final OrderItemMapper orderItemMapper;
 
     public OrderQueryRepositoryImpl(
-            OrderMapper orderMapper, OrderDataMapper dataMapper, OrderItemMapper orderItemMapper) {
+            OrderMapper orderMapper, OrderConverter dataMapper, OrderItemMapper orderItemMapper) {
         super(orderMapper);
         this.dataMapper = dataMapper;
         this.orderItemMapper = orderItemMapper;

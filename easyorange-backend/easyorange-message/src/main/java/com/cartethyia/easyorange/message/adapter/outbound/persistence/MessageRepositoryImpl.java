@@ -20,19 +20,19 @@ public class MessageRepositoryImpl extends BaseRepository<MessageMapper, Message
     @Override
     public Optional<Message> findById(String id) {
         MessageDO entity = mapper.selectById(id);
-        return Optional.ofNullable(MessageDataMapper.toAggregate(entity));
+        return Optional.ofNullable(MessageConverter.toAggregate(entity));
     }
 
     @Override
     public Message save(Message message) {
-        MessageDO entity = MessageDataMapper.toEntity(message);
+        MessageDO entity = MessageConverter.toEntity(message);
         mapper.insert(entity);
-        return MessageDataMapper.toAggregate(entity);
+        return MessageConverter.toAggregate(entity);
     }
 
     @Override
     public void update(Message message) {
-        mapper.updateById(MessageDataMapper.toEntity(message));
+        mapper.updateById(MessageConverter.toEntity(message));
     }
 
     @Override

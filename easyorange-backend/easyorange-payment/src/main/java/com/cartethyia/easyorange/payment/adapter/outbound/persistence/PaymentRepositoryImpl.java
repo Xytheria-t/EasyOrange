@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.payment.adapter.outbound.persistence;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cartethyia.easyorange.common.repository.BaseRepository;
-import com.cartethyia.easyorange.payment.adapter.outbound.persistence.converter.PaymentDataMapper;
+import com.cartethyia.easyorange.payment.adapter.outbound.persistence.converter.PaymentConverter;
 import com.cartethyia.easyorange.payment.adapter.outbound.persistence.mapper.PaymentMapper;
 import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentResultCode;
@@ -29,12 +29,12 @@ public class PaymentRepositoryImpl extends BaseRepository<PaymentMapper, Payment
 
     @Override
     public void save(Payment aggregate) {
-        mapper.insert(PaymentDataMapper.toPO(aggregate));
+        mapper.insert(PaymentConverter.toPO(aggregate));
     }
 
     @Override
     public void update(Payment aggregate) {
-        PaymentDO po = PaymentDataMapper.toPO(aggregate);
+        PaymentDO po = PaymentConverter.toPO(aggregate);
         int rows = mapper.updateById(po);
 
         if (rows == 0) {
@@ -46,7 +46,7 @@ public class PaymentRepositoryImpl extends BaseRepository<PaymentMapper, Payment
     @Override
     @Transactional(readOnly = true)
     public Optional<Payment> findById(String id) {
-        return Optional.ofNullable(mapper.selectById(id)).map(PaymentDataMapper::toAggregate);
+        return Optional.ofNullable(mapper.selectById(id)).map(PaymentConverter::toAggregate);
     }
 
     @Override
@@ -54,7 +54,7 @@ public class PaymentRepositoryImpl extends BaseRepository<PaymentMapper, Payment
     public Optional<Payment> findByPaymentNo(String paymentNo) {
         return Optional.ofNullable(
                         lambdaQuery().eq(PaymentDO::getPaymentNo, paymentNo).one())
-                .map(PaymentDataMapper::toAggregate);
+                .map(PaymentConverter::toAggregate);
     }
 
     @Override
@@ -62,7 +62,7 @@ public class PaymentRepositoryImpl extends BaseRepository<PaymentMapper, Payment
     public Optional<Payment> findByOrderId(String orderId) {
         return Optional.ofNullable(
                         lambdaQuery().eq(PaymentDO::getOrderId, orderId).one())
-                .map(PaymentDataMapper::toAggregate);
+                .map(PaymentConverter::toAggregate);
     }
 
     @Override
@@ -75,7 +75,7 @@ public class PaymentRepositoryImpl extends BaseRepository<PaymentMapper, Payment
                 .eq(status != null, PaymentDO::getStatus, status)
                 .orderByDesc(PaymentDO::getCreateTime)
                 .page(new Page<>(pageNum, pageSize, false));
-        return page.getRecords().stream().map(PaymentDataMapper::toAggregate).toList();
+        return page.getRecords().stream().map(PaymentConverter::toAggregate).toList();
     }
 
     @Override

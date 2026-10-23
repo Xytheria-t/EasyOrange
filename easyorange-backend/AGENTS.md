@@ -99,7 +99,7 @@
 
 ### user
 
-- **登录每方式独立 DTO + 独立端点**，`toCredential()` → `LoginCredential`（sealed：`Password` / `Sms`），**禁枚举字段区分**；两层映射：`UserEntityMapper` 管全部持久化（`UserDO` 无 `toDomain()`）、`UserAssembler` 管响应脱敏
+- **登录每方式独立 DTO + 独立端点**，`toCredential()` → `LoginCredential`（sealed：`Password` / `Sms`），**禁枚举字段区分**；两层映射：`UserConverter` 管全部持久化（`UserDO` 无 `toDomain()`）、`UserAssembler` 管响应脱敏
 - `SmsCodePort` **按 `@Profile` 互斥**（dev/test ↔ it/prod），未声明 profile 不注册、**启动即失败防裸跑生产**；`SmsSenderPort` 目前只有日志发送器、**全 profile 装配**（prod 激活时若不装配，`RedisSmsCodeAdapter` 构造注入直接失败——宁「启动可用、业务不可用」也不选启动即挂）；validation 包只放**纯格式**校验，唯一性在 application / domain
 - **改密码成功必须吊销全部会话 + 发 `UserPasswordChangedEvent`**，新旧同密码拒；注册 `nick_name` **默认 = `username`**；新增字段走值对象 record → Flyway → DO/Mapper → DTO/Assembler → 聚合根
 

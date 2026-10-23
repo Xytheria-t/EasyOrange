@@ -26,10 +26,10 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.ObjectMapper;
 
-@DisplayName("OrderDataMapper 单元测试")
-class OrderDataMapperTest {
+@DisplayName("OrderConverter 单元测试")
+class OrderConverterTest {
 
-    private final OrderDataMapper mapper = new OrderDataMapper(new ObjectMapper());
+    private final OrderConverter mapper = new OrderConverter(new ObjectMapper());
 
     private static final String ID = "100";
     private static final String ORDER_NO = "ORD100";

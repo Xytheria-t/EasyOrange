@@ -17,7 +17,7 @@ import org.mapstruct.ReportingPolicy;
         nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.SET_TO_NULL,
         unmappedTargetPolicy = ReportingPolicy.IGNORE)
 @SuppressWarnings("unused")
-public interface UserEntityMapper {
+public interface UserConverter {
 
     @Mapping(target = "encodedPassword", source = "password")
     Credentials toCredentials(UserDO entity);

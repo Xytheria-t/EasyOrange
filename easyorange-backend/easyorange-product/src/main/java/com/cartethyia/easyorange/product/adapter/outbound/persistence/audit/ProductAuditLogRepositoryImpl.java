@@ -14,7 +14,7 @@ import org.springframework.stereotype.Repository;
 public class ProductAuditLogRepositoryImpl implements ProductAuditLogRepository {
 
     private final ProductAuditLogMapper productAuditLogMapper;
-    private final ProductAuditLogDataMapper dataMapper;
+    private final ProductAuditLogConverter dataMapper;
     private final IdGenerator idGenerator;
 
     @Override

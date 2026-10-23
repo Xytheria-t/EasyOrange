@@ -4,8 +4,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cartethyia.easyorange.common.dto.PageRequest;
 import com.cartethyia.easyorange.common.repository.BaseRepository;
 import com.cartethyia.easyorange.common.result.PageResult;
+import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageConverter;
 import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageDO;
-import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageDataMapper;
 import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageMapper;
 import com.cartethyia.easyorange.message.application.port.query.MessageQueryRepository;
 import com.cartethyia.easyorange.message.domain.aggregate.Message;
@@ -33,7 +33,7 @@ public class MessageQueryRepositoryImpl extends BaseRepository<MessageMapper, Me
 
     @Override
     public Message findById(String id) {
-        return MessageDataMapper.toAggregate(mapper.selectById(id));
+        return MessageConverter.toAggregate(mapper.selectById(id));
     }
 
     @Override
@@ -116,7 +116,7 @@ public class MessageQueryRepositoryImpl extends BaseRepository<MessageMapper, Me
                         .orderByDesc(MessageDO::getCreateTime)
                         .last(HISTORY_LIMIT_CLAUSE)
                         .list();
-        List<Message> chronological = new java.util.ArrayList<>(MessageDataMapper.toAggregateList(recent));
+        List<Message> chronological = new java.util.ArrayList<>(MessageConverter.toAggregateList(recent));
         java.util.Collections.reverse(chronological);
         return chronological;
     }
@@ -128,7 +128,7 @@ public class MessageQueryRepositoryImpl extends BaseRepository<MessageMapper, Me
 
     @Override
     public List<Message> findLatestPerConversation(String userId) {
-        return MessageDataMapper.toAggregateList(mapper.selectLatestPerConversation(userId));
+        return MessageConverter.toAggregateList(mapper.selectLatestPerConversation(userId));
     }
 
     @Override
@@ -141,7 +141,7 @@ public class MessageQueryRepositoryImpl extends BaseRepository<MessageMapper, Me
     }
 
     private PageResult<Message> toAggregatePageResult(Page<MessageDO> messagePage) {
-        List<Message> records = MessageDataMapper.toAggregateList(messagePage.getRecords());
+        List<Message> records = MessageConverter.toAggregateList(messagePage.getRecords());
         return PageResult.of(
                 records, messagePage.getTotal(), (int) messagePage.getCurrent(), (int) messagePage.getSize());
     }

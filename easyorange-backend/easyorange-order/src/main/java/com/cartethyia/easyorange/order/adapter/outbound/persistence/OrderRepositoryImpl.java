@@ -23,10 +23,10 @@ public class OrderRepositoryImpl extends BaseRepository<OrderMapper, OrderDO> im
     /** 定时任务单次扫描上限 — 分批处理防止一次加载全表，剩余批次由下一轮 cron 继续。 */
     private static final int SCAN_BATCH_LIMIT = 500;
 
-    private final OrderDataMapper dataMapper;
+    private final OrderConverter dataMapper;
     private final OrderItemMapper orderItemMapper;
 
-    public OrderRepositoryImpl(OrderMapper orderMapper, OrderDataMapper dataMapper, OrderItemMapper orderItemMapper) {
+    public OrderRepositoryImpl(OrderMapper orderMapper, OrderConverter dataMapper, OrderItemMapper orderItemMapper) {
         super(orderMapper);
         this.dataMapper = dataMapper;
         this.orderItemMapper = orderItemMapper;
