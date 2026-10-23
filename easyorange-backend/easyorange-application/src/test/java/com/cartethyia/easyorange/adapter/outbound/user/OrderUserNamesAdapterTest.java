@@ -5,7 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.cartethyia.easyorange.user.domain.port.UserQueryPort;
-import com.cartethyia.easyorange.user.domain.port.UserQueryPort.UserInfo;
+import com.cartethyia.easyorange.user.domain.port.UserQueryPort.UserProfile;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -16,8 +16,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("OrderUserInfoAdapter 测试")
-class OrderUserInfoAdapterTest {
+@DisplayName("OrderUserNamesAdapter 测试")
+class OrderUserNamesAdapterTest {
 
     @Mock
     private UserQueryPort userQueryPort;
@@ -25,10 +25,11 @@ class OrderUserInfoAdapterTest {
     @Test
     @DisplayName("批量查询用户名，缺失 ID 不返回")
     void findUsernames_returnsUsernameMap() {
-        var port = new OrderUserInfoAdapter(userQueryPort);
+        var port = new OrderUserNamesAdapter(userQueryPort);
         when(userQueryPort.findAllByIds(any()))
                 .thenReturn(List.of(
-                        new UserInfo("1", "认领方小明", "小明", "avatar1"), new UserInfo("2", "资产方张三", "张三", "avatar2")));
+                        new UserProfile("1", "认领方小明", "小明", "avatar1"),
+                        new UserProfile("2", "资产方张三", "张三", "avatar2")));
 
         Map<String, String> usernames = port.findUsernames(Set.of("1", "2", "999"));
 
@@ -41,7 +42,7 @@ class OrderUserInfoAdapterTest {
     @Test
     @DisplayName("空集合返回空 Map，不查用户模块")
     void findUsernames_emptyIds_returnsEmptyMap() {
-        var port = new OrderUserInfoAdapter(userQueryPort);
+        var port = new OrderUserNamesAdapter(userQueryPort);
 
         assertThat(port.findUsernames(Set.of())).isEmpty();
         assertThat(port.findUsernames(null)).isEmpty();

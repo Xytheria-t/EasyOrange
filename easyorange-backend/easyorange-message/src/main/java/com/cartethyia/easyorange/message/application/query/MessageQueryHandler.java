@@ -6,10 +6,10 @@ import com.cartethyia.easyorange.message.application.query.dto.MessageVO;
 import com.cartethyia.easyorange.message.application.query.dto.UnreadCountVO;
 import com.cartethyia.easyorange.message.domain.aggregate.Message;
 import com.cartethyia.easyorange.message.domain.enums.ReadStatus;
-import com.cartethyia.easyorange.message.domain.port.UserInfoPort;
+import com.cartethyia.easyorange.message.domain.port.MessageUserProfilePort;
 import com.cartethyia.easyorange.message.domain.valueobject.MessageQuery;
+import com.cartethyia.easyorange.message.domain.valueobject.MessageUserProfile;
 import com.cartethyia.easyorange.message.domain.valueobject.UnreadCount;
-import com.cartethyia.easyorange.message.domain.valueobject.UserInfo;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -26,7 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class MessageQueryHandler {
 
     private final MessageQueryRepository queryRepository;
-    private final UserInfoPort userInfoPort;
+    private final MessageUserProfilePort userProfilePort;
 
     @Transactional(readOnly = true)
     public PageResult<MessageVO> getMyMessages(String userId, MessageQuery query) {
@@ -48,12 +48,12 @@ public class MessageQueryHandler {
     }
 
     private PageResult<MessageVO> toMessageVOPage(PageResult<Message> messagePage) {
-        Map<String, UserInfo> userMap = resolveUserInfo(messagePage.records());
+        Map<String, MessageUserProfile> userMap = resolveProfiles(messagePage.records());
         return messagePage.map(m -> toMessageVO(m, userMap));
     }
 
     /** 一页消息涉及的收发方通常只有个位数，摊成一次 {@code IN} 查询，不做 N+1。 */
-    private Map<String, UserInfo> resolveUserInfo(List<Message> aggregates) {
+    private Map<String, MessageUserProfile> resolveProfiles(List<Message> aggregates) {
         Set<String> userIds = aggregates.stream()
                 .flatMap(m -> java.util.stream.Stream.of(m.senderId(), m.receiverId()))
                 .filter(Objects::nonNull)
@@ -62,12 +62,12 @@ public class MessageQueryHandler {
         if (userIds.isEmpty()) {
             return Map.of();
         }
-        return userInfoPort.getUserInfoMap(userIds);
+        return userProfilePort.getProfiles(userIds);
     }
 
-    private MessageVO toMessageVO(Message aggregate, Map<String, UserInfo> userMap) {
-        UserInfo sender = aggregate.senderId() != null ? userMap.get(aggregate.senderId()) : null;
-        UserInfo receiver = aggregate.receiverId() != null ? userMap.get(aggregate.receiverId()) : null;
+    private MessageVO toMessageVO(Message aggregate, Map<String, MessageUserProfile> userMap) {
+        MessageUserProfile sender = aggregate.senderId() != null ? userMap.get(aggregate.senderId()) : null;
+        MessageUserProfile receiver = aggregate.receiverId() != null ? userMap.get(aggregate.receiverId()) : null;
 
         return MessageVO.builder()
                 .id(aggregate.id())
@@ -99,11 +99,11 @@ public class MessageQueryHandler {
                 .build();
     }
 
-    private static String nameOf(UserInfo user) {
+    private static String nameOf(MessageUserProfile user) {
         return user != null ? user.username() : "未知用户";
     }
 
-    private static String avatarOf(UserInfo user) {
+    private static String avatarOf(MessageUserProfile user) {
         return user != null ? user.avatar() : null;
     }
 }

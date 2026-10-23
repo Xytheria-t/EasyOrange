@@ -12,8 +12,8 @@ import com.cartethyia.easyorange.message.domain.aggregate.Message;
 import com.cartethyia.easyorange.message.domain.enums.MessageStatus;
 import com.cartethyia.easyorange.message.domain.enums.MessageType;
 import com.cartethyia.easyorange.message.domain.enums.ReadStatus;
-import com.cartethyia.easyorange.message.domain.port.UserInfoPort;
-import com.cartethyia.easyorange.message.domain.valueobject.UserInfo;
+import com.cartethyia.easyorange.message.domain.port.MessageUserProfilePort;
+import com.cartethyia.easyorange.message.domain.valueobject.MessageUserProfile;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -34,7 +34,7 @@ class ConversationQueryHandlerTest {
     private MessageQueryRepository queryRepository;
 
     @Mock
-    private UserInfoPort userInfoPort;
+    private MessageUserProfilePort userProfilePort;
 
     @InjectMocks
     private ConversationQueryHandler handler;
@@ -72,10 +72,10 @@ class ConversationQueryHandlerTest {
 
             when(queryRepository.findConversation(CURRENT_USER_ID, OTHER_USER_ID))
                     .thenReturn(List.of(msg1, msg2));
-            when(userInfoPort.getUserInfoMap(any()))
+            when(userProfilePort.getProfiles(any()))
                     .thenReturn(Map.of(
-                            CURRENT_USER_ID, new UserInfo(CURRENT_USER_ID, "当前用户", null),
-                            OTHER_USER_ID, new UserInfo(OTHER_USER_ID, "对方用户", "avatar.jpg")));
+                            CURRENT_USER_ID, new MessageUserProfile(CURRENT_USER_ID, "当前用户", null),
+                            OTHER_USER_ID, new MessageUserProfile(OTHER_USER_ID, "对方用户", "avatar.jpg")));
 
             List<ConversationVO> result = handler.getConversation(CURRENT_USER_ID, OTHER_USER_ID);
 
@@ -106,7 +106,7 @@ class ConversationQueryHandlerTest {
 
             when(queryRepository.findConversation(CURRENT_USER_ID, OTHER_USER_ID))
                     .thenReturn(List.of(recalled));
-            when(userInfoPort.getUserInfoMap(any())).thenReturn(Map.of());
+            when(userProfilePort.getProfiles(any())).thenReturn(Map.of());
 
             ConversationVO vo =
                     handler.getConversation(CURRENT_USER_ID, OTHER_USER_ID).getFirst();
@@ -139,10 +139,10 @@ class ConversationQueryHandlerTest {
             when(queryRepository.findLatestPerConversation(CURRENT_USER_ID))
                     .thenReturn(List.of(msgWithUser2, msgWithUser3));
             when(queryRepository.countUnreadByConversation(CURRENT_USER_ID)).thenReturn(Map.of());
-            when(userInfoPort.getUserInfoMap(any()))
+            when(userProfilePort.getProfiles(any()))
                     .thenReturn(new HashMap<>(Map.of(
-                            OTHER_USER_ID, new UserInfo(OTHER_USER_ID, "用户2", "a.jpg"),
-                            THIRD_USER_ID, new UserInfo(THIRD_USER_ID, "用户3", "b.jpg"))));
+                            OTHER_USER_ID, new MessageUserProfile(OTHER_USER_ID, "用户2", "a.jpg"),
+                            THIRD_USER_ID, new MessageUserProfile(THIRD_USER_ID, "用户3", "b.jpg"))));
 
             List<ConversationListVO> result = handler.getConversations(CURRENT_USER_ID);
 
@@ -181,8 +181,8 @@ class ConversationQueryHandlerTest {
 
             when(queryRepository.findLatestPerConversation(CURRENT_USER_ID)).thenReturn(List.of(sysMsg, chatMsg));
             when(queryRepository.countUnreadByConversation(CURRENT_USER_ID)).thenReturn(Map.of("system", 1));
-            when(userInfoPort.getUserInfoMap(any()))
-                    .thenReturn(Map.of(OTHER_USER_ID, new UserInfo(OTHER_USER_ID, "用户2", null)));
+            when(userProfilePort.getProfiles(any()))
+                    .thenReturn(Map.of(OTHER_USER_ID, new MessageUserProfile(OTHER_USER_ID, "用户2", null)));
 
             List<ConversationListVO> result = handler.getConversations(CURRENT_USER_ID);
 

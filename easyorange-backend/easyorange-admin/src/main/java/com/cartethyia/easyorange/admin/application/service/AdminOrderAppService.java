@@ -13,7 +13,7 @@ import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderStats;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderSummary;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.ProductInfo;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserPort;
-import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserInfo;
+import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserSummary;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -46,7 +46,7 @@ public class AdminOrderAppService {
     public OrderListView listOrders(AdminOrderQuery condition) {
         OrderQueryResult page = adminOrderPort.queryOrders(condition);
         Map<String, List<OrderItemInfo>> items = loadOrderItems(page.records());
-        return new OrderListView(page, loadUserInfos(page.records()), items, loadProductInfos(items));
+        return new OrderListView(page, loadUserSummaries(page.records()), items, loadProductInfos(items));
     }
 
     @Transactional(readOnly = true)
@@ -61,8 +61,8 @@ public class AdminOrderAppService {
                 .toList();
         return new OrderDetailView(
                 order,
-                adminUserPort.getUserInfo(order.buyerId()),
-                adminUserPort.getUserInfo(order.sellerId()),
+                adminUserPort.getUserSummary(order.buyerId()),
+                adminUserPort.getUserSummary(order.sellerId()),
                 adminOrderPort.getProducts(productIds));
     }
 
@@ -86,13 +86,13 @@ public class AdminOrderAppService {
         adminOrderPort.refundOrder(id, reason);
     }
 
-    private Map<String, UserInfo> loadUserInfos(List<OrderSummary> orders) {
+    private Map<String, UserSummary> loadUserSummaries(List<OrderSummary> orders) {
         Set<String> userIds = new HashSet<>();
         orders.forEach(o -> {
             if (o.buyerId() != null) userIds.add(o.buyerId());
             if (o.sellerId() != null) userIds.add(o.sellerId());
         });
-        return adminUserPort.getUserInfos(userIds.stream().toList());
+        return adminUserPort.getUserSummaries(userIds.stream().toList());
     }
 
     private Map<String, List<OrderItemInfo>> loadOrderItems(List<OrderSummary> orders) {

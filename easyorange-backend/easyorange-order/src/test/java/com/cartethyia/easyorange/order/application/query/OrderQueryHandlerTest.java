@@ -18,7 +18,7 @@ import com.cartethyia.easyorange.order.application.query.readmodel.OrderReadMode
 import com.cartethyia.easyorange.order.domain.exception.OrderDomainException;
 import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
 import com.cartethyia.easyorange.order.domain.port.OrderQueryCondition;
-import com.cartethyia.easyorange.order.domain.port.UserInfoPort;
+import com.cartethyia.easyorange.order.domain.port.OrderUserNamesPort;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -53,7 +53,7 @@ class OrderQueryHandlerTest {
     private OrderReadModelAssembler readModelAssembler;
 
     @Mock
-    private UserInfoPort userInfoPort;
+    private OrderUserNamesPort userNamesPort;
 
     private OrderQueryHandler handler;
 
@@ -62,7 +62,7 @@ class OrderQueryHandlerTest {
 
     @BeforeEach
     void setUp() {
-        handler = new OrderQueryHandler(orderReadRepository, orderCachePort, readModelAssembler, userInfoPort);
+        handler = new OrderQueryHandler(orderReadRepository, orderCachePort, readModelAssembler, userNamesPort);
 
         testOrderReadModel = new OrderReadModel(
                 "1",
@@ -93,7 +93,7 @@ class OrderQueryHandlerTest {
         when(readModelAssembler.toOrderVO(any(OrderReadModel.class), anyMap(), anyBoolean()))
                 .thenReturn(mockOrderVO);
         when(readModelAssembler.toOrderVOs(any(), anyMap())).thenReturn(List.of(mockOrderVO));
-        when(userInfoPort.findUsernames(any())).thenReturn(Map.of());
+        when(userNamesPort.findUsernames(any())).thenReturn(Map.of());
         when(orderCachePort.buildOrderListKey(any(), any(), any(), any())).thenReturn("eo:order:list:key");
         when(orderCachePort.getOrderList(any())).thenReturn(Optional.empty());
     }

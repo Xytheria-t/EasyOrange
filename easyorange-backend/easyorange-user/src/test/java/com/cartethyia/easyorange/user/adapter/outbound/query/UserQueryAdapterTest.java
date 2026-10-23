@@ -8,7 +8,7 @@ import static org.mockito.Mockito.when;
 
 import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.aggregate.UserTestFixture;
-import com.cartethyia.easyorange.user.domain.port.UserQueryPort.UserInfo;
+import com.cartethyia.easyorange.user.domain.port.UserQueryPort.UserProfile;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,10 +43,10 @@ class UserQueryAdapterTest {
             User user = UserTestFixture.normalUser();
             when(userRepository.findAllByIds(List.of(UserTestFixture.USER_ID))).thenReturn(List.of(user));
 
-            List<UserInfo> result = adapter.findAllByIds(List.of(UserTestFixture.USER_ID));
+            List<UserProfile> result = adapter.findAllByIds(List.of(UserTestFixture.USER_ID));
 
             assertThat(result).hasSize(1);
-            UserInfo info = result.get(0);
+            UserProfile info = result.get(0);
             assertThat(info.id()).isEqualTo(UserTestFixture.USER_ID);
             assertThat(info.username()).isEqualTo(UserTestFixture.USERNAME);
             assertThat(info.nickName()).isEqualTo("小张");
@@ -59,7 +59,7 @@ class UserQueryAdapterTest {
             User user = UserTestFixture.minimalUser();
             when(userRepository.findAllByIds(List.of(UserTestFixture.USER_ID))).thenReturn(List.of(user));
 
-            List<UserInfo> result = adapter.findAllByIds(List.of(UserTestFixture.USER_ID));
+            List<UserProfile> result = adapter.findAllByIds(List.of(UserTestFixture.USER_ID));
 
             assertThat(result.get(0).nickName()).isNull();
             assertThat(result.get(0).avatar()).isNull();

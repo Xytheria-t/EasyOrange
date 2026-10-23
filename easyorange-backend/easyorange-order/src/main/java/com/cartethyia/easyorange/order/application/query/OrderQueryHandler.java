@@ -9,7 +9,7 @@ import com.cartethyia.easyorange.order.domain.constant.OrderResultCode;
 import com.cartethyia.easyorange.order.domain.exception.OrderDomainException;
 import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
 import com.cartethyia.easyorange.order.domain.port.OrderQueryCondition;
-import com.cartethyia.easyorange.order.domain.port.UserInfoPort;
+import com.cartethyia.easyorange.order.domain.port.OrderUserNamesPort;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +31,7 @@ public class OrderQueryHandler {
     private final OrderQueryRepository orderReadRepository;
     private final OrderCachePort<OrderVO> orderCachePort;
     private final OrderReadModelAssembler readModelAssembler;
-    private final UserInfoPort userInfoPort;
+    private final OrderUserNamesPort userNamesPort;
 
     @Transactional(readOnly = true)
     public OrderVO getOrderDetailForOwner(String userId, String orderId) {
@@ -43,7 +43,7 @@ public class OrderQueryHandler {
             throw OrderDomainException.of(OrderResultCode.ORDER_NOT_OWNER);
         }
 
-        Map<String, String> usernames = userInfoPort.findUsernames(Set.of(order.buyerId(), order.sellerId()));
+        Map<String, String> usernames = userNamesPort.findUsernames(Set.of(order.buyerId(), order.sellerId()));
         return readModelAssembler.toOrderVO(order, usernames, false);
     }
 
@@ -104,7 +104,7 @@ public class OrderQueryHandler {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
-        Map<String, String> usernames = userInfoPort.findUsernames(userIds);
+        Map<String, String> usernames = userNamesPort.findUsernames(userIds);
         return readModelAssembler.toOrderVOs(orders, usernames);
     }
 }

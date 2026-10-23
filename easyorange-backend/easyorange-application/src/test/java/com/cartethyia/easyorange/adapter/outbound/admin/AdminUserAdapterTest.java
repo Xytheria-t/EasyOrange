@@ -5,9 +5,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserDetail;
-import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserInfo;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserQueryCondition;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserQueryResult;
+import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserSummary;
 import com.cartethyia.easyorange.user.domain.port.AdminUserManagementPort;
 import com.cartethyia.easyorange.user.domain.port.AdminUserManagementPort.AdminUserDetail;
 import com.cartethyia.easyorange.user.domain.port.AdminUserManagementPort.AdminUserInfo;
@@ -72,11 +72,11 @@ class AdminUserAdapterTest {
     class QueryMappingTests {
 
         @Test
-        @DisplayName("getUserInfo 委托并映射基础信息")
-        void getUserInfo_maps() {
+        @DisplayName("getUserSummary 委托并映射基础信息")
+        void getUserSummary_maps() {
             when(adminUserManagementPort.getInfo(USER_ID)).thenReturn(info());
 
-            UserInfo result = adapter.getUserInfo(USER_ID);
+            UserSummary result = adapter.getUserSummary(USER_ID);
 
             assertThat(result.id()).isEqualTo(USER_ID);
             assertThat(result.username()).isEqualTo("testuser");
@@ -86,19 +86,19 @@ class AdminUserAdapterTest {
         }
 
         @Test
-        @DisplayName("getUserInfo 用户不存在时透传 null")
-        void getUserInfo_nullPassthrough() {
+        @DisplayName("getUserSummary 用户不存在时透传 null")
+        void getUserSummary_nullPassthrough() {
             when(adminUserManagementPort.getInfo(USER_ID)).thenReturn(null);
 
-            assertThat(adapter.getUserInfo(USER_ID)).isNull();
+            assertThat(adapter.getUserSummary(USER_ID)).isNull();
         }
 
         @Test
-        @DisplayName("getUserInfos 委托并映射批量信息")
-        void getUserInfos_maps() {
+        @DisplayName("getUserSummaries 委托并映射批量信息")
+        void getUserSummaries_maps() {
             when(adminUserManagementPort.getInfos(List.of(USER_ID))).thenReturn(Map.of(USER_ID, info()));
 
-            var result = adapter.getUserInfos(List.of(USER_ID));
+            var result = adapter.getUserSummaries(List.of(USER_ID));
 
             assertThat(result).containsKey(USER_ID);
             assertThat(result.get(USER_ID).username()).isEqualTo("testuser");

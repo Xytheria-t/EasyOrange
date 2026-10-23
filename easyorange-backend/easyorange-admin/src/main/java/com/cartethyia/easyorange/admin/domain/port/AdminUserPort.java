@@ -18,9 +18,9 @@ import java.util.Map;
  */
 public interface AdminUserPort {
 
-    UserInfo getUserInfo(String userId);
+    UserSummary getUserSummary(String userId);
 
-    Map<String, UserInfo> getUserInfos(List<String> userIds);
+    Map<String, UserSummary> getUserSummaries(List<String> userIds);
 
     UserDetail getUserDetail(String userId);
 
@@ -60,7 +60,7 @@ public interface AdminUserPort {
      */
     List<RecentActivityRow> findRecentRegistrations(int limit);
 
-    record UserInfo(String id, String username, String nickName, String avatar, String phone) {}
+    record UserSummary(String id, String username, String nickName, String avatar, String phone) {}
 
     record UserDetail(
             String id,

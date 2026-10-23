@@ -18,11 +18,13 @@ public class UserQueryAdapter implements UserQueryPort {
 
     @Override
     @Transactional(readOnly = true)
-    public List<UserInfo> findAllByIds(Collection<String> ids) {
+    public List<UserProfile> findAllByIds(Collection<String> ids) {
         if (ids == null || ids.isEmpty()) {
             return List.of();
         }
-        return userRepository.findAllByIds(ids).stream().map(this::toUserInfo).toList();
+        return userRepository.findAllByIds(ids).stream()
+                .map(this::toUserProfile)
+                .toList();
     }
 
     @Override
@@ -31,13 +33,13 @@ public class UserQueryAdapter implements UserQueryPort {
         return userRepository.count();
     }
 
-    private UserInfo toUserInfo(User user) {
+    private UserProfile toUserProfile(User user) {
         String nickName = null;
         String avatar = null;
         if (user.getPersonalInfo() != null) {
             nickName = user.getPersonalInfo().nickName();
             avatar = user.getPersonalInfo().avatar();
         }
-        return new UserInfo(user.getId(), user.getUsername(), nickName, avatar);
+        return new UserProfile(user.getId(), user.getUsername(), nickName, avatar);
     }
 }

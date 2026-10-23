@@ -4,9 +4,9 @@ import com.cartethyia.easyorange.message.application.port.query.MessageQueryRepo
 import com.cartethyia.easyorange.message.application.query.dto.ConversationListVO;
 import com.cartethyia.easyorange.message.application.query.dto.ConversationVO;
 import com.cartethyia.easyorange.message.domain.aggregate.Message;
-import com.cartethyia.easyorange.message.domain.port.UserInfoPort;
+import com.cartethyia.easyorange.message.domain.port.MessageUserProfilePort;
+import com.cartethyia.easyorange.message.domain.valueobject.MessageUserProfile;
 import com.cartethyia.easyorange.message.domain.valueobject.SystemConversation;
-import com.cartethyia.easyorange.message.domain.valueobject.UserInfo;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,7 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class ConversationQueryHandler {
 
     private final MessageQueryRepository queryRepository;
-    private final UserInfoPort userInfoPort;
+    private final MessageUserProfilePort userProfilePort;
 
     @Transactional(readOnly = true)
     public List<ConversationVO> getConversation(String currentUserId, String otherUserId) {
@@ -32,7 +32,7 @@ public class ConversationQueryHandler {
             return List.of();
         }
 
-        Map<String, UserInfo> userMap = userInfoPort.getUserInfoMap(Set.of(currentUserId, otherUserId));
+        Map<String, MessageUserProfile> userMap = userProfilePort.getProfiles(Set.of(currentUserId, otherUserId));
 
         return messages.stream().map(msg -> toConversationVO(msg, userMap)).toList();
     }
@@ -55,7 +55,7 @@ public class ConversationQueryHandler {
         Set<String> userKeys = latestByUser.keySet().stream()
                 .filter(key -> !SystemConversation.ID.equals(key))
                 .collect(Collectors.toSet());
-        Map<String, UserInfo> userMap = userInfoPort.getUserInfoMap(userKeys);
+        Map<String, MessageUserProfile> userMap = userProfilePort.getProfiles(userKeys);
 
         return latestByUser.entrySet().stream()
                 .map(entry -> buildConversationListVO(entry.getKey(), entry.getValue(), userMap, unreadCounts))
@@ -70,9 +70,9 @@ public class ConversationQueryHandler {
         return msg.senderId().equals(currentUserId) ? msg.receiverId() : msg.senderId();
     }
 
-    private ConversationVO toConversationVO(Message message, Map<String, UserInfo> userMap) {
-        UserInfo sender = message.senderId() != null ? userMap.get(message.senderId()) : null;
-        UserInfo receiver = message.receiverId() != null ? userMap.get(message.receiverId()) : null;
+    private ConversationVO toConversationVO(Message message, Map<String, MessageUserProfile> userMap) {
+        MessageUserProfile sender = message.senderId() != null ? userMap.get(message.senderId()) : null;
+        MessageUserProfile receiver = message.receiverId() != null ? userMap.get(message.receiverId()) : null;
 
         return ConversationVO.builder()
                 .id(message.id())
@@ -95,9 +95,12 @@ public class ConversationQueryHandler {
     }
 
     private ConversationListVO buildConversationListVO(
-            String targetUserId, Message latestMsg, Map<String, UserInfo> userMap, Map<String, Integer> unreadCounts) {
+            String targetUserId,
+            Message latestMsg,
+            Map<String, MessageUserProfile> userMap,
+            Map<String, Integer> unreadCounts) {
         boolean isSystem = SystemConversation.ID.equals(targetUserId);
-        UserInfo targetUser = userMap.get(targetUserId);
+        MessageUserProfile targetUser = userMap.get(targetUserId);
         return ConversationListVO.builder()
                 .targetUserId(targetUserId)
                 .targetUserName(isSystem ? "系统通知" : (targetUser != null ? targetUser.username() : "未知用户"))

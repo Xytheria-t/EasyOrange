@@ -15,8 +15,8 @@ import com.cartethyia.easyorange.message.domain.enums.MessageStatus;
 import com.cartethyia.easyorange.message.domain.enums.MessageType;
 import com.cartethyia.easyorange.message.domain.enums.ReadStatus;
 import com.cartethyia.easyorange.message.domain.exception.MessageDomainException;
-import com.cartethyia.easyorange.message.domain.port.UserInfoPort;
-import com.cartethyia.easyorange.message.domain.valueobject.UserInfo;
+import com.cartethyia.easyorange.message.domain.port.MessageUserProfilePort;
+import com.cartethyia.easyorange.message.domain.valueobject.MessageUserProfile;
 import java.security.Principal;
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -43,7 +43,7 @@ class ChatWebSocketHandlerTest {
     private MessageCommandHandler messageCommandHandler;
 
     @Mock
-    private UserInfoPort userInfoPort;
+    private MessageUserProfilePort userProfilePort;
 
     @InjectMocks
     private ChatWebSocketHandler handler;
@@ -93,7 +93,7 @@ class ChatWebSocketHandlerTest {
         principal = mock(Principal.class);
         // lenient：broadcastRecallEvent / typing 用例不使用这两个依赖
         lenient().when(principal.getName()).thenReturn(USER_ID);
-        lenient().when(userInfoPort.getUserInfoMap(any())).thenReturn(Map.of());
+        lenient().when(userProfilePort.getProfiles(any())).thenReturn(Map.of());
         wsMessage = WsMessage.builder()
                 .receiverId(RECEIVER_ID)
                 .type(2)
@@ -152,8 +152,8 @@ class ChatWebSocketHandlerTest {
         @DisplayName("回显帧带发送者档案（与 REST 会话详情同源），纯实时会话前端也能取到头像")
         void handleChatMessage_broadcastsSenderProfile() {
             stubSavedMessage();
-            when(userInfoPort.getUserInfoMap(any()))
-                    .thenReturn(Map.of(USER_ID, UserInfo.of(USER_ID, "alice", "http://a.png")));
+            when(userProfilePort.getProfiles(any()))
+                    .thenReturn(Map.of(USER_ID, MessageUserProfile.of(USER_ID, "alice", "http://a.png")));
 
             handler.handleChatMessage(wsMessage, principal);
 

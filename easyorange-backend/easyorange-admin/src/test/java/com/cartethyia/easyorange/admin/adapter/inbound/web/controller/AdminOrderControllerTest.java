@@ -23,7 +23,7 @@ import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderQueryResu
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderStats;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderSummary;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.ProductInfo;
-import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserInfo;
+import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserSummary;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -68,8 +68,8 @@ class AdminOrderControllerTest {
         return new OrderListView(
                 new OrderQueryResult(List.of(order), 1, 1, 20),
                 Map.of(
-                        "10", new UserInfo("10", "buyer1", "buyer1", null, null),
-                        "20", new UserInfo("20", "seller1", "seller1", null, null)),
+                        "10", new UserSummary("10", "buyer1", "buyer1", null, null),
+                        "20", new UserSummary("20", "seller1", "seller1", null, null)),
                 Map.of("1", List.of(item)),
                 Map.of("100", new ProductInfo("100", "Product1", BigDecimal.valueOf(199))));
     }
@@ -131,8 +131,8 @@ class AdminOrderControllerTest {
         when(adminOrderService.getOrderDetail("1"))
                 .thenReturn(new OrderDetailView(
                         order,
-                        new UserInfo("10", "buyer1", "buyer1", "avatar1", "13800138000"),
-                        new UserInfo("20", "seller1", "seller1", "avatar2", "13900139000"),
+                        new UserSummary("10", "buyer1", "buyer1", "avatar1", "13800138000"),
+                        new UserSummary("20", "seller1", "seller1", "avatar2", "13900139000"),
                         Map.of("100", new ProductInfo("100", "Product1", BigDecimal.valueOf(199)))));
 
         mockMvc.perform(get("/api/admin/orders/1"))

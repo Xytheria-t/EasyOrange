@@ -13,10 +13,10 @@ import com.cartethyia.easyorange.message.domain.aggregate.Message;
 import com.cartethyia.easyorange.message.domain.enums.MessageStatus;
 import com.cartethyia.easyorange.message.domain.enums.MessageType;
 import com.cartethyia.easyorange.message.domain.enums.ReadStatus;
-import com.cartethyia.easyorange.message.domain.port.UserInfoPort;
+import com.cartethyia.easyorange.message.domain.port.MessageUserProfilePort;
 import com.cartethyia.easyorange.message.domain.valueobject.MessageQuery;
+import com.cartethyia.easyorange.message.domain.valueobject.MessageUserProfile;
 import com.cartethyia.easyorange.message.domain.valueobject.UnreadCount;
-import com.cartethyia.easyorange.message.domain.valueobject.UserInfo;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -36,7 +36,7 @@ class MessageQueryHandlerTest {
     private MessageQueryRepository queryRepository;
 
     @Mock
-    private UserInfoPort userInfoPort;
+    private MessageUserProfilePort userProfilePort;
 
     @InjectMocks
     private MessageQueryHandler queryHandler;
@@ -74,12 +74,12 @@ class MessageQueryHandlerTest {
             PageResult<Message> pageResult = PageResult.of(List.of(aggregate), 1L, 1, 20);
             when(queryRepository.findByReceiverId(any(MessageQuery.class), anyString()))
                     .thenReturn(pageResult);
-            when(userInfoPort.getUserInfoMap(any()))
+            when(userProfilePort.getProfiles(any()))
                     .thenReturn(Map.of(
                             SENDER_ID,
-                            new UserInfo(SENDER_ID, "发送者", null),
+                            new MessageUserProfile(SENDER_ID, "发送者", null),
                             USER_ID,
-                            new UserInfo(USER_ID, "接收者", null)));
+                            new MessageUserProfile(USER_ID, "接收者", null)));
 
             PageResult<MessageVO> result = queryHandler.getMyMessages(USER_ID, query);
 

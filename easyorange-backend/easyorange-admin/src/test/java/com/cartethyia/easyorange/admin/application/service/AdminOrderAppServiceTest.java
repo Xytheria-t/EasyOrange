@@ -20,7 +20,7 @@ import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderStats;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderSummary;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.ProductInfo;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserPort;
-import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserInfo;
+import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserSummary;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -108,10 +108,10 @@ class AdminOrderAppServiceTest {
             OrderSummary order = createOrderSummary("PENDING_PAYMENT");
 
             when(adminOrderPort.queryOrders(CONDITION)).thenReturn(new OrderQueryResult(List.of(order), 1, 1, 20));
-            when(adminUserPort.getUserInfos(anyList()))
+            when(adminUserPort.getUserSummaries(anyList()))
                     .thenReturn(Map.of(
-                            BUYER_ID, new UserInfo(BUYER_ID, "buyer", "认领方", null, null),
-                            SELLER_ID, new UserInfo(SELLER_ID, "seller", "资产方", null, null)));
+                            BUYER_ID, new UserSummary(BUYER_ID, "buyer", "认领方", null, null),
+                            SELLER_ID, new UserSummary(SELLER_ID, "seller", "资产方", null, null)));
             when(adminOrderPort.getOrderItems(anyList()))
                     .thenReturn(Map.of(
                             ORDER_ID, List.of(new OrderItemInfo(ORDER_ID, PRODUCT_ID, 1, new BigDecimal("99.99")))));
@@ -132,7 +132,7 @@ class AdminOrderAppServiceTest {
         void listOrders_missingRelatedData_returnsEmptyMaps() {
             OrderSummary order = createOrderSummary("PENDING_PAYMENT");
             when(adminOrderPort.queryOrders(CONDITION)).thenReturn(new OrderQueryResult(List.of(order), 1, 1, 20));
-            when(adminUserPort.getUserInfos(anyList())).thenReturn(Map.of());
+            when(adminUserPort.getUserSummaries(anyList())).thenReturn(Map.of());
             when(adminOrderPort.getOrderItems(anyList())).thenReturn(Map.of());
             when(adminOrderPort.getProducts(anyList())).thenReturn(Map.of());
 
@@ -152,8 +152,10 @@ class AdminOrderAppServiceTest {
         @DisplayName("获取订单详情成功")
         void getOrderDetail_success() {
             when(adminOrderPort.getOrderDetail(ORDER_ID)).thenReturn(createOrderDetail("PENDING_PAYMENT"));
-            when(adminUserPort.getUserInfo(BUYER_ID)).thenReturn(new UserInfo(BUYER_ID, "buyer", "认领方", null, null));
-            when(adminUserPort.getUserInfo(SELLER_ID)).thenReturn(new UserInfo(SELLER_ID, "seller", "资产方", null, null));
+            when(adminUserPort.getUserSummary(BUYER_ID))
+                    .thenReturn(new UserSummary(BUYER_ID, "buyer", "认领方", null, null));
+            when(adminUserPort.getUserSummary(SELLER_ID))
+                    .thenReturn(new UserSummary(SELLER_ID, "seller", "资产方", null, null));
             when(adminOrderPort.getProducts(anyList()))
                     .thenReturn(Map.of(PRODUCT_ID, new ProductInfo(PRODUCT_ID, "测试商品", new BigDecimal("99.99"))));
 
@@ -178,8 +180,8 @@ class AdminOrderAppServiceTest {
         @DisplayName("买/卖/商品缺失时原样返回 null，由展示层兜底")
         void getOrderDetail_nullBuyerSellerProduct() {
             when(adminOrderPort.getOrderDetail(ORDER_ID)).thenReturn(createOrderDetail("PENDING_PAYMENT"));
-            when(adminUserPort.getUserInfo(BUYER_ID)).thenReturn(null);
-            when(adminUserPort.getUserInfo(SELLER_ID)).thenReturn(null);
+            when(adminUserPort.getUserSummary(BUYER_ID)).thenReturn(null);
+            when(adminUserPort.getUserSummary(SELLER_ID)).thenReturn(null);
             when(adminOrderPort.getProducts(anyList())).thenReturn(Map.of());
 
             OrderDetailView view = orderService.getOrderDetail(ORDER_ID);

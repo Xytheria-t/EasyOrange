@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.admin.domain.model;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderItemInfo;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderQueryResult;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.ProductInfo;
-import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserInfo;
+import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserSummary;
 import java.util.List;
 import java.util.Map;
 
@@ -18,6 +18,6 @@ import java.util.Map;
  */
 public record OrderListView(
         OrderQueryResult page,
-        Map<String, UserInfo> users,
+        Map<String, UserSummary> users,
         Map<String, List<OrderItemInfo>> items,
         Map<String, ProductInfo> products) {}

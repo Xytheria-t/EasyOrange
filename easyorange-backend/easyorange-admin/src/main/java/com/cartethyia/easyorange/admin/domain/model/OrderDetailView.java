@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.admin.domain.model;
 
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderDetail;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.ProductInfo;
-import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserInfo;
+import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserSummary;
 import java.util.Map;
 
 /**
@@ -14,4 +14,5 @@ import java.util.Map;
  * <b>边界</b>：买卖双方查不到时这里是 null，保留 id 让前端能显示「用户已不可见」，
  * 而不是把整块信息抹成空白。
  */
-public record OrderDetailView(OrderDetail order, UserInfo buyer, UserInfo seller, Map<String, ProductInfo> products) {}
+public record OrderDetailView(
+        OrderDetail order, UserSummary buyer, UserSummary seller, Map<String, ProductInfo> products) {}

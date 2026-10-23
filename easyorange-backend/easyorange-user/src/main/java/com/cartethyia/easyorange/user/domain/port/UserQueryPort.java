@@ -10,11 +10,11 @@ import java.util.List;
 public interface UserQueryPort {
 
     /** 批量查询用户公开信息（按传入 ID 顺序，缺失的 ID 不返回）。 */
-    List<UserInfo> findAllByIds(Collection<String> ids);
+    List<UserProfile> findAllByIds(Collection<String> ids);
 
     /** 用户总数（未删除）。 */
     long count();
 
     /** 用户公开信息投影（不含凭据/联系方式等敏感字段）。 */
-    record UserInfo(String id, String username, String nickName, String avatar) {}
+    record UserProfile(String id, String username, String nickName, String avatar) {}
 }

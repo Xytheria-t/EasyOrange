@@ -4,10 +4,10 @@ import com.cartethyia.easyorange.admin.domain.model.RecentActivityRow;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserPort;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserAuth;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserDetail;
-import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserInfo;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserQueryCondition;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserQueryResult;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserStats;
+import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserSummary;
 import com.cartethyia.easyorange.user.domain.port.AdminUserManagementPort;
 import com.cartethyia.easyorange.user.domain.port.AdminUserManagementPort.AdminUserDetail;
 import com.cartethyia.easyorange.user.domain.port.AdminUserManagementPort.AdminUserInfo;
@@ -35,15 +35,15 @@ public class AdminUserAdapter implements AdminUserPort {
     private final AdminUserManagementPort adminUserManagementPort;
 
     @Override
-    public UserInfo getUserInfo(String userId) {
+    public UserSummary getUserSummary(String userId) {
         AdminUserInfo info = adminUserManagementPort.getInfo(userId);
-        return info != null ? toUserInfo(info) : null;
+        return info != null ? toUserSummary(info) : null;
     }
 
     @Override
-    public Map<String, UserInfo> getUserInfos(List<String> userIds) {
+    public Map<String, UserSummary> getUserSummaries(List<String> userIds) {
         return adminUserManagementPort.getInfos(userIds).entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, e -> toUserInfo(e.getValue())));
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> toUserSummary(e.getValue())));
     }
 
     @Override
@@ -114,8 +114,8 @@ public class AdminUserAdapter implements AdminUserPort {
         return new UserStats(stats.totalUsers(), stats.todayNewUsers());
     }
 
-    private UserInfo toUserInfo(AdminUserInfo info) {
-        return new UserInfo(info.id(), info.username(), info.nickName(), info.avatar(), info.phone());
+    private UserSummary toUserSummary(AdminUserInfo info) {
+        return new UserSummary(info.id(), info.username(), info.nickName(), info.avatar(), info.phone());
     }
 
     private UserDetail toUserDetail(AdminUserDetail detail) {

@@ -15,7 +15,7 @@ import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderItemInfo;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderQueryResult;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderStats;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderSummary;
-import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserInfo;
+import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserSummary;
 import com.cartethyia.easyorange.common.result.PageResult;
 import java.util.List;
 import java.util.Map;
@@ -66,7 +66,7 @@ public class AdminOrderAssembler {
     }
 
     /** 收件人名取买家昵称：eo_order 只存 address / phone 两列，没有收件人姓名单列。 */
-    private static Address toAddress(UserInfo buyer, OrderDetail order) {
+    private static Address toAddress(UserSummary buyer, OrderDetail order) {
         if (order.address() == null && order.phone() == null) {
             return null;
         }
@@ -90,8 +90,8 @@ public class AdminOrderAssembler {
     }
 
     private AdminOrderResponse toResponse(OrderSummary order, OrderListView view) {
-        UserInfo buyer = view.users().get(order.buyerId());
-        UserInfo seller = view.users().get(order.sellerId());
+        UserSummary buyer = view.users().get(order.buyerId());
+        UserSummary seller = view.users().get(order.sellerId());
         List<ItemInfo> items = itemInfos(view.items().getOrDefault(order.id(), List.of()), view.products());
 
         return new AdminOrderResponse(
@@ -137,7 +137,7 @@ public class AdminOrderAssembler {
     }
 
     /** 查不到档案时保留 id，让前端能显示「用户已不可见」而不是把整块信息抹成空白。 */
-    private static Participant toParticipant(UserInfo user, String fallbackId) {
+    private static Participant toParticipant(UserSummary user, String fallbackId) {
         return user != null
                 ? new Participant(user.id(), user.nickName(), user.avatar(), user.phone())
                 : new Participant(fallbackId, null, null, null);
