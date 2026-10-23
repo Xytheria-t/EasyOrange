@@ -12,6 +12,9 @@ import lombok.Getter;
  * <p>
  * admin 之前全部业务异常走 {@code BusinessException.of("中文串")}，code 落到通用默认 ——
  * 「用户不存在」与「订单不存在」对外是同一个码，前端没法分支。
+ * <p>
+ * 这里的 *_NOT_FOUND 是 admin 边界对同一条件的第二套码，与 user 的 B1001 / order 的 B3001 /
+ * product 的 B2001 同义不同码；前端按实际调用路径分别处理，不要当成全局唯一码。
  *
  * @see IResultCode
  */

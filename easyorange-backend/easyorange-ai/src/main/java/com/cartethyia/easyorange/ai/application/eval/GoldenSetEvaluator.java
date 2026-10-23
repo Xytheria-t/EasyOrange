@@ -74,7 +74,7 @@ public class GoldenSetEvaluator {
             }
         }
         // 均值分母是「成功评分数」而非 cases.size()：判分失败不进平均，其流失由 GenerationReport 的
-        // judgedCount 对比 sampleCount 暴露 —— 拿全量当分母会把「模型答不出」算成「模型答得差」。
+        // judgedCases 对比 totalCases 暴露 —— 拿全量当分母会把「模型答不出」算成「模型答得差」。
         double avg = ratio(scoreSum, judged);
         log.info(
                 "Golden set generation eval: judged {}/{} cases, avg score = {}",

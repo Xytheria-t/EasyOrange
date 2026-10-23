@@ -4,7 +4,8 @@ import com.cartethyia.easyorange.ai.domain.model.AssetHit;
 import java.util.List;
 
 /**
- * 在售资产检索端口 — 对话式找货的召回侧，与 {@code KnowledgeIndexPort} 同形态、语料换成「在售资产」。
+ * 在售资产检索端口 — 对话式找货的召回侧（asset 即 product 模块 {@code eo_product} 的在售商品，
+ * {@code productId = product.id}），与 {@code KnowledgeIndexPort} 同形态、语料换成「在售资产」。
  * 两路独立召回 + 排名融合，不合成一次「knn + query 同请求」（同请求拿不到各自排名，见实现类注释）；
  * 只读消费方，商品索引由 product 模块维护。
  */

@@ -12,7 +12,8 @@ import org.springframework.stereotype.Component;
  * AI 建议采纳率读取适配器 — 实现 {@link ListingAdoptionPort}。
  * <p>
  * 放在 application 模块：这是管理端只读统计，需要跨模块读 product 侧的表，
- * 属组合根的职责范围（与 {@code JdbcCategoryCatalogAdapter} 同层）；ai 模块只声明端口，不碰商品表。
+ * 属组合根的职责范围（与 {@link com.cartethyia.easyorange.adapter.outbound.product.CategoryAdapter} 同层）；
+ * ai 模块只声明端口，不碰商品表。
  * <p>
  * 采纳判定写在读的一侧而不是落库时算好：快照存的是原文，口径（算哪些字段、怎么算一致）随查询走，
  * 以后收紧判定不必回填历史数据。
