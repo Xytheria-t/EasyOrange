@@ -116,7 +116,7 @@ function MessagesPage() {
         queryKey: ['messages', 'conversations'],
         queryFn: async () => {
             const response = await messageApi.getConversations();
-            return (response.data ?? []) as unknown as ConversationSummary[];
+            return response.data ?? [];
         },
         staleTime: 15 * 1000,
     });
