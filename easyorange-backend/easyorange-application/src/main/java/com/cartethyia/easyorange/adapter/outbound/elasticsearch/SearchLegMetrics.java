@@ -18,7 +18,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class SearchLegMetrics {
 
-    /** source tag 封闭集 — 与三个共用 adapter 一一对应（搜索页商品 / 知识库 RAG / 对话找货）。 */
+    /** source tag 封闭集 — 与三个共用 adapter 一一对应（搜索页商品 / 知识库 RAG / 对话找货）；
+     * PRODUCT 与 ASSET 是两条调用路径而不是两个语料库，两者都读 {@code eo_product} 索引。 */
     public enum Source {
         PRODUCT("product"),
         KNOWLEDGE("knowledge"),

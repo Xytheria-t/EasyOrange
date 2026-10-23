@@ -9,7 +9,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 /**
- * AI 建议采纳率读取适配器 — 实现 {@link ListingAdoptionPort}。
+ * AI 建议采纳率读取适配器 — 实现 {@link ListingAdoptionPort}；listing 指「AI 上架建议」，不是独立实体。
  * <p>
  * 放在 application 模块：这是管理端只读统计，需要跨模块读 product 侧的表，
  * 属组合根的职责范围（与 {@link com.cartethyia.easyorange.adapter.outbound.product.CategoryAdapter} 同层）；

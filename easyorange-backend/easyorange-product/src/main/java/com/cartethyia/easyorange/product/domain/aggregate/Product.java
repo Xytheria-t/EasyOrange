@@ -35,6 +35,10 @@ import java.util.Optional;
 import lombok.Builder;
 import lombok.Getter;
 
+/**
+ * 商品聚合（表 {@code eo_product}）— 代码与 API 统一称 Product；业务文案与前端称「资产」（C2C 资产流转），
+ * AI 模块的 Asset 也是它，三者同一实体。新增标识符按代码侧用 Product，不要再引入第三个词。
+ */
 @Getter
 @Builder(toBuilder = true)
 public class Product {
