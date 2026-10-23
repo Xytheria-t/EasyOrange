@@ -450,7 +450,7 @@ easyorange:
       # scenario 键与 ModelCallScope 枚举名（小写）对齐：auto_listing/semantic/chat/knowledge
       # 缺一个场景的后果不是「不限额」而是「该场景的用量恒记 0」——预算里看不见的调用照样在供应商那边计费
       # pricing / copy / review / qa / search_enhance 五个场景已随各自的重复入口下线（独立估值 / 文案生成 / 商品详情问答 / 管理端审核建议 / 搜索页四路增强），不在两条 AI 主线上，勿再加回
-      scenarios:
+      roles:
         auto_listing:      # 拍照识别（发布助手）— Vision + LLM JSON，~3000 token/call
           max-tokens-per-call: 3000
           daily-token-limit: 500000
@@ -465,7 +465,7 @@ easyorange:
           daily-token-limit: 200000
     routing:               # 模型路由 — 模型角色 → 模型 bean 名（接入新模型只需改配置）
       default-model: chatModel
-      scenarios:
+      roles:
         decision: decisionChatModel  # 工具决策（多步工具循环）— 快模型，只选工具不写答案
         vision: visionChatModel   # 图片分析（智能上架）— 视觉模型 Qwen-VL
         judge: judgeChatModel     # LLM-as-Judge 评审 — 独立评审模型（家族异于生成模型，消自评偏差）

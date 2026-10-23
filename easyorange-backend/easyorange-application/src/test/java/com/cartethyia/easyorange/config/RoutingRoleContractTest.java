@@ -11,34 +11,33 @@ import org.junit.jupiter.api.Test;
 import org.yaml.snakeyaml.Yaml;
 
 /**
- * 模型路由场景契约 — 守住「代码引用的场景键必须在 yaml 配置」这条静默失效线。
+ * 模型路由角色契约 — 守住「代码引用的角色键必须在 yaml 配置」这条静默失效线。
  *
  * <p>{@code ModelRouter.choose} 对未配置的场景回退 default-model：<b>键缺失不报错</b>，症状是「图片
- * 分析悄悄走了文本模型」这类降级而非异常。场景名在 {@link ModelRouter} 单点定义（消费方引用常量，
- * 不写字面量），本测试钉住 application.yaml 与这批常量的对应关系——加了新场景忘配 yaml，这里红。
+ * 分析悄悄走了文本模型」这类降级而非异常。角色名在 {@link ModelRouter} 单点定义（消费方引用常量，
+ * 不写字面量），本测试钉住 application.yaml 与这批常量的对应关系——加了新角色忘配 yaml，这里红。
  */
-@DisplayName("模型路由场景契约")
-class RoutingScenarioContractTest {
+@DisplayName("模型路由角色契约")
+class RoutingRoleContractTest {
 
     @Test
-    @DisplayName("代码引用的全部场景键都在 application.yaml 配置且 bean 名非空")
-    void yamlCoversAllReferencedScenarios() throws Exception {
+    @DisplayName("代码引用的全部角色键都在 application.yaml 配置且 bean 名非空")
+    void yamlCoversAllReferencedRoles() throws Exception {
         Map<?, ?> scenarios = routingScenarios();
 
-        for (String scenario :
-                Set.of(ModelRouter.SCENARIO_DECISION, ModelRouter.SCENARIO_VISION, ModelRouter.SCENARIO_JUDGE)) {
+        for (String scenario : Set.of(ModelRouter.ROLE_DECISION, ModelRouter.ROLE_VISION, ModelRouter.ROLE_JUDGE)) {
             Object beanName = scenarios.get(scenario);
             assertThat(beanName)
-                    .as("easyorange.ai.routing.scenarios.%s 未配置 —— 该场景会静默回退 default-model", scenario)
+                    .as("easyorange.ai.routing.roles.%s 未配置 —— 该角色会静默回退 default-model", scenario)
                     .isNotNull();
             assertThat(String.valueOf(beanName))
-                    .as("easyorange.ai.routing.scenarios.%s 的 bean 名为空", scenario)
+                    .as("easyorange.ai.routing.roles.%s 的 bean 名为空", scenario)
                     .isNotBlank();
         }
     }
 
     @Test
-    @DisplayName("default-model 已显式配置（场景键缺失时的回退目标不能靠 Spring 占位符兜）")
+    @DisplayName("default-model 已显式配置（角色键缺失时的回退目标不能靠 Spring 占位符兜）")
     void defaultModelConfigured() throws Exception {
         assertThat(routing("default-model"))
                 .as("easyorange.ai.routing.default-model 未配置")
@@ -47,14 +46,14 @@ class RoutingScenarioContractTest {
 
     @SuppressWarnings("unchecked")
     private static Map<?, ?> routingScenarios() throws Exception {
-        Object scenarios = routing("scenarios");
-        assertThat(scenarios).as("easyorange.ai.routing.scenarios 段缺失").isInstanceOf(Map.class);
+        Object scenarios = routing("roles");
+        assertThat(scenarios).as("easyorange.ai.routing.roles 段缺失").isInstanceOf(Map.class);
         return (Map<?, ?>) scenarios;
     }
 
     private static Object routing(String key) throws Exception {
         try (InputStream yaml =
-                RoutingScenarioContractTest.class.getClassLoader().getResourceAsStream("application.yaml")) {
+                RoutingRoleContractTest.class.getClassLoader().getResourceAsStream("application.yaml")) {
             assertThat(yaml).as("测试资源缺失：application.yaml").isNotNull();
             // application.yaml 是多文档（--- 分隔 profile），easyorange.ai 段落在首个文档里
             for (Object document : new Yaml().loadAll(yaml)) {

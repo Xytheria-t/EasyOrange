@@ -43,7 +43,7 @@ EasyOrange 的 AI 能力自 2025-11 起基于自研基础设施构建，到 2026
 | `judgeChatModel` | DashScope `https://dashscope.aliyuncs.com/compatible-mode/v1` | `qwen-plus` | LLM-as-Judge 评审——独立评审模型，家族异于生成模型以消自评偏差 |
 | `embeddingModel` | DashScope `https://dashscope.aliyuncs.com/compatible-mode/v1` | `text-embedding-v3`（dimensions=1024） | 语义召回（商品 / 知识库）+ ES 索引写入 |
 
-> 模型角色 → bean 的映射在 `easyorange.ai.routing.scenarios`（`vision: visionChatModel` / `judge: judgeChatModel`），由 `ModelRouter` 按角色名从容器取，**四个模型 bean 都不加 `@Qualifier`**——加注解得改代码，按角色路由才能 yaml 热更换模型。
+> 模型角色 → bean 的映射在 `easyorange.ai.routing.roles`（`vision: visionChatModel` / `judge: judgeChatModel`），由 `ModelRouter` 按角色名从容器取，**四个模型 bean 都不加 `@Qualifier`**——加注解得改代码，按角色路由才能 yaml 热更换模型。
 
 > 表中端点与模型是**默认值**（不带任何环境变量即可跑通的形态），非部署实况。配置槽位后来按职责改名为
 > `easyorange.ai.text` / `easyorange.ai.vision` / `easyorange.ai.embedding`（键名不带厂商名，厂商只作为
@@ -87,7 +87,7 @@ EasyOrange 的 AI 能力自 2025-11 起基于自研基础设施构建，到 2026
 
 - **自定义指标丢失**：`easyorange.ai.cache.*` / `easyorange.ai.ratelimit.*` 等自定义指标删除；缓存命中率类指标需依赖 Spring AI 内置观测或后续自行补充
 - **JSON 结构化输出依赖 OpenAI 协议**：`callJson` 用 `OpenChatModel.ResponseFormat`（OpenAI 特有），若切换到非 OpenAI 兼容供应商需另改
-- **供应商 Bean 名称约定**：模型角色 → bean 名写在 yaml（`easyorange.ai.routing.scenarios`），改模型热更即可；代价是 bean 名成了**字符串契约**，编译期看不见，且 `ModelRouter` 对未配置角色**静默回退 default-model**（症状是「图片分析悄悄走了文本模型」，不是报错）——由 `RoutingScenarioContractTest` 钉住「代码引用的角色键必须在 yaml 里配且 bean 名非空」
+- **供应商 Bean 名称约定**：模型角色 → bean 名写在 yaml（`easyorange.ai.routing.roles`），改模型热更即可；代价是 bean 名成了**字符串契约**，编译期看不见，且 `ModelRouter` 对未配置角色**静默回退 default-model**（症状是「图片分析悄悄走了文本模型」，不是报错）——由 `RoutingRoleContractTest` 钉住「代码引用的角色键必须在 yaml 里配且 bean 名非空」
 - **Spring AI 尚新**：依赖框架自身的稳定性与 API 演进节奏（见 #5647 风险）
 
 ### 缓解措施

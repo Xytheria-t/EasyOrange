@@ -37,7 +37,7 @@ class JudgeTest {
 
     @BeforeEach
     void setUp() {
-        lenient().when(modelRouter.choose(ModelRouter.SCENARIO_JUDGE)).thenReturn(chatModel);
+        lenient().when(modelRouter.chooseForRole(ModelRouter.ROLE_JUDGE)).thenReturn(chatModel);
         aiJudge = new Judge(new TestPromptRegistry(), TestModelCaller.create(modelRouter), new ObjectMapper());
     }
 

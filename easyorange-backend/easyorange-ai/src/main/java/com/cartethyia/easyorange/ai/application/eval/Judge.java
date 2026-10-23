@@ -38,7 +38,7 @@ public class Judge {
 
     private Optional<Judgement> judgeWith(String systemPrompt, String caseText) {
         try {
-            String json = modelCaller.callJson(ModelRouter.SCENARIO_JUDGE, systemPrompt, caseText);
+            String json = modelCaller.callJson(ModelRouter.ROLE_JUDGE, systemPrompt, caseText);
             return parse(json);
         } catch (Exception e) {
             return Optional.empty();

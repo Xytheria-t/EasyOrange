@@ -137,7 +137,7 @@ public class AutoListingAppService {
     private ImageClues recognizeClues(String cluePrompt, List<String> dataUrls) {
         return modelCaller
                 .callJsonWithImages(
-                        ModelRouter.SCENARIO_VISION,
+                        ModelRouter.ROLE_VISION,
                         ModelCallScope.AUTO_LISTING,
                         cluePrompt,
                         CLUE_REQUEST_TEXT,
@@ -153,7 +153,7 @@ public class AutoListingAppService {
         // clues 只服务决策轮，不进生成消息：生成器 prompt 的上下文只有 <observations> 与 <category_options>，
         // 画面信息由随请求的原图承担
         Optional<AutoListingResult> listing = modelCaller.callJsonWithImages(
-                ModelRouter.SCENARIO_VISION,
+                ModelRouter.ROLE_VISION,
                 ModelCallScope.AUTO_LISTING,
                 generatorPrompt,
                 userText,

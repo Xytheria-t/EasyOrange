@@ -121,7 +121,7 @@ class ToolCallingWireTest {
         var tools = new ChatTools(null, null, null, null, null);
 
         List<AssistantMessage.ToolCall> calls = modelCaller.requestToolCalls(
-                ModelRouter.SCENARIO_DECISION,
+                ModelRouter.ROLE_DECISION,
                 ModelCallScope.CHAT,
                 List.of(new SystemMessage("你是多步工具决策器"), new UserMessage("<user_question>\n怎么退款？\n</user_question>")),
                 List.of(ToolCallbacks.from(tools)));
@@ -160,7 +160,7 @@ class ToolCallingWireTest {
                 "call-9", "function", ChatTools.TOOL_KNOWLEDGE_SEARCH, "{\"thought\":\"查退款规则\",\"query\":\"退款\"}");
 
         List<AssistantMessage.ToolCall> calls = modelCaller.requestToolCalls(
-                ModelRouter.SCENARIO_DECISION,
+                ModelRouter.ROLE_DECISION,
                 ModelCallScope.CHAT,
                 List.of(
                         new SystemMessage("你是多步工具决策器"),
@@ -197,7 +197,7 @@ class ToolCallingWireTest {
                 "call-2", "function", ChatTools.TOOL_PRODUCT_SEARCH, "{\"thought\":\"找笔记本\",\"query\":\"笔记本\"}");
 
         List<AssistantMessage.ToolCall> calls = modelCaller.requestToolCalls(
-                ModelRouter.SCENARIO_DECISION,
+                ModelRouter.ROLE_DECISION,
                 ModelCallScope.CHAT,
                 List.of(
                         new SystemMessage("你是多步工具决策器"),

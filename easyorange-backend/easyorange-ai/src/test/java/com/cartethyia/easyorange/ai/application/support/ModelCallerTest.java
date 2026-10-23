@@ -179,7 +179,7 @@ class ModelCallerTest {
         void callJson_success() {
             when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("{\"key\":\"value\"}"));
 
-            String result = modelCaller.callJson(ModelRouter.SCENARIO_JUDGE, "system", "user");
+            String result = modelCaller.callJson(ModelRouter.ROLE_JUDGE, "system", "user");
 
             assertThat(result).isEqualTo("{\"key\":\"value\"}");
             verify(chatModel).call(any(Prompt.class));
@@ -237,7 +237,7 @@ class ModelCallerTest {
             when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("{\"title\":\"二手相机\"}"));
 
             Optional<Listing> result = modelCaller.callJsonWithImages(
-                    ModelRouter.SCENARIO_VISION,
+                    ModelRouter.ROLE_VISION,
                     ModelCallScope.AUTO_LISTING,
                     "system",
                     "user",
@@ -262,7 +262,7 @@ class ModelCallerTest {
             when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("{\"title\":\"二手相机\"}"));
 
             Optional<Listing> result = modelCaller.callJsonWithImages(
-                    ModelRouter.SCENARIO_VISION,
+                    ModelRouter.ROLE_VISION,
                     ModelCallScope.AUTO_LISTING,
                     "system",
                     "user",
@@ -283,7 +283,7 @@ class ModelCallerTest {
             when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("{broken}"));
 
             Optional<Listing> result = modelCaller.callJsonWithImages(
-                    ModelRouter.SCENARIO_VISION,
+                    ModelRouter.ROLE_VISION,
                     ModelCallScope.AUTO_LISTING,
                     "system",
                     "user",

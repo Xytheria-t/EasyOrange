@@ -74,7 +74,7 @@ public final class TestModelCaller {
     /** 角色键一律解析到给定模型 —— 用例自己桩模型的 {@code call} / {@code stream} 时用它固定路由。 */
     public static ModelRouter routerReturning(ChatModel chatModel) {
         ModelRouter modelRouter = mock(ModelRouter.class);
-        lenient().when(modelRouter.choose(anyString())).thenReturn(chatModel);
+        lenient().when(modelRouter.chooseForRole(anyString())).thenReturn(chatModel);
         return modelRouter;
     }
 }

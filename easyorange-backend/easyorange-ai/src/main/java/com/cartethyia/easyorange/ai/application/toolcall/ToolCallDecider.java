@@ -78,7 +78,7 @@ public class ToolCallDecider {
     private List<ParsedToolCall> requestCalls(
             @Nullable String sessionId, List<Message> messages, List<ToolCallback> callbacks, ModelCallScope scope) {
         List<AssistantMessage.ToolCall> toolCalls =
-                modelCaller.requestToolCalls(ModelRouter.SCENARIO_DECISION, scope, messages, callbacks);
+                modelCaller.requestToolCalls(ModelRouter.ROLE_DECISION, scope, messages, callbacks);
         if (toolCalls.isEmpty()) {
             log.warn(
                     "action=tool_call_decision_failed, fallback=single_step, sessionId={}, reason=模型未返回工具调用",

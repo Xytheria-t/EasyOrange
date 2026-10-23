@@ -108,10 +108,10 @@ public class ModelCaller {
     // ── 工具调用与结构化输出 ──
 
     /** 原生 tool calling（带记账）：空列表 = 模型没调工具，由调用方按决策失败处理；只发请求不执行工具。
-     * {@code scenario} 取 {@link ModelRouter} 的角色键常量。 */
+     * {@code role} 取 {@link ModelRouter} 的角色键常量。 */
     public List<AssistantMessage.ToolCall> requestToolCalls(
-            String scenario, ModelCallScope scope, List<Message> messages, List<ToolCallback> toolCallbacks) {
-        ChatModel chatModel = modelRouter.choose(scenario);
+            String role, ModelCallScope scope, List<Message> messages, List<ToolCallback> toolCallbacks) {
+        ChatModel chatModel = modelRouter.chooseForRole(role);
         return callRecorder.record(scope, chatModel, joinTexts(messages), () -> {
             ChatResponse response =
                     chatModel.call(new Prompt(messages, toolOptions(chatModel, toolCallbacks, maxTokensOf(scope))));
@@ -121,21 +121,21 @@ public class ModelCaller {
 
     /** JSON 结构化输出（唯一不记账的调用）：追加 {@code response_format=json_object}，解析与降级由调用方承担。唯一调用方
      * {@code Judge} 只在金标准集回归跑批里跑，记账会让成本报表套娃、还要额外配评估场景预算，故刻意账外。 */
-    public String callJson(String scenario, String systemPrompt, String userMessage) {
-        ChatModel chatModel = modelRouter.choose(scenario);
+    public String callJson(String role, String systemPrompt, String userMessage) {
+        ChatModel chatModel = modelRouter.chooseForRole(role);
         return textOf(chatModel.call(new Prompt(systemUser(systemPrompt, userMessage), jsonOptions(chatModel, null))));
     }
 
     /** 多模态结构化输出：图片与「要哪些字段」同一次请求给到视觉模型。刻意不做「视觉模型写自由文本、文本模型再转
      * JSON」两段式 —— 第二次调用看不到图片，多付一次调用的钱与延迟，还丢掉没写进文字的画面细节。 */
     public <T> Optional<T> callJsonWithImages(
-            String scenario,
+            String role,
             ModelCallScope scope,
             String systemPrompt,
             String userText,
             List<String> imageUrls,
             Class<T> responseType) {
-        ChatModel chatModel = modelRouter.choose(scenario);
+        ChatModel chatModel = modelRouter.chooseForRole(role);
         Message userMessage = UserMessage.builder()
                 .text(userText)
                 .media(MediaResolver.of(imageUrls))

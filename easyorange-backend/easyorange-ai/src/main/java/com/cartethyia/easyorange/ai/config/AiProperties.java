@@ -145,10 +145,10 @@ public record AiProperties(
      * {@link com.cartethyia.easyorange.ai.application.support.ModelRouter}），值为 Spring bean 名；未配置的角色回退
      * {@code defaultModel}，换模型只改配置代码零改动，judge 指向独立评审模型即可消除自评偏差。
      */
-    public record Routing(@DefaultValue("chatModel") String defaultModel, Map<String, String> scenarios) {
+    public record Routing(@DefaultValue("chatModel") String defaultModel, Map<String, String> roles) {
 
         public Routing {
-            scenarios = Map.copyOf(scenarios == null ? Map.of() : scenarios);
+            roles = Map.copyOf(roles == null ? Map.of() : roles);
         }
     }
 

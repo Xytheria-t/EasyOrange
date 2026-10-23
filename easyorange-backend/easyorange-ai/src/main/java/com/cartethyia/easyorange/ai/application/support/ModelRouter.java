@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * 模型路由 —— 按<b>模型角色</b>选模型 bean（decision 决策 / vision 视觉 / judge 评审），角色 → bean 名映射在
- * {@code easyorange.ai.routing.scenarios}（yaml 可热更新），未配置的角色回退 {@code default-model}；接入新模型只改配置。
+ * {@code easyorange.ai.routing.roles}（yaml 可热更新），未配置的角色回退 {@code default-model}；接入新模型只改配置。
  * <p>
  * 在链路里的位置：{@link ModelCaller} 解析角色化调用时唯一的协作者 —— 调用方声明角色键，由本类挑出 bean 交回；
  * 本类不发起调用、不记账。
@@ -22,27 +22,27 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class ModelRouter {
 
-    /** 路由角色键 — 与 yaml {@code easyorange.ai.routing.scenarios} 的键契约对应，消费方引用常量不写字面量。 */
-    public static final String SCENARIO_DECISION = "decision";
+    /** 路由角色键 — 与 yaml {@code easyorange.ai.routing.roles} 的键契约对应，消费方引用常量不写字面量。 */
+    public static final String ROLE_DECISION = "decision";
 
-    public static final String SCENARIO_VISION = "vision";
-    public static final String SCENARIO_JUDGE = "judge";
+    public static final String ROLE_VISION = "vision";
+    public static final String ROLE_JUDGE = "judge";
 
     private final AiProperties aiProperties;
     private final ApplicationContext applicationContext;
 
     /** 取该角色对应的模型 bean。 */
-    public ChatModel choose(String scenario) {
+    public ChatModel chooseForRole(String role) {
         String beanName = aiProperties
                 .routing()
-                .scenarios()
-                .getOrDefault(scenario, aiProperties.routing().defaultModel());
+                .roles()
+                .getOrDefault(role, aiProperties.routing().defaultModel());
         // 角色键缺失回 default-model 是设计内路径；键配了但 bean 解析不到是配置错误 —— 静默回退 primary
         // 会把「vision 配错」伪装成「图片分析走文本模型」，fail-fast 让错误显式暴露
         try {
             return applicationContext.getBean(beanName, ChatModel.class);
         } catch (BeansException e) {
-            throw new IllegalStateException("模型路由配置错误: scenario=%s -> bean=%s".formatted(scenario, beanName), e);
+            throw new IllegalStateException("模型路由配置错误: role=%s -> bean=%s".formatted(role, beanName), e);
         }
     }
 }
