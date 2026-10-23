@@ -19,7 +19,6 @@ export function normalizeProduct(raw: RawProduct): Product {
         categoryId: raw.categoryId,
         categoryName: raw.categoryName ?? '',
         condition,
-        conditionLevel: condition,
         status,
         images: raw.images ?? [],
         location: raw.location ?? '',
@@ -33,11 +32,4 @@ export function normalizeProduct(raw: RawProduct): Product {
         stock: raw.stock,
         contactMethod: raw.contactMethod,
     };
-}
-
-export function calculateDiscount(currentPrice: number, originalPrice?: number | null): number | null {
-    if (!originalPrice || originalPrice <= 0 || currentPrice >= originalPrice) {
-        return null;
-    }
-    return Math.round((currentPrice / originalPrice) * 10) / 10;
 }

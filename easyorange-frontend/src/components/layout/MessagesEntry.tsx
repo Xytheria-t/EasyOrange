@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { messageApi } from '@/api/messageApi';
 import { Badge } from '@/components/ui';
 import { Button } from '@/components/ui/button';
-import type { ChatSession } from '@/types';
+import type { ConversationSummary } from '@/types';
 
 /**
  * 顶栏消息入口 —— 带会话未读汇总。
@@ -19,7 +19,7 @@ export function MessagesEntry() {
         queryKey: ['messages', 'conversations'],
         queryFn: async () => {
             const response = await messageApi.getConversations();
-            return (response.data ?? []) as unknown as ChatSession[];
+            return (response.data ?? []) as unknown as ConversationSummary[];
         },
         staleTime: 15 * 1000,
     });

@@ -1,4 +1,4 @@
-export interface ChatSession {
+export interface ConversationSummary {
     /** 会话唯一标识是对方 userId（后端 ConversationListVO 无独立会话 id） */
     targetUserId: string;
     targetUserName: string;

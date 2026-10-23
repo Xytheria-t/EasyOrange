@@ -1,8 +1,8 @@
-import type { LoginRequest, LoginResponse, RegisterRequest, User } from '@/types';
+import type { LoginFormInput, LoginResponse, RegisterRequest, User } from '@/types';
 import { request } from './core/request';
 
 export const userApi = {
-    login(data: LoginRequest) {
+    login(data: LoginFormInput) {
         return request<LoginResponse>('/auth/login', {
             method: 'POST',
             body: { identifier: data.account, password: data.password, clientType: 'web' },

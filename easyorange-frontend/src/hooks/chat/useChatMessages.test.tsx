@@ -6,11 +6,11 @@ import { useChatStore } from '@/store/chatStore';
 import type { ChatMessage } from '@/types/message';
 import { useChatMessages } from './useChatMessages';
 
-const mockGetConversation = vi.hoisted(() => vi.fn());
+const mockGetConversationMessages = vi.hoisted(() => vi.fn());
 
 vi.mock('@/api/messageApi', () => ({
     messageApi: {
-        getConversation: (...args: unknown[]) => mockGetConversation(...args),
+        getConversationMessages: (...args: unknown[]) => mockGetConversationMessages(...args),
     },
 }));
 
@@ -44,7 +44,7 @@ function createRawMessage(id: string, overrides: Partial<ChatMessage> = {}) {
 
 beforeEach(() => {
     useChatStore.getState().reset();
-    mockGetConversation.mockReset();
+    mockGetConversationMessages.mockReset();
 });
 
 afterEach(() => {
@@ -56,11 +56,11 @@ describe('useChatMessages', () => {
         renderHook(() => useChatMessages(null, 'conv-1'), {
             wrapper: createWrapper(),
         });
-        expect(mockGetConversation).not.toHaveBeenCalled();
+        expect(mockGetConversationMessages).not.toHaveBeenCalled();
     });
 
     it('returns empty messages while loading', () => {
-        mockGetConversation.mockReturnValue(new Promise(() => {}));
+        mockGetConversationMessages.mockReturnValue(new Promise(() => {}));
         const { result } = renderHook(() => useChatMessages('user-2', 'conv-1'), {
             wrapper: createWrapper(),
         });
@@ -70,7 +70,7 @@ describe('useChatMessages', () => {
 
     it('fetches and normalizes the last page of messages', async () => {
         const rawMessages = Array.from({ length: 55 }, (_, i) => createRawMessage(`msg-${i + 1}`));
-        mockGetConversation.mockResolvedValue({ data: rawMessages });
+        mockGetConversationMessages.mockResolvedValue({ data: rawMessages });
 
         const { result } = renderHook(() => useChatMessages('user-2', 'conv-1'), {
             wrapper: createWrapper(),
@@ -78,7 +78,7 @@ describe('useChatMessages', () => {
 
         await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-        expect(mockGetConversation).toHaveBeenCalledWith('user-2');
+        expect(mockGetConversationMessages).toHaveBeenCalledWith('user-2');
         expect(result.current.messages).toHaveLength(50);
         expect(result.current.messages[0].id).toBe('msg-6');
         expect(result.current.messages[49].id).toBe('msg-55');
@@ -86,7 +86,7 @@ describe('useChatMessages', () => {
 
     it('merges base messages with store messages', async () => {
         const rawMessages = [createRawMessage('msg-1')];
-        mockGetConversation.mockResolvedValue({ data: rawMessages });
+        mockGetConversationMessages.mockResolvedValue({ data: rawMessages });
 
         useChatStore.getState().addMessage('conv-1', {
             id: 'msg-2',
@@ -113,7 +113,7 @@ describe('useChatMessages', () => {
 
     it('overrides base message with newer store message for same id', async () => {
         const rawMessages = [createRawMessage('msg-1', { status: 'SENT', content: 'base' })];
-        mockGetConversation.mockResolvedValue({ data: rawMessages });
+        mockGetConversationMessages.mockResolvedValue({ data: rawMessages });
 
         useChatStore.getState().addMessage('conv-1', {
             id: 'msg-1',
@@ -140,7 +140,7 @@ describe('useChatMessages', () => {
 
     it('loads older messages', async () => {
         const rawMessages = Array.from({ length: 60 }, (_, i) => createRawMessage(`msg-${i + 1}`));
-        mockGetConversation.mockResolvedValue({ data: rawMessages });
+        mockGetConversationMessages.mockResolvedValue({ data: rawMessages });
 
         const { result } = renderHook(() => useChatMessages('user-2', 'conv-1'), {
             wrapper: createWrapper(),
@@ -159,7 +159,7 @@ describe('useChatMessages', () => {
 
     it('keeps hasMore true when more older messages remain', async () => {
         const rawMessages = Array.from({ length: 110 }, (_, i) => createRawMessage(`msg-${i + 1}`));
-        mockGetConversation.mockResolvedValue({ data: rawMessages });
+        mockGetConversationMessages.mockResolvedValue({ data: rawMessages });
 
         const { result } = renderHook(() => useChatMessages('user-2', 'conv-1'), {
             wrapper: createWrapper(),
@@ -178,7 +178,7 @@ describe('useChatMessages', () => {
 
     it('sets hasMore to false when no older messages exist', async () => {
         const rawMessages = Array.from({ length: 40 }, (_, i) => createRawMessage(`msg-${i + 1}`));
-        mockGetConversation.mockResolvedValue({ data: rawMessages });
+        mockGetConversationMessages.mockResolvedValue({ data: rawMessages });
 
         const { result } = renderHook(() => useChatMessages('user-2', 'conv-1'), {
             wrapper: createWrapper(),
@@ -196,7 +196,7 @@ describe('useChatMessages', () => {
     });
 
     it('exposes query error on initial fetch failure', async () => {
-        mockGetConversation.mockRejectedValue(new Error('network error'));
+        mockGetConversationMessages.mockRejectedValue(new Error('network error'));
 
         const { result } = renderHook(() => useChatMessages('user-2', 'conv-1'), {
             wrapper: createWrapper(),
@@ -207,19 +207,19 @@ describe('useChatMessages', () => {
     });
 
     it('does nothing when loadOlder is called without oldest message', async () => {
-        mockGetConversation.mockResolvedValue({ data: [] });
+        mockGetConversationMessages.mockResolvedValue({ data: [] });
 
         const { result } = renderHook(() => useChatMessages('user-2', 'conv-1'), {
             wrapper: createWrapper(),
         });
 
         await waitFor(() => expect(result.current.isLoading).toBe(false));
-        mockGetConversation.mockClear();
+        mockGetConversationMessages.mockClear();
 
         await act(async () => {
             await result.current.loadOlder();
         });
 
-        expect(mockGetConversation).not.toHaveBeenCalled();
+        expect(mockGetConversationMessages).not.toHaveBeenCalled();
     });
 });

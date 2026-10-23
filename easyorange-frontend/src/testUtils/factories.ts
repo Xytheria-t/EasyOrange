@@ -11,7 +11,6 @@ export function createMockProduct(overrides: Partial<Product> = {}): Product {
         categoryId: '1',
         categoryName: '电子产品',
         condition: 1,
-        conditionLevel: 1,
         status: 'ONLINE',
         images: ['https://example.com/image.jpg'],
         location: '北京',

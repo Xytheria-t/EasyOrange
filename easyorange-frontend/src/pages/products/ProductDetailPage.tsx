@@ -168,9 +168,7 @@ function ProductDetailPage() {
 
     const images = product.images?.length > 0 ? product.images : [placeholderImage];
     const isOwner = user && product.sellerId === user.userId;
-    const conditionLabel = product.conditionLevel
-        ? (CONDITION_LABEL_MAP[product.conditionLevel] ?? product.condition)
-        : product.condition;
+    const conditionLabel = CONDITION_LABEL_MAP[product.condition] ?? product.condition;
     const statusLabel = STATUS_LABEL_MAP[product.status as keyof typeof STATUS_LABEL_MAP] ?? product.status;
     const isOnline = product.status === 'ONLINE';
     const isSold = product.status === 'SOLD';
@@ -476,9 +474,7 @@ function ProductDetailPage() {
                         <>
                             <div className="pdp-similar-grid">
                                 {similarProducts.slice(0, 4).map(item => {
-                                    const itemConditionLabel = item.conditionLevel
-                                        ? (CONDITION_LABEL_MAP[item.conditionLevel] ?? item.condition)
-                                        : item.condition;
+                                    const itemConditionLabel = CONDITION_LABEL_MAP[item.condition] ?? item.condition;
                                     const itemHasDiscount =
                                         item.originalPrice != null && item.originalPrice > item.price;
                                     const itemDiscountPercent = itemHasDiscount

@@ -2,16 +2,16 @@
  * @fileoverview 消息 API 模块
  */
 
-import type { ChatSession, RawChatMessage } from '@/types';
+import type { ConversationSummary, RawChatMessage } from '@/types';
 import type { RecallPayload } from '@/types/message';
 import { request } from './core/request';
 
 export const messageApi = {
     getConversations() {
-        return request<ChatSession[]>('/messages/conversations');
+        return request<ConversationSummary[]>('/messages/conversations');
     },
 
-    getConversation(userId: string | number) {
+    getConversationMessages(userId: string | number) {
         return request<RawChatMessage[]>(`/messages/conversation/${userId}`);
     },
 

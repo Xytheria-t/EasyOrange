@@ -96,7 +96,7 @@ vi.mock('@/api/productApi', () => ({
 
 vi.mock('@/api/messageApi', () => ({
     messageApi: {
-        getConversation: vi.fn().mockResolvedValue({ data: [] }),
+        getConversationMessages: vi.fn().mockResolvedValue({ data: [] }),
         sendMessage: vi.fn().mockResolvedValue({}),
     },
 }));
@@ -112,7 +112,6 @@ function createMockProduct(overrides: Partial<Product> = {}): Product {
         categoryId: '1',
         categoryName: '电子产品',
         condition: 1,
-        conditionLevel: 1,
         status: 'ONLINE',
         images: ['https://example.com/image.jpg'],
         location: '北京海淀',

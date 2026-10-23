@@ -12,6 +12,6 @@ export { errorHandler } from './errorHandler';
 export { buildQueryString, formatDate, formatPrice, formatRelativeTime } from './format';
 
 // 函数工具
-export { debounce, throttle } from './functionUtils';
+export { debounce, rafCoalesce } from './functionUtils';
 // 商品工具
-export { calculateDiscount, normalizeProduct } from './product';
+export { normalizeProduct } from './product';

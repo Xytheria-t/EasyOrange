@@ -18,6 +18,6 @@ export async function fetchChatMessages(targetUserId: string | null): Promise<Ch
     if (!targetUserId) {
         return [];
     }
-    const response = await messageApi.getConversation(targetUserId);
+    const response = await messageApi.getConversationMessages(targetUserId);
     return normalizeChatMessages(response.data ?? []).slice(-CHAT_PAGE_SIZE);
 }

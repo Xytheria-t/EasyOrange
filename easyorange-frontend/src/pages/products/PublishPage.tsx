@@ -192,13 +192,10 @@ function PublishPage() {
     };
 
     const handleFormSubmit = async (data: PublishFormData, isDraft: boolean) => {
-        const payload = buildProductPayload(data);
+        const payload = buildProductPayload(data, aiSuggestion ?? undefined);
 
         try {
-            const productId = (await createProduct.mutateAsync({
-                ...payload,
-                aiSuggestion: aiSuggestion ?? undefined,
-            })) as string;
+            const productId = (await createProduct.mutateAsync(payload)) as string;
 
             if (!isDraft && productId) {
                 // 新建商品是 DRAFT，只能先提交审核（DRAFT → PENDING_REVIEW）；

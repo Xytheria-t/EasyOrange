@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { uploadFile } from '@/api/uploadApi';
 import { type PublishFormData, publishSchema } from '@/schemas/publishSchema';
 import { useUIStore } from '@/store/uiStore';
+import type { AiSuggestionSnapshot, CreateProductRequest } from '@/types';
 import { compressImage } from '@/utils/imageCompress';
 
 export const PRODUCT_FORM_DEFAULTS: PublishFormData = {
@@ -19,20 +20,8 @@ export const PRODUCT_FORM_DEFAULTS: PublishFormData = {
     imageUrls: [],
 };
 
-export interface ProductPayload {
-    name: string;
-    description: string;
-    price: number;
-    originalPrice?: number;
-    categoryId: string;
-    conditionLevel: number;
-    stock: number;
-    location?: string;
-    contactMethod?: string;
-    imageUrls: string[];
-}
-
-export function buildProductPayload(data: PublishFormData): ProductPayload {
+/** 表单 → 创建请求体（与 CreateProductRequest 同形，避免两套类型靠结构化兼容静默丢字段）。 */
+export function buildProductPayload(data: PublishFormData, aiSuggestion?: AiSuggestionSnapshot): CreateProductRequest {
     return {
         name: data.name.trim(),
         description: data.description.trim(),
@@ -46,6 +35,7 @@ export function buildProductPayload(data: PublishFormData): ProductPayload {
         // 上传接口返回相对地址（/api/file/…），后端 ImageUrl 只认 http(s)；
         // 按当前源绝对化——vite/nginx 同源反代，dev 与生产都成立。已是绝对地址的原样保留（编辑页回填场景）。
         imageUrls: data.imageUrls.map(url => new URL(url, location.origin).href),
+        aiSuggestion,
     };
 }
 

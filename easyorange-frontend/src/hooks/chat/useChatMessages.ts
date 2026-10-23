@@ -52,7 +52,7 @@ export function useChatMessages(targetUserId: string | null, conversationId: str
         loadingOlderRef.current = true;
 
         try {
-            const response = await messageApi.getConversation(targetUserId);
+            const response = await messageApi.getConversationMessages(targetUserId);
             const allMessages = normalizeChatMessages(response.data ?? []);
             const oldestIndex = allMessages.findIndex(m => m.id === oldestMessageId);
 

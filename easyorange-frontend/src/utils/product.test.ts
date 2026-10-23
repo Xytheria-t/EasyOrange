@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { RawProduct } from '@/types';
-import { calculateDiscount, normalizeProduct } from './product';
+import { normalizeProduct } from './product';
 
 describe('normalizeProduct', () => {
     it('normalizes a raw product record', () => {
@@ -56,20 +56,5 @@ describe('normalizeProduct', () => {
             status: 'ARCHIVED',
         } as unknown as RawProduct);
         expect(unknown.status).toBe('ONLINE');
-    });
-});
-
-describe('calculateDiscount', () => {
-    it('calculates discount ratio', () => {
-        expect(calculateDiscount(80, 100)).toBe(0.8);
-    });
-
-    it('returns null when originalPrice is missing', () => {
-        expect(calculateDiscount(80, null)).toBeNull();
-    });
-
-    it('returns null when current >= original', () => {
-        expect(calculateDiscount(100, 100)).toBeNull();
-        expect(calculateDiscount(120, 100)).toBeNull();
     });
 });

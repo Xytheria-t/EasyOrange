@@ -43,7 +43,7 @@ export const ProductCard = memo(({ product, style, index = 0, variant = 'default
     const conditionLabel = CONDITION_LABEL_MAP[product.condition] || product.condition;
     const hasDiscount = product.originalPrice != null && product.originalPrice > product.price;
     const discountPercent = hasDiscount ? Math.round((1 - product.price / (product.originalPrice as number)) * 100) : 0;
-    const isHot = product.isHot || (product.views != null && product.views > 200);
+    const isHot = product.views != null && product.views > 200;
     const quickLocation = product.location?.trim() || '校内面交';
     const sellerName = product.sellerName || '匿名用户';
     const hasDescription = !!product.description && product.description.trim().length > 0;
@@ -241,8 +241,8 @@ export const ProductCard = memo(({ product, style, index = 0, variant = 'default
             <div className="product-info-premium">
                 {!isCompact && (
                     <div className="product-eyebrow-premium">
-                        {(product.category || product.categoryName) && (
-                            <span className="product-category-premium">{product.category || product.categoryName}</span>
+                        {product.categoryName && (
+                            <span className="product-category-premium">{product.categoryName}</span>
                         )}
                         <span className={`product-signal-premium ${isHot ? 'is-hot' : ''}`}>
                             {isHot ? 'AI 热度精选' : 'AI 托管中'}

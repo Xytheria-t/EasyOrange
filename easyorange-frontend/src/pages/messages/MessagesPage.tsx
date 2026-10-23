@@ -8,7 +8,7 @@ import { EmptyState, ErrorState, LoadingState } from '@/components/feedback/Stat
 import { PaginationBar } from '@/components/PaginationBar';
 import { Button } from '@/components/ui/button';
 import { usePagination } from '@/hooks/usePagination';
-import type { ChatSession } from '@/types';
+import type { ConversationSummary } from '@/types';
 import { SYSTEM_TARGET_USER_ID } from '@/types/message';
 import { formatRelativeTime } from '@/utils';
 import './messages.css';
@@ -43,7 +43,7 @@ function bucketOf(time: string): Bucket {
     return 'earlier';
 }
 
-function sessionRow(conv: ChatSession, targetUserId: string | undefined) {
+function sessionRow(conv: ConversationSummary, targetUserId: string | undefined) {
     const isActive = conv.targetUserId === targetUserId;
     const isSystem = conv.targetUserId === SYSTEM_TARGET_USER_ID;
     const hasUnread = conv.unreadCount > 0;
@@ -116,7 +116,7 @@ function MessagesPage() {
         queryKey: ['messages', 'conversations'],
         queryFn: async () => {
             const response = await messageApi.getConversations();
-            return (response.data ?? []) as unknown as ChatSession[];
+            return (response.data ?? []) as unknown as ConversationSummary[];
         },
         staleTime: 15 * 1000,
     });

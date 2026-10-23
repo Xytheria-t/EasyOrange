@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { userApi } from '@/api/userApi';
 import { logout as sessionLogout, setSession } from '@/features/auth/session';
 import { useAuthStore } from '@/store';
-import type { LoginRequest, RegisterRequest, User } from '@/types';
+import type { LoginFormInput, RegisterRequest, User } from '@/types';
 
 const AUTH_KEYS = {
     all: ['auth'] as const,
@@ -31,7 +31,7 @@ export function useLogin() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async (data: LoginRequest) => {
+        mutationFn: async (data: LoginFormInput) => {
             // 短信登录与密码登录是两个端点：验证码走 sms-login 的 verifyCode 字段，
             // 混进 /auth/login 当密码用会恒报「账号或密码错误」
             const response =

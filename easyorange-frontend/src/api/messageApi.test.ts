@@ -16,8 +16,8 @@ describe('messageApi', () => {
         expect(mockRequest).toHaveBeenCalledWith('/messages/conversations');
     });
 
-    it('getConversation calls request with userId', () => {
-        messageApi.getConversation(123);
+    it('getConversationMessages calls request with userId', () => {
+        messageApi.getConversationMessages(123);
         expect(mockRequest).toHaveBeenCalledWith('/messages/conversation/123');
     });
 

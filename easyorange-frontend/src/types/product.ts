@@ -8,8 +8,8 @@ export interface Product {
     originalPrice: number | null;
     categoryId: string;
     categoryName: string;
+    /** 成色等级（后端 condition；展示用 CONDITION_LABEL_MAP 换算文案） */
     condition: number;
-    conditionLevel: number;
     status: ProductStatus;
     images: string[];
     mainImageUrl?: string | null;
@@ -21,10 +21,6 @@ export interface Product {
     sellerRating: number;
     createTime: string;
     updateTime: string;
-    isHot?: boolean;
-    discount?: number;
-    viewCount?: number;
-    category?: string;
     stock?: number;
     contactMethod?: string;
 }

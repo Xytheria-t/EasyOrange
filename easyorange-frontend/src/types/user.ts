@@ -15,12 +15,15 @@ export interface User {
     updateTime: string;
 }
 
-export interface LoginRequest {
+/**
+ * 登录表单输入 — 不是线上请求体：{@link userApi.login} 会映射成
+ * `{ identifier, password, clientType: 'web' }`，短信登录走独立端点的 `verifyCode`。
+ */
+export interface LoginFormInput {
     account: string;
+    /** 密码登录时是密码；短信登录时是验证码（字段名沿用表单历史，勿直传 /auth/login） */
     password: string;
     loginMethod: 'password' | 'sms';
-    clientType?: 'WEB';
-    isRegister?: boolean;
 }
 
 export interface RegisterRequest {

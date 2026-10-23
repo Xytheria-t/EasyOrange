@@ -48,6 +48,7 @@ function ChatThread({ counterpart, onBack }: ChatThreadProps) {
     const { user } = useAuthStore();
     const currentUserId = user?.userId ?? '';
 
+    // 仅前端 WS 订阅键（后端没有会话主键，会话由双方 userId 唯一确定）；不要当 API id 用
     const conversationId = useMemo(() => {
         if (!targetUserId || !currentUserId) {
             return '';

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useLogout } from '@/hooks';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
-import { throttle } from '@/utils/functionUtils';
+import { rafCoalesce } from '@/utils/functionUtils';
 import { MessagesEntry } from './MessagesEntry';
 
 export function Header() {
@@ -35,9 +35,9 @@ export function Header() {
     };
 
     useEffect(() => {
-        const handleScroll = throttle(() => {
+        const handleScroll = rafCoalesce(() => {
             setIsScrolled(window.scrollY > 20);
-        }, 100);
+        });
         window.addEventListener('scroll', handleScroll, { passive: true });
         return () => {
             handleScroll.cancel();

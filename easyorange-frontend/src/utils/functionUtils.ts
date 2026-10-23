@@ -1,6 +1,6 @@
 /**
  * @fileoverview 函数工具模块
- * @description 提供 debounce、throttle 等函数工具
+ * @description 提供 debounce、rafCoalesce 等函数工具
  */
 
 export interface DebounceOptions {
@@ -41,14 +41,14 @@ export function debounce<T extends (...args: unknown[]) => unknown>(
     return debounced;
 }
 
-export function throttle<T extends (...args: unknown[]) => unknown>(
-    func: T,
-    _limit = 300
+/** 按帧合并调用（requestAnimationFrame），不是时间窗口节流：每帧最多执行一次，无尾调用参数。 */
+export function rafCoalesce<T extends (...args: unknown[]) => unknown>(
+    func: T
 ): ((...args: Parameters<T>) => void) & { cancel: () => void } {
     let rafId: number | null = null;
     let lastArgs: Parameters<T> | null = null;
 
-    const throttled = function (this: unknown, ...args: Parameters<T>) {
+    const rafCoalesced = function (this: unknown, ...args: Parameters<T>) {
         lastArgs = args;
         if (rafId === null) {
             rafId = requestAnimationFrame(() => {
@@ -61,7 +61,7 @@ export function throttle<T extends (...args: unknown[]) => unknown>(
         }
     };
 
-    throttled.cancel = () => {
+    rafCoalesced.cancel = () => {
         if (rafId !== null) {
             cancelAnimationFrame(rafId);
             rafId = null;
@@ -69,5 +69,5 @@ export function throttle<T extends (...args: unknown[]) => unknown>(
         lastArgs = null;
     };
 
-    return throttled;
+    return rafCoalesced;
 }
