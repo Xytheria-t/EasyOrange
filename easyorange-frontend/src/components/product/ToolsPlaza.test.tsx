@@ -1,78 +1,69 @@
 import { fireEvent, render, screen } from '@testing-library/react';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import { ToolsPlaza } from './ToolsPlaza';
 
+function LocationProbe() {
+    const location = useLocation();
+    return <div data-testid="location">{location.pathname}</div>;
+}
+
+function renderPlaza(ui: React.ReactElement) {
+    return render(
+        <MemoryRouter>
+            {ui}
+            <LocationProbe />
+        </MemoryRouter>
+    );
+}
+
 describe('ToolsPlaza', () => {
     it('renders brand title', () => {
-        render(<ToolsPlaza />);
+        renderPlaza(<ToolsPlaza />);
         expect(screen.getByText('筛选工具')).toBeInTheDocument();
     });
 
     it('shows total count', () => {
-        render(<ToolsPlaza total={42} />);
+        renderPlaza(<ToolsPlaza total={42} />);
         expect(screen.getByText('42 件商品')).toBeInTheDocument();
     });
 
     it('shows zero total by default', () => {
-        render(<ToolsPlaza />);
+        renderPlaza(<ToolsPlaza />);
         expect(screen.getByText('0 件商品')).toBeInTheDocument();
     });
 
     it('renders filter buttons without sort options', () => {
-        render(<ToolsPlaza />);
+        renderPlaza(<ToolsPlaza />);
         expect(screen.getByText('全部')).toBeInTheDocument();
         expect(screen.getByText('特价优惠')).toBeInTheDocument();
         expect(screen.queryByText('最新发布')).not.toBeInTheDocument();
         expect(screen.queryByText('热门商品')).not.toBeInTheDocument();
     });
 
-    it('renders AI推荐 button', () => {
-        render(<ToolsPlaza />);
-        expect(screen.getByText('AI推荐')).toBeInTheDocument();
+    it('navigates to the AI playground instead of faking a filter', () => {
+        renderPlaza(<ToolsPlaza />);
+        fireEvent.click(screen.getByText('AI 找货'));
+        expect(screen.getByTestId('location')).toHaveTextContent('/playground');
     });
 
     it('calls onFilterChange with "all" when clicking 全部', () => {
         const onFilterChange = vi.fn();
-        render(<ToolsPlaza onFilterChange={onFilterChange} />);
+        renderPlaza(<ToolsPlaza onFilterChange={onFilterChange} />);
         fireEvent.click(screen.getByText('全部'));
         expect(onFilterChange).toHaveBeenCalledWith('all');
     });
 
-    it('calls onFilterChange with "ai" when clicking AI button', () => {
+    it('calls onFilterChange with "discount" when clicking 特价优惠', () => {
         const onFilterChange = vi.fn();
-        render(<ToolsPlaza onFilterChange={onFilterChange} />);
-        fireEvent.click(screen.getByText('AI推荐'));
-        expect(onFilterChange).toHaveBeenCalledWith('ai');
-    });
-
-    it('shows AI hint when AI mode is active', () => {
-        render(<ToolsPlaza />);
-        fireEvent.click(screen.getByText('AI推荐'));
-        expect(screen.getByText(/AI正在根据您的浏览习惯/)).toBeInTheDocument();
-    });
-
-    it('hides AI hint when clicking regular filter after AI mode', () => {
-        render(<ToolsPlaza />);
-        fireEvent.click(screen.getByText('AI推荐'));
-        expect(screen.getByText(/AI正在根据您的浏览习惯/)).toBeInTheDocument();
-        fireEvent.click(screen.getByText('全部'));
-        expect(screen.queryByText(/AI正在根据您的浏览习惯/)).not.toBeInTheDocument();
+        renderPlaza(<ToolsPlaza onFilterChange={onFilterChange} />);
+        fireEvent.click(screen.getByText('特价优惠'));
+        expect(onFilterChange).toHaveBeenCalledWith('discount');
     });
 
     it('sets 全部 active by default', () => {
-        render(<ToolsPlaza />);
+        renderPlaza(<ToolsPlaza />);
         const allBtn = screen.getByText('全部').closest('button');
         expect(allBtn?.className).toContain('active');
-    });
-
-    it('toggles AI mode on second click and falls back to default', () => {
-        const onFilterChange = vi.fn();
-        render(<ToolsPlaza onFilterChange={onFilterChange} />);
-        fireEvent.click(screen.getByText('AI推荐'));
-        expect(onFilterChange).toHaveBeenCalledWith('ai');
-        fireEvent.click(screen.getByText('AI推荐'));
-        // Second click should call onFilterChange with 'all' (fallback to default)
-        expect(onFilterChange).toHaveBeenLastCalledWith('all');
-        expect(onFilterChange).toHaveBeenCalledTimes(2);
     });
 });

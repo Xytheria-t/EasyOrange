@@ -1,8 +1,9 @@
 import { Sparkles, Zap } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 
-export type ToolsPlazaFilter = 'all' | 'ai' | 'discount';
+export type ToolsPlazaFilter = 'all' | 'discount';
 
 interface ToolsPlazaProps {
     onFilterChange?: (filter: ToolsPlazaFilter) => void;
@@ -11,31 +12,13 @@ interface ToolsPlazaProps {
 }
 
 export function ToolsPlaza({ onFilterChange, total = 0, activeFilter: externalActiveFilter }: ToolsPlazaProps) {
+    const navigate = useNavigate();
     const [internalActiveFilter, setInternalActiveFilter] = useState<ToolsPlazaFilter>('all');
-    const [aiMode, setAiMode] = useState(false);
 
     const activeFilter = externalActiveFilter ?? internalActiveFilter;
 
-    useEffect(() => {
-        if (externalActiveFilter && externalActiveFilter !== 'ai') {
-            setAiMode(false);
-        }
-    }, [externalActiveFilter]);
-
     const handleFilterClick = (filter: ToolsPlazaFilter) => {
-        if (filter === 'ai') {
-            const nextAiMode = !aiMode;
-            setAiMode(nextAiMode);
-            setInternalActiveFilter(nextAiMode ? 'ai' : 'all');
-            if (nextAiMode) {
-                onFilterChange?.('ai');
-            } else {
-                onFilterChange?.('all');
-            }
-            return;
-        }
         setInternalActiveFilter(filter);
-        setAiMode(false);
         onFilterChange?.(filter);
     };
 
@@ -64,13 +47,13 @@ export function ToolsPlaza({ onFilterChange, total = 0, activeFilter: externalAc
                 <Button
                     type="button"
                     variant="ghost"
-                    className={`plaza-tool plaza-ai-tool ${aiMode ? 'active' : ''}`}
-                    onClick={() => handleFilterClick('ai')}
+                    className="plaza-tool plaza-ai-tool"
+                    onClick={() => navigate('/playground')}
                 >
                     <div className="tool-icon">
                         <Sparkles size={16} />
                     </div>
-                    <span className="tool-label">AI推荐</span>
+                    <span className="tool-label">AI 找货</span>
                     <div className="tool-badge ai-badge">
                         <Zap size={8} />
                         AI
@@ -83,7 +66,7 @@ export function ToolsPlaza({ onFilterChange, total = 0, activeFilter: externalAc
                     <Button
                         type="button"
                         variant="ghost"
-                        className={`plaza-tool ${activeFilter === 'all' && !aiMode ? 'active' : ''}`}
+                        className={`plaza-tool ${activeFilter === 'all' ? 'active' : ''}`}
                         onClick={() => handleFilterClick('all')}
                     >
                         <div className="tool-icon">
@@ -107,7 +90,7 @@ export function ToolsPlaza({ onFilterChange, total = 0, activeFilter: externalAc
                     <Button
                         type="button"
                         variant="ghost"
-                        className={`plaza-tool ${activeFilter === 'discount' && !aiMode ? 'active' : ''}`}
+                        className={`plaza-tool ${activeFilter === 'discount' ? 'active' : ''}`}
                         onClick={() => handleFilterClick('discount')}
                     >
                         <div className="tool-icon">
@@ -128,13 +111,6 @@ export function ToolsPlaza({ onFilterChange, total = 0, activeFilter: externalAc
                     </Button>
                 </div>
             </div>
-
-            {aiMode && (
-                <div className="plaza-ai-hint">
-                    <Sparkles size={14} />
-                    <span>AI正在根据您的浏览习惯为您推荐最合适的商品</span>
-                </div>
-            )}
 
             <div className="plaza-accent">
                 <div className="accent-glow" />

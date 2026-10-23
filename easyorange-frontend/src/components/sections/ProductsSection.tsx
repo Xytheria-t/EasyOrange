@@ -12,7 +12,7 @@ const FILTER_PARAMS: Record<FilterKey, ProductQueryParams> = {
     all: { sort: 'newest', pageNum: 1, pageSize: 8 },
     new: { sort: 'newest', pageNum: 1, pageSize: 8 },
     hot: { sort: 'popular', pageNum: 1, pageSize: 8 },
-    discount: { sort: 'price_asc', pageNum: 1, pageSize: 8 },
+    discount: { hasDiscount: true, sort: 'price_asc', pageNum: 1, pageSize: 8 },
 };
 
 export default function ProductsSection() {
